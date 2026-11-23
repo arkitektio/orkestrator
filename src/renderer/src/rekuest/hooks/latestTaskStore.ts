@@ -1,13 +1,13 @@
-import {gql, type ApolloClient} from '@apollo/client';
 import {applyTaskUpdate, idleTaskRecord, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import type {TaskEventKind} from '../api/graphql';
 import {taskUpdateFromEvent} from '../components/blokTaskUpdates';
+import type {RekuestSession} from '../session/client';
 import {createLiveStateStore, type LiveStateSubscribe} from './liveStateStore';
 
 /**
  * The task an agent's action last ran as, whoever started it, kept current.
  *
- * The server's `latestTask(agent, interface)` feed says it first as a snapshot
+ * The session's `latest:<agent>/<interface>` topic says it first as a snapshot
  * (the task and the few events its record is made of) and then says what
  * changes it: the task's events, and every task of the action as it starts
  * and as it ends. This folds those into the record a blok reads
@@ -15,44 +15,6 @@ import {createLiveStateStore, type LiveStateSubscribe} from './liveStateStore';
  * subscription per `(agent, interface)` however many bloks read it, and
  * readers hear of it at most once per animation frame.
  */
-
-/** Written by hand, and typed below: the generated documents are left alone. */
-export const WatchLatestTaskDocument = gql`
-  subscription WatchLatestTask($agent: ID!, $interface: String!) {
-    latestTask(agent: $agent, interface: $interface) {
-      __typename
-      ... on LatestTaskSnapshot {
-        implementation
-        latest {
-          id
-          isDone
-          latestEventKind
-        }
-        events {
-          id
-          task
-          kind
-          message
-          progress
-          returns
-        }
-      }
-      ... on TaskChange {
-        id
-        isDone
-        latestEventKind
-      }
-      ... on TaskEventChange {
-        id
-        task
-        kind
-        message
-        progress
-        returns
-      }
-    }
-  }
-`;
 
 type TaskRow = {id: string; isDone: boolean; latestEventKind: TaskEventKind};
 
@@ -69,8 +31,6 @@ export type LatestTaskMessage =
   | ({__typename: 'TaskChange'} & TaskRow)
   | ({__typename: 'TaskEventChange'} & ReportedEvent);
 
-export type WatchLatestTaskSubscription = {latestTask: LatestTaskMessage};
-export type WatchLatestTaskSubscriptionVariables = {agent: string; interface: string};
 
 /** What is held for one action of one agent. Replaced, never mutated. */
 export type LatestTaskState = {
@@ -130,31 +90,72 @@ export const foldLatestTask = (state: LatestTaskState | null, message: LatestTas
   return position === 0 && record === state.record ? state : {...state, task: message.task, record};
 };
 
-/**
- * The feed as the live-state store reads one: every change hands it the whole
- * of what is held, which the store publishes once per frame.
- */
-export const subscribeLatestTask: LiveStateSubscribe<ApolloClient<unknown>> = (client, variables, handlers) => {
-  let held: LatestTaskState | null = null;
-  let revision = 0;
-  const subscription = client
-    .subscribe<WatchLatestTaskSubscription, WatchLatestTaskSubscriptionVariables>({
-      query: WatchLatestTaskDocument,
-      variables: {agent: variables.agentID, interface: variables.interface},
-    })
-    .subscribe({
-      next: result => {
-        const message = result.data?.latestTask;
-        if (!message) return;
-        const next = foldLatestTask(held, message);
-        if (next === held || next === null) return;
-        held = next;
-        revision += 1;
-        handlers.next({__typename: 'StateSnapshotEvent', value: next, globalRevision: revision});
-      },
-      error: handlers.error,
-    });
-  return () => subscription.unsubscribe();
+/** A task record as the session carries it (`TaskChangePayload`). */
+type WireTaskRow = {id: string; is_done: boolean; latest_event_kind: string};
+/** A reported event as the session carries it (`TaskEventPayload`). */
+type WireReported = {
+  task: string;
+  kind: string;
+  message?: string | null;
+  progress?: number | null;
+  returns?: unknown;
 };
 
-export const latestTaskStore = createLiveStateStore<ApolloClient<unknown>>({subscribe: subscribeLatestTask});
+const reported = (event: WireReported): ReportedEvent => ({
+  task: event.task,
+  kind: event.kind as TaskEventKind,
+  message: event.message ?? null,
+  progress: event.progress ?? null,
+  returns: event.returns ?? null,
+});
+
+const taskRow = (task: WireTaskRow): TaskRow => ({
+  id: task.id,
+  isDone: task.is_done,
+  latestEventKind: task.latest_event_kind as TaskEventKind,
+});
+
+/** The session's `latest:` snapshot as the feed's first message. */
+export const snapshotMessage = (snapshot: {
+  implementation?: string | null;
+  latest?: WireTaskRow | null;
+  events?: WireReported[];
+}): LatestTaskMessage => ({
+  __typename: 'LatestTaskSnapshot',
+  implementation: snapshot.implementation ?? null,
+  latest: snapshot.latest ? taskRow(snapshot.latest) : null,
+  events: (snapshot.events ?? []).map(reported),
+});
+
+/** One item of the session's `latest:` topic as the feed's message, or null. */
+export const itemMessage = (item: {create?: WireTaskRow | null; event?: WireReported | null}): LatestTaskMessage | null => {
+  if (item.create) return {__typename: 'TaskChange', ...taskRow(item.create)};
+  if (item.event) return {__typename: 'TaskEventChange', ...reported(item.event)};
+  return null;
+};
+
+/**
+ * The feed as the live-state store reads one, over the window's caller session
+ * (`latest:<agent>/<interface>`): every change hands it the whole of what is
+ * held, which the store publishes once per frame. A resume resends the
+ * snapshot, which replaces what is held.
+ */
+export const subscribeLatestTask: LiveStateSubscribe<RekuestSession> = (session, variables, handlers) => {
+  let held: LatestTaskState | null = null;
+  let revision = 0;
+  const fold = (message: LatestTaskMessage | null) => {
+    if (!message) return;
+    const next = foldLatestTask(held, message);
+    if (next === held || next === null) return;
+    held = next;
+    revision += 1;
+    handlers.next({__typename: 'StateSnapshotEvent', value: next, globalRevision: revision});
+  };
+  return session.watch(`latest:${variables.agentID}/${variables.interface}`, {
+    onResync: snapshot => fold(snapshotMessage(snapshot as Parameters<typeof snapshotMessage>[0])),
+    onData: item => fold(itemMessage(item as Parameters<typeof itemMessage>[0])),
+    onRefused: error => handlers.error(new Error(error)),
+  });
+};
+
+export const latestTaskStore = createLiveStateStore<RekuestSession>({subscribe: subscribeLatestTask});

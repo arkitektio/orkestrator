@@ -6371,39 +6371,72 @@ export type StructurePackage = {
 /** Root subscription type for real-time event streams from the system. */
 export type Subscription = {
   __typename?: 'Subscription';
-  /** Subscribe to task create/update for a specific agent. */
+  /**
+   * Subscribe to task create/update for a specific agent.
+   * @deprecated Follow the caller session's `agent:<agent>/tasks` topic on takt (`/session`) instead.
+   */
   agentTasks: AgentTaskUpdate;
-  /** Subscribe to updates on agent connections and statuses. */
+  /**
+   * Subscribe to updates on agent connections and statuses.
+   * @deprecated Follow the caller session's `agents:org` topic on takt (`/session`) instead.
+   */
   agents: AgentChangeEvent;
   /** The organization's assets as they are stored (only those of `refs`, if given): an agent's declared asset becomes available the moment one with its ref arrives. */
   assets: AssetChange;
-  /** Subscribe to all descendant task changes of a task. */
+  /**
+   * Subscribe to all descendant task changes of a task.
+   * @deprecated Follow the caller session's `children:<task>` topic on takt (`/session`) instead.
+   */
   childTasks: ChildTaskEvent;
   /** Subscribe to changes in implementations. */
   implementationChange: Implementation;
   /** Subscribe to creation or updates of implementations. */
   implementations: ImplementationUpdate;
-  /** The task an agent's action last ran as, whoever started it, kept current. Yields a `LatestTaskSnapshot` first, then that task's events (`TaskEventChange`: progress, results, its end) and, as a `TaskChange`, every task of the action that starts or ends: a started one with a higher id is the latest from then on. A snapshot without an implementation means the agent offers no action under that interface, and nothing follows. */
+  /**
+   * The task an agent's action last ran as, whoever started it, kept current. Yields a `LatestTaskSnapshot` first, then that task's events (`TaskEventChange`: progress, results, its end) and, as a `TaskChange`, every task of the action that starts or ends: a started one with a higher id is the latest from then on. A snapshot without an implementation means the agent offers no action under that interface, and nothing follows.
+   * @deprecated Follow the caller session's `latest:<agent>/<interface>` topic on takt (`/session`) instead.
+   */
   latestTask: LatestTaskSnapshotTaskChangeTaskEventChange;
-  /** Subscribe to root tasks created by this client (caller-scoped). */
+  /**
+   * Subscribe to root tasks created by this client (caller-scoped).
+   * @deprecated Follow the caller session's `tasks:mine` topic on takt (`/session`) instead.
+   */
   mytasks: TaskChangeEvent;
-  /** Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened. */
+  /**
+   * Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened.
+   * @deprecated Follow the caller session's `probe:<probe>` topic on takt (`/session`) instead.
+   */
   probeEvents: ProbeEvent;
   /** Subscribe to the organization's schedules being created, changed (by a user or by their runs) or deleted. */
   schedules: RuleChangeEvent;
   /** Subscribe to the signals services send about the organization's objects: one arrived, or triggers were matched against it. */
   signals: SignalChangeEvent;
-  /** Subscribe to updates of state values and patches. */
+  /**
+   * Subscribe to updates of state values and patches.
+   * @deprecated Follow the caller session's `state:<agent>/<interface>` topic on takt (`/session`) instead.
+   */
   stateUpdateEvents: State;
-  /** One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history. */
+  /**
+   * One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history.
+   * @deprecated Follow the caller session's `task:<task>` topic on takt (`/session`) instead.
+   */
   taskEvents: TaskEventChange;
-  /** Subscribe to root task changes across the whole organization. */
+  /**
+   * Subscribe to root task changes across the whole organization.
+   * @deprecated Follow the caller session's `tasks:org` topic on takt (`/session`) instead.
+   */
   tasks: TaskChangeEvent;
   /** Subscribe to the organization's triggers being created, changed (by a user or by their firings) or deleted. */
   triggers: RuleChangeEvent;
-  /** Watch an agent: yields snapshots for all states then streams patches. */
+  /**
+   * Watch an agent: yields snapshots for all states then streams patches.
+   * @deprecated Follow the caller session's `states:<agent>` topic on takt (`/session`) instead.
+   */
   watchAgent: AgentSnapshotEventStatePatchEvent;
-  /** Watch a state: yields the current snapshot then streams patches. */
+  /**
+   * Watch a state: yields the current snapshot then streams patches.
+   * @deprecated Follow the caller session's `state:<agent>/<interface>` topic on takt (`/session`) instead.
+   */
   watchState: StateSnapshotEventStatePatchEvent;
 };
 

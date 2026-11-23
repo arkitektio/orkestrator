@@ -3,7 +3,7 @@ import * as React from 'react';
 import {act, render} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {TaskEventKind} from '../api/graphql';
-import type {LatestTaskMessage} from '../hooks/latestTaskStore';
+import {fakeLatestSession, type FakeLatestFeed} from '../hooks/latestTaskFeed.testing';
 import tree from './latestTaskPanel.fixture.json';
 import {installAppBlokCatalog} from '@/core/blok/testing';
 
@@ -15,21 +15,14 @@ installAppBlokCatalog();
  * the progress of whichever action is running.
  */
 
-type Feed = {variables: {agent: string; interface: string}; next: (message: LatestTaskMessage) => void};
-const feeds: Feed[] = [];
-const client = {
-  subscribe: ({variables}: {variables: Feed['variables']}) => ({
-    subscribe: (observer: {next: (result: {data: {latestTask: LatestTaskMessage}}) => void}) => {
-      feeds.push({variables, next: message => observer.next({data: {latestTask: message}})});
-      return {unsubscribe: () => {}};
-    },
-  }),
-};
+const feeds: FakeLatestFeed[] = [];
+const session = fakeLatestSession(feeds);
 
 vi.mock('@/rekuest/components/useBlokViewer', () => ({useBlokViewer: () => null}));
 vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: () => null, useBlokComponentStore: () => null}));
 vi.mock('@/core/modules/hooks/useServiceReads', () => ({useServiceReads: () => ({query: () => Promise.resolve({}), subscribe: () => () => undefined})}));
-vi.mock('@/rekuest/api/hooks', () => ({useRekuest: () => client}));
+vi.mock('@/rekuest/api/hooks', () => ({useRekuest: () => ({})}));
+vi.mock('@/rekuest/session/hooks', () => ({useRekuestSession: () => session}));
 vi.mock('@/rekuest/hooks/useAssign', () => ({useAssign: () => ({assign: vi.fn()})}));
 vi.mock('@/rekuest/scene/RekuestSceneHost', () => ({RekuestSceneHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));
 vi.mock('@/rekuest/scene/RekuestAssetHost', () => ({RekuestAssetHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));

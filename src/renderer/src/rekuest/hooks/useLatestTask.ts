@@ -1,5 +1,5 @@
 import {useCallback, useSyncExternalStore} from 'react';
-import {useRekuest} from '@/rekuest/api/hooks';
+import {useRekuestSession} from '../session/hooks';
 import {EMPTY_LIVE_STATE} from './liveStateStore';
 import {latestTaskStore, type LatestTaskState} from './latestTaskStore';
 
@@ -13,13 +13,13 @@ const unwatched = () => () => {};
  * first and closed by the last (`latestTaskStore`).
  */
 export const useLatestTask = ({agentID, name}: {agentID?: string; name?: string}): LatestTaskState | null => {
-  const client = useRekuest();
-  const active = !!agentID && !!name && !!client;
+  const session = useRekuestSession();
+  const active = !!agentID && !!name;
 
   const subscribe = useCallback(
     (onStoreChange: () => void) =>
-      active ? latestTaskStore.acquire(client, agentID as string, name as string, onStoreChange) : unwatched(),
-    [active, agentID, client, name],
+      active ? latestTaskStore.acquire(session, agentID as string, name as string, onStoreChange) : unwatched(),
+    [active, agentID, session, name],
   );
   const getSnapshot = useCallback(
     () => (active ? latestTaskStore.getSnapshot(agentID as string, name as string) : EMPTY_LIVE_STATE),

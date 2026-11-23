@@ -1,3 +1,4 @@
+import {fakeLatestSession, type FakeLatestFeed} from './latestTaskFeed.testing';
 import {describe, expect, it, vi} from 'vitest';
 import {TaskEventKind} from '../api/graphql';
 import {createLiveStateStore, type LiveStateEvent} from './liveStateStore';
@@ -102,16 +103,8 @@ describe('the latest task of an action, folded from its feed', () => {
 describe('the latest-task store', () => {
   const make = () => {
     const frames: Array<() => void> = [];
-    const feeds: Array<{variables: unknown; next: (message: LatestTaskMessage) => void; closed: boolean}> = [];
-    const client = {
-      subscribe: vi.fn(({variables}: {variables: unknown}) => ({
-        subscribe: (observer: {next: (result: {data: {latestTask: LatestTaskMessage}}) => void}) => {
-          const feed = {variables, next: (message: LatestTaskMessage) => observer.next({data: {latestTask: message}}), closed: false};
-          feeds.push(feed);
-          return {unsubscribe: () => (feed.closed = true)};
-        },
-      })),
-    };
+    const feeds: FakeLatestFeed[] = [];
+    const client = fakeLatestSession(feeds);
     const store = createLiveStateStore<typeof client>({
       subscribe: subscribeLatestTask as never,
       schedule: callback => frames.push(callback),

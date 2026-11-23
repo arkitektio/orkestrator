@@ -7657,10 +7657,10 @@ type StructurePackage {
 """Root subscription type for real-time event streams from the system."""
 type Subscription {
   """Subscribe to task create/update for a specific agent."""
-  agentTasks(agent: ID!): AgentTaskUpdate!
+  agentTasks(agent: ID!): AgentTaskUpdate! @deprecated(reason: "Follow the caller session's `agent:<agent>/tasks` topic on takt (`/session`) instead.")
 
   """Subscribe to updates on agent connections and statuses."""
-  agents: AgentChangeEvent!
+  agents: AgentChangeEvent! @deprecated(reason: "Follow the caller session's `agents:org` topic on takt (`/session`) instead.")
 
   """
   The organization's assets as they are stored (only those of `refs`, if given): an agent's declared asset becomes available the moment one with its ref arrives.
@@ -7668,7 +7668,7 @@ type Subscription {
   assets(refs: [String!] = null): AssetChange!
 
   """Subscribe to all descendant task changes of a task."""
-  childTasks(id: ID!): ChildTaskEvent!
+  childTasks(id: ID!): ChildTaskEvent! @deprecated(reason: "Follow the caller session's `children:<task>` topic on takt (`/session`) instead.")
 
   """Subscribe to changes in implementations."""
   implementationChange(implementation: ID!): Implementation!
@@ -7679,15 +7679,15 @@ type Subscription {
   """
   The task an agent's action last ran as, whoever started it, kept current. Yields a `LatestTaskSnapshot` first, then that task's events (`TaskEventChange`: progress, results, its end) and, as a `TaskChange`, every task of the action that starts or ends: a started one with a higher id is the latest from then on. A snapshot without an implementation means the agent offers no action under that interface, and nothing follows.
   """
-  latestTask(agent: ID!, interface: String!): LatestTaskSnapshotTaskChangeTaskEventChange!
+  latestTask(agent: ID!, interface: String!): LatestTaskSnapshotTaskChangeTaskEventChange! @deprecated(reason: "Follow the caller session's `latest:<agent>/<interface>` topic on takt (`/session`) instead.")
 
   """Subscribe to root tasks created by this client (caller-scoped)."""
-  mytasks: TaskChangeEvent!
+  mytasks: TaskChangeEvent! @deprecated(reason: "Follow the caller session's `tasks:mine` topic on takt (`/session`) instead.")
 
   """
   Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened.
   """
-  probeEvents(probe: ID!): ProbeEvent!
+  probeEvents(probe: ID!): ProbeEvent! @deprecated(reason: "Follow the caller session's `probe:<probe>` topic on takt (`/session`) instead.")
 
   """
   Subscribe to the organization's schedules being created, changed (by a user or by their runs) or deleted.
@@ -7700,15 +7700,15 @@ type Subscription {
   signals: SignalChangeEvent!
 
   """Subscribe to updates of state values and patches."""
-  stateUpdateEvents(stateId: ID!): State!
+  stateUpdateEvents(stateId: ID!): State! @deprecated(reason: "Follow the caller session's `state:<agent>/<interface>` topic on takt (`/session`) instead.")
 
   """
   One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history.
   """
-  taskEvents(after: ID = null, afterSeq: Int = null, task: ID!): TaskEventChange!
+  taskEvents(after: ID = null, afterSeq: Int = null, task: ID!): TaskEventChange! @deprecated(reason: "Follow the caller session's `task:<task>` topic on takt (`/session`) instead.")
 
   """Subscribe to root task changes across the whole organization."""
-  tasks: TaskChangeEvent!
+  tasks: TaskChangeEvent! @deprecated(reason: "Follow the caller session's `tasks:org` topic on takt (`/session`) instead.")
 
   """
   Subscribe to the organization's triggers being created, changed (by a user or by their firings) or deleted.
@@ -7716,10 +7716,10 @@ type Subscription {
   triggers: RuleChangeEvent!
 
   """Watch an agent: yields snapshots for all states then streams patches."""
-  watchAgent(agentId: ID!): AgentSnapshotEventStatePatchEvent!
+  watchAgent(agentId: ID!): AgentSnapshotEventStatePatchEvent! @deprecated(reason: "Follow the caller session's `states:<agent>` topic on takt (`/session`) instead.")
 
   """Watch a state: yields the current snapshot then streams patches."""
-  watchState(agentId: ID = null, interface: String = null, stateId: ID = null): StateSnapshotEventStatePatchEvent!
+  watchState(agentId: ID = null, interface: String = null, stateId: ID = null): StateSnapshotEventStatePatchEvent! @deprecated(reason: "Follow the caller session's `state:<agent>/<interface>` topic on takt (`/session`) instead.")
 }
 
 """Tracks the assignment of an implementation to a specific task."""
