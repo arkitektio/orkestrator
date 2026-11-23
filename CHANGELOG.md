@@ -1,3 +1,16 @@
+# [8.27.0](https://github.com/arkitektio/orkestrator/compare/v8.26.0...v8.27.0) (2026-11-23)
+
+
+### Bug Fixes
+
+* **connection:** an optional service the hub does not grant is no configuration issue ([19ed384](https://github.com/arkitektio/orkestrator/commit/19ed38482ee7bed429ba602fc8c696a3c5ac9069))
+
+
+### Features
+
+* Settings → Connection shows the agent and live updates; the yellow glyph links there ([e02ed67](https://github.com/arkitektio/orkestrator/commit/e02ed679b8a67bf89bf407f28dd988df6594b368))
+* **settings:** in order, and a Hub page with a page per service ([0cf38f4](https://github.com/arkitektio/orkestrator/commit/0cf38f4e2f920c58f3f34273f90e520c29d2ea00))
+
 # [8.26.0](https://github.com/arkitektio/orkestrator/compare/v8.25.0...v8.26.0) (2026-11-23)
 
 
