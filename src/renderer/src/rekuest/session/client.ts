@@ -41,6 +41,53 @@ export type SessionSync = {
   /** Back on a new session (away longer than the grace): every topic is being sent again
    *  whole, and until it is, what it shows may be out of date. */
   catchingUp: boolean;
+  /** Why updates stopped, the last time they did: kept while they do not flow. */
+  error: SessionError | null;
+};
+
+/** What went wrong with the session's socket: a sentence, and what the socket said. */
+export type SessionError = {
+  message: string;
+  /** The technical part: close code, the server's reason. */
+  detail?: string;
+  at: number;
+};
+
+/** Why a session socket closed, as a sentence (`opened`: whether it ever opened). */
+export const describeClose = (
+  code: number,
+  reason: string | undefined,
+  opened: boolean,
+  url: string,
+): Omit<SessionError, "at"> => {
+  const detail = `Close code ${code}${reason ? `: ${reason}` : ""}`;
+  // A socket that never opened: the server was unreachable, or (when the rest of rekuest
+  // answers) its gateway does not send `/rekuest/session` to takt. The browser cannot tell.
+  if (!opened) {
+    return {
+      message: `The server did not open live updates at ${url}. If the rest of the app works, the hub's gateway may not route this path to takt yet: update the hub.`,
+      detail,
+    };
+  }
+  switch (code) {
+    case CLOSE.UNAUTHORIZED:
+      return { message: "The server refused this window's sign-in.", detail };
+    case CLOSE.PROTOCOL:
+      return { message: "The server could not read what this window sent.", detail };
+    case CLOSE.IDLE:
+      return { message: "The server heard nothing from this window for too long.", detail };
+    case CLOSE.SUPERSEDED:
+      return { message: "Another connection took this window's session over.", detail };
+    case CLOSE.UNAVAILABLE:
+      return { message: "Live updates are not available on the server right now.", detail };
+    case 1000:
+    case 1001:
+      return { message: "The server closed the connection.", detail };
+    case 1006:
+      return { message: "The connection dropped without a word from the server.", detail };
+    default:
+      return { message: "The connection closed.", detail };
+  }
 };
 
 /** How long a catch-up is waited for before the window stops saying it is catching up. */
@@ -112,7 +159,17 @@ export class RekuestSession {
   private socket: WebSocket | null = null;
   private status: SessionStatus = "connecting";
   private statusListeners = new Set<() => void>();
-  private sync: SessionSync = { status: "connecting", since: Date.now(), catchingUp: false };
+  private sync: SessionSync = {
+    status: "connecting",
+    since: Date.now(),
+    catchingUp: false,
+    error: null,
+  };
+  private error: SessionError | null = null;
+  /** What the server said in its CLOSING frame, for the close that follows. */
+  private closingReason: string | null = null;
+  /** Why this window closed its own socket, for the close that follows. */
+  private closedBecause: Omit<SessionError, "at"> | null = null;
   /** Topics a new session still owes their first snapshot (see `SessionSync.catchingUp`). */
   private owed = new Set<string>();
   private catchUpTimer: ReturnType<typeof setTimeout> | null = null;
@@ -168,9 +225,15 @@ export class RekuestSession {
     const flowing = this.status === "open";
     const since = flowing ? null : (this.sync.since ?? Date.now());
     const catchingUp = flowing && this.owed.size > 0;
+    const error = flowing ? null : this.error;
     const sync = this.sync;
-    if (sync.status !== this.status || sync.since !== since || sync.catchingUp !== catchingUp) {
-      this.sync = { status: this.status, since, catchingUp };
+    if (
+      sync.status !== this.status ||
+      sync.since !== since ||
+      sync.catchingUp !== catchingUp ||
+      sync.error !== error
+    ) {
+      this.sync = { status: this.status, since, catchingUp, error };
     }
     for (const listener of [...this.statusListeners]) listener();
   }
@@ -208,6 +271,7 @@ export class RekuestSession {
       socket = new Socket(this.options.url);
     } catch (e) {
       console.warn("[rekuest] the session socket could not be made:", e);
+      this.fail({ message: "This window could not open its live-updates socket.", detail: String(e) });
       this.retry();
       return;
     }
@@ -227,6 +291,10 @@ export class RekuestSession {
         )
         .catch((e) => {
           console.warn("[rekuest] no token for the session:", e);
+          this.closedBecause = {
+            message: "This window has no sign-in to open live updates with.",
+            detail: e instanceof Error ? e.message : String(e),
+          };
           socket.close();
         });
     };
@@ -253,7 +321,16 @@ export class RekuestSession {
         // A server without a session route never opens one: said, then tried again.
         console.warn(`[rekuest] could not open the session at ${this.options.url}; trying again`);
       }
+      // Why: the window's own reason when it closed the socket, else what the server said.
+      const reason = event.reason || this.closingReason || undefined;
+      this.error = {
+        ...(this.closedBecause ?? describeClose(event.code, reason, opened, this.options.url)),
+        at: Date.now(),
+      };
+      this.closingReason = null;
+      this.closedBecause = null;
       this.setStatus(this.everOpen ? "reconnecting" : "connecting");
+      this.publish();
       this.retry();
     };
   }
@@ -296,6 +373,7 @@ export class RekuestSession {
         const pending = this.pending.get(frame.request);
         if (!pending) return;
         this.pending.delete(frame.request);
+        this.publish();
         pending.resolve(frame);
         return;
       }
@@ -304,6 +382,7 @@ export class RekuestSession {
           const pending = this.pending.get(frame.request);
           if (!pending) return;
           this.pending.delete(frame.request);
+          this.publish();
           pending.reject(new SessionRefusal(frame.error));
         } else if (frame.topic) {
           // A feed that will not come: said, so a dead list is not a mystery.
@@ -317,9 +396,18 @@ export class RekuestSession {
         }
         return;
       }
+      case "CLOSING":
+        this.closingReason = frame.reason;
+        return;
       default:
         return;
     }
+  }
+
+  /** Something went wrong before a socket could close: kept as the reason, said at once. */
+  private fail(error: Omit<SessionError, "at">) {
+    this.error = { ...error, at: Date.now() };
+    this.publish();
   }
 
   private onWelcome(session: string, resumed: boolean, limits: SessionLimits) {
@@ -408,6 +496,7 @@ export class RekuestSession {
       this.topics.set(name, topic);
       this.dropped.delete(name);
       this.send({ type: "WATCH", topic: name });
+      this.publish();
     }
     topic.listeners.add(listener);
     return () => {
@@ -417,6 +506,7 @@ export class RekuestSession {
       if (current.listeners.size > 0) return;
       this.topics.delete(name);
       this.settle([name]);
+      this.publish();
       if (!this.send({ type: "UNWATCH", topic: name })) this.dropped.add(name);
     };
   }
@@ -441,12 +531,36 @@ export class RekuestSession {
         reject,
       });
       this.send(full);
+      this.publish();
     });
   }
 
   /** The limits the server told, once open. */
   getLimits(): SessionLimits | null {
     return this.limits;
+  }
+
+  /** Where the socket goes. */
+  getUrl(): string {
+    return this.options.url;
+  }
+
+  /** The last time updates stopped, and why: kept after they flow again (for a status page). */
+  getLastError(): SessionError | null {
+    return this.error;
+  }
+
+  /** What this window follows and waits for, for a status page (`subscribeStatus` tells changes). */
+  getActivity = (): string => `${this.topics.size}:${this.pending.size}`;
+
+  /** The topics followed, by name. */
+  getTopics(): string[] {
+    return [...this.topics.keys()];
+  }
+
+  /** How many calls still wait for their answer. */
+  getPendingCount(): number {
+    return this.pending.size;
   }
 
   dispose() {

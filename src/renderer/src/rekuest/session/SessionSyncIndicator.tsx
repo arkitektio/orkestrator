@@ -1,7 +1,9 @@
+import { CONNECTION_STATUS_PATH } from "@/core/connection/statusPath";
 import { cn } from "@/core/util/utils";
 import { CloudOff, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { SessionSync } from "./client";
+import { useEffect, useState, type SyntheticEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import type { SessionError, SessionSync } from "./client";
 import { useRekuestSession, useRekuestSessionSync } from "./hooks";
 
 type Kind = "connecting" | "reconnecting" | "catching_up";
@@ -30,6 +32,10 @@ const elapsed = (ms: number) => {
 
 const KEEP_RUNNING =
   "Tasks keep running (except those set to stop when this window goes away).";
+
+/** The error under the explanation: its sentence, then what the socket said. */
+const withError = (detail: string, error: SessionError | null) =>
+  error ? `${detail}\n\nWhy: ${error.message}${error.detail ? `\n${error.detail}` : ""}` : detail;
 
 const describe = (kind: Kind, since: number | null, now: number) => {
   const away = since != null ? ` for ${elapsed(now - since)}` : "";
@@ -60,6 +66,7 @@ const describe = (kind: Kind, since: number | null, now: number) => {
  */
 export const SessionSyncIndicator = () => {
   const sync = useRekuestSessionSync(useRekuestSession());
+  const navigate = useNavigate();
   const kind = kindOf(sync);
   // The sync it was shown for: a new one (every change makes one) waits its own delay.
   const [shownFor, setShownFor] = useState<SessionSync | null>(null);
@@ -84,27 +91,44 @@ export const SessionSyncIndicator = () => {
   }, [shown]);
 
   if (!shown) return null;
-  const { label, detail } = describe(shown, sync.since, now);
+  const { label, detail: explanation } = describe(shown, sync.since, now);
+  const detail = withError(explanation, sync.error);
   const Icon = shown === "catching_up" ? RefreshCw : CloudOff;
+  // It sits inside the account switcher's trigger: what it does must not open the menu too.
+  const stop = (event: SyntheticEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+  };
+  const open = (event: SyntheticEvent) => {
+    stop(event);
+    navigate(CONNECTION_STATUS_PATH);
+  };
 
   return (
+    // A span with the link's role: a real anchor may not sit inside the trigger's button.
     <span
-      role="status"
-      title={detail}
+      role="link"
+      tabIndex={0}
+      aria-label={`${label}: open the connection status`}
+      onPointerDown={stop}
+      onClick={open}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") open(event);
+      }}
+      title={`${detail}\n\nClick for the connection status.`}
       data-testid="rekuest-sync-indicator"
       data-sync={shown}
-      className="flex shrink-0 items-center"
+      className="flex shrink-0 cursor-pointer items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Icon
         aria-hidden
         className={cn(
           "h-3.5 w-3.5 shrink-0",
-          shown === "reconnecting" && "animate-pulse text-warning",
-          shown === "connecting" && "animate-pulse text-muted-foreground",
-          shown === "catching_up" && "animate-spin text-primary/70",
+          // Yellow whatever the reason: what it shows may be out of date.
+          "text-warning",
+          shown === "catching_up" ? "animate-spin" : "animate-pulse",
         )}
       />
-      <span className="sr-only">{label}</span>
     </span>
   );
 };

@@ -456,20 +456,24 @@ export const ModulePaletteHitActions = (props: PaletteHitActionProps) => (
   <PerModule pick={(builtins) => builtins.paletteHitActions} props={props} />
 );
 
-/** Every module's rail islands, each module's behind its guard. */
-export const ModuleRailIslands = () => {
+/** The components one builtin lists, every module's behind its role and service guard. */
+const ModuleComponents = ({
+  pick,
+}: {
+  pick: (builtins: ModuleDefinition["builtins"]) => readonly ComponentType[] | undefined;
+}) => {
   useModuleHostVersion();
   return (
     <>
       {(moduleDefinitions() as readonly ModuleDefinition[]).map((definition) => {
-        const islands = definition.builtins.railIslands;
-        if (!islands?.length) return null;
+        const components = pick(definition.builtins);
+        if (!components?.length) return null;
         const Guard = moduleGuard(namespaceOf(definition));
         return (
           <RoleGuard key={namespaceOf(definition)} require={definition.roles}>
             <Guard>
-              {islands.map((Island, index) => (
-                <Island key={index} />
+              {components.map((Component, index) => (
+                <Component key={index} />
               ))}
             </Guard>
           </RoleGuard>
@@ -479,28 +483,14 @@ export const ModuleRailIslands = () => {
   );
 };
 
+/** Every module's rail islands, each module's behind its guard. */
+export const ModuleRailIslands = () => <ModuleComponents pick={(b) => b.railIslands} />;
+
 /** Every module's footer indicators (beside the agent), each module's behind its guard. */
-export const ModuleFooterIndicators = () => {
-  useModuleHostVersion();
-  return (
-    <>
-      {(moduleDefinitions() as readonly ModuleDefinition[]).map((definition) => {
-        const indicators = definition.builtins.footerIndicators;
-        if (!indicators?.length) return null;
-        const Guard = moduleGuard(namespaceOf(definition));
-        return (
-          <RoleGuard key={namespaceOf(definition)} require={definition.roles}>
-            <Guard>
-              {indicators.map((Indicator, index) => (
-                <Indicator key={index} />
-              ))}
-            </Guard>
-          </RoleGuard>
-        );
-      })}
-    </>
-  );
-};
+export const ModuleFooterIndicators = () => <ModuleComponents pick={(b) => b.footerIndicators} />;
+
+/** Every module's cards on Settings → Connection, each module's behind its guard. */
+export const ModuleStatusCards = () => <ModuleComponents pick={(b) => b.statusCards} />;
 
 /**
  * Every module's always-on components (updaters, registrars), each

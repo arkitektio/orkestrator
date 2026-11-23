@@ -88,6 +88,7 @@ export const CLOSE = {
   PROTOCOL: 4400,
   UNAUTHORIZED: 4401,
   IDLE: 4408,
+  SUPERSEDED: 4409,
   UNAVAILABLE: 4503,
 } as const;
 

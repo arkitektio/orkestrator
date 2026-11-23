@@ -9,6 +9,7 @@ import { EnhanceButton } from "./components/EnhanceButton";
 import { AgentUpdater } from "./components/functional/AgentUpdater";
 import { TaskUpdater } from "./components/functional/TaskUpdater";
 import { TaskIsland } from "./components/global/TaskIsland";
+import { SessionStatusCard } from "./session/SessionStatusCard";
 import { SessionSyncIndicator } from "./session/SessionSyncIndicator";
 import { HomeTasks } from "./dashboard/HomeTasks";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
@@ -157,5 +158,7 @@ export const REKUEST_MODULE = defineModule({
     railIslands: [TaskIsland],
     // Beside the agent: whether live task and state updates flow.
     footerIndicators: [SessionSyncIndicator],
+    // Settings → Connection: the session's state, and why it is down.
+    statusCards: [SessionStatusCard],
   },
 });

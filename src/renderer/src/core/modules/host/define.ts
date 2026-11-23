@@ -143,6 +143,11 @@ export type ModuleBuiltins = {
    * reconnecting). One icon each, rendering null while there is nothing to say.
    */
   footerIndicators?: readonly ComponentType[];
+  /**
+   * EXTENSION: cards on Settings → Connection (`core/connection/statusPath`), each behind the
+   * module's guard: the state of the module's live connection, and why it is down.
+   */
+  statusCards?: readonly ComponentType[];
   /** Named requests on its own service, by `"<namespace>.<name>"` (spec: `request`). */
   operations?: Record<string, OperationHandler>;
   /**

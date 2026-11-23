@@ -185,7 +185,7 @@ describe("RekuestSession", () => {
     expect(session.getSync()).toMatchObject({ status: "connecting", catchingUp: false });
     expect(session.getSync().since).not.toBeNull();
     const first = await welcome("s-1");
-    expect(session.getSync()).toEqual({ status: "open", since: null, catchingUp: false });
+    expect(session.getSync()).toEqual({ status: "open", since: null, catchingUp: false, error: null });
     const dropped = Date.now();
     first.drop();
     vi.advanceTimersByTime(3_000);
@@ -198,7 +198,36 @@ describe("RekuestSession", () => {
     vi.advanceTimersByTime(5_000);
     await welcome("s-1", true);
     // Resumed: what was missed is replayed, nothing to catch up.
-    expect(session.getSync()).toEqual({ status: "open", since: null, catchingUp: false });
+    expect(session.getSync()).toEqual({ status: "open", since: null, catchingUp: false, error: null });
+  });
+
+  it("keeps why updates stopped, in a sentence and with what the socket said", async () => {
+    const session = make();
+    FakeSocket.all.at(-1)!.drop(1006);
+    expect(session.getSync().error).toMatchObject({
+      message: expect.stringContaining("The server did not open live updates at wss://hub/rekuest/session."),
+      detail: "Close code 1006",
+    });
+    vi.advanceTimersByTime(3_000);
+    const socket = await welcome("s-1");
+    expect(session.getSync().error).toBeNull();
+    socket.push({ type: "CLOSING", reason: "takt is restarting" });
+    socket.drop(4503);
+    expect(session.getSync().error).toMatchObject({
+      message: "Live updates are not available on the server right now.",
+      detail: "Close code 4503: takt is restarting",
+    });
+  });
+
+  it("says when it had no sign-in to open with", async () => {
+    const session = make({ getToken: async () => Promise.reject(new Error("token expired")) });
+    FakeSocket.all.at(-1)!.open();
+    await flush();
+    await flush();
+    expect(session.getSync().error).toMatchObject({
+      message: "This window has no sign-in to open live updates with.",
+      detail: "token expired",
+    });
   });
 
   it("catches up after a new session until every topic was sent again, or gives up waiting", async () => {
