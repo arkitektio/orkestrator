@@ -1,3 +1,11 @@
+# [8.29.0](https://github.com/arkitektio/orkestrator/compare/v8.28.0...v8.29.0) (2026-11-23)
+
+
+### Features
+
+* **mcp:** experimental MCP server so an assistant can look at the app ([8f0d7ba](https://github.com/arkitektio/orkestrator/commit/8f0d7ba376101f0e303b8b62f09f6931f8279606))
+* **settings:** a rail tile for Settings, and Telemetry becomes Bug reports ([c98b313](https://github.com/arkitektio/orkestrator/commit/c98b313c87685fa5f0cdaadc07e85a7f90b4e3de))
+
 # [8.28.0](https://github.com/arkitektio/orkestrator/compare/v8.27.0...v8.28.0) (2026-11-23)
 
 
