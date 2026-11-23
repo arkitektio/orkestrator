@@ -93,6 +93,21 @@ describe("RekuestSession", () => {
     expect(items).toEqual([{ task_seq: 2 }]);
   });
 
+  it("sends nothing but HELLO before it is welcomed, then what waited, once", async () => {
+    const session = make();
+    const socket = FakeSocket.all.at(-1)!;
+    socket.open();
+    // Watched and called while the token is still being read: HELLO is not out yet.
+    session.watch("task:9", { onData: () => {}, onResync: () => {} });
+    const answer = session.call({ type: "CANCEL", task: "9" });
+    await flush();
+    expect(socket.sent.map((frame) => frame.type)).toEqual(["HELLO"]);
+    socket.push({ type: "WELCOME", session: "s-1", resumed: false, limits: LIMITS });
+    expect(socket.sent.map((frame) => frame.type)).toEqual(["HELLO", "WATCH", "CANCEL"]);
+    socket.push({ type: "ACCEPTED", pos: 1, request: socket.ofType("CANCEL")[0].request });
+    await expect(answer).resolves.toMatchObject({ type: "ACCEPTED" });
+  });
+
   it("comes back to the same session with how far it got, and pings that too", async () => {
     const session = make();
     session.watch("task:7", { onData: () => {}, onResync: () => {} });

@@ -110,6 +110,9 @@ export class RekuestSession {
   private reauther: ReturnType<typeof setInterval> | null = null;
   private disposed = false;
   private counter = 0;
+  /** Whether this socket was welcomed: until then only HELLO may go out (takt closes a
+   *  socket whose first frame is anything else), and what waits is sent on WELCOME. */
+  private welcomed = false;
 
   constructor(options: RekuestSessionOptions) {
     this.options = options;
@@ -183,6 +186,7 @@ export class RekuestSession {
     socket.onclose = (event) => {
       if (this.socket !== socket) return;
       this.socket = null;
+      this.welcomed = false;
       this.stopTimers();
       if (this.disposed) return;
       if (event.code === CLOSE.UNAUTHORIZED) {
@@ -208,6 +212,7 @@ export class RekuestSession {
   private send(frame: ClientFrame): boolean {
     const socket = this.socket;
     if (!socket || socket.readyState !== 1) return false;
+    if (!this.welcomed && frame.type !== "HELLO") return false;
     socket.send(JSON.stringify(frame));
     return true;
   }
@@ -272,6 +277,7 @@ export class RekuestSession {
     this.session = session;
     this.limits = limits;
     this.everOpen = true;
+    this.welcomed = true;
     this.attempt = 0;
     this.setStatus("open");
     // What changed while the socket was down: the server resumed the watches it had;
