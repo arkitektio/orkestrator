@@ -22,12 +22,16 @@ const PinAction = (props: { pinned: boolean; what: string; onToggle: () => Promi
   </PageAction>
 );
 
-export const PinMaterializedBlokAction = (props: { materializedBlok: { id: string; pinned: boolean } }) => {
+export const PinMaterializedBlokAction = (props: {
+  materializedBlok: { id: string; pinned: boolean };
+  /** What the page calls it: an agent's panel is a "panel". */
+  what?: string;
+}) => {
   const [pin] = usePinMaterializedBlokMutation({ refetchQueries: PIN_REFETCH });
   return (
     <PinAction
       pinned={props.materializedBlok.pinned}
-      what="blok"
+      what={props.what ?? "blok"}
       onToggle={() =>
         pin({ variables: { input: { id: props.materializedBlok.id, pin: !props.materializedBlok.pinned } } })
       }
