@@ -29,6 +29,9 @@ export type SessionStatus =
   | "reconnecting"
   /** This server has no caller sessions: use the GraphQL subscriptions. */
   | "unsupported"
+  /** It never opened in a while (no answer to tell why): the GraphQL subscriptions meanwhile,
+   *  while it keeps trying; once it opens, the feeds move over. */
+  | "fallback"
   /** Turned off (Settings → Developer), or disposed. */
   | "disabled";
 
@@ -55,6 +58,9 @@ type Pending = {
 
 type Topic = {
   listeners: Set<TopicListener>;
+  /** The server forgot this topic (a new session after the grace): its next snapshot is a
+   *  catch-up, not a first look. */
+  expired: boolean;
   /** What was delivered since the topic's last RESYNC, to drop a seam's duplicates. */
   seen: Set<string>;
   /** The newest state revision delivered (state topics). */
@@ -74,6 +80,8 @@ export type RekuestSessionOptions = {
 };
 
 const SEEN_LIMIT = 4096;
+/** How long the first connection may try before the feeds fall back to GraphQL meanwhile. */
+const FALLBACK_AFTER_MS = 10_000;
 const REAUTH_EVERY_MS = 60_000;
 
 /** A key for an item that may arrive twice at a seam; null when it carries none. */
@@ -114,6 +122,7 @@ export class RekuestSession {
   private reauther: ReturnType<typeof setInterval> | null = null;
   private disposed = false;
   private counter = 0;
+  private startedAt = Date.now();
 
   constructor(options: RekuestSessionOptions) {
     this.options = options;
@@ -201,7 +210,9 @@ export class RekuestSession {
         // The token was refused: the next attempt asks for a fresh one.
         console.warn("[rekuest] the session's token was refused; trying again with a fresh one");
       }
-      this.setStatus(this.everOpen ? "reconnecting" : "connecting");
+      this.setStatus(
+        this.everOpen ? "reconnecting" : this.status === "fallback" ? "fallback" : "connecting",
+      );
       this.retry();
     };
   }
@@ -216,7 +227,12 @@ export class RekuestSession {
         return;
       }
     } catch {
-      // Not reachable: neither is anything else on this server. Try again.
+      // Not reachable, or a 404 this window may not read (no CORS on it): no way to tell.
+    }
+    // Not known to be there: after a while the feeds use GraphQL meanwhile, and move over
+    // once a socket opens.
+    if (this.status === "connecting" && Date.now() - this.startedAt >= FALLBACK_AFTER_MS) {
+      this.setStatus("fallback");
     }
     this.retry();
   }
@@ -268,6 +284,8 @@ export class RekuestSession {
           this.pending.delete(frame.request);
           pending.reject(new SessionRefusal(frame.error));
         } else if (frame.topic) {
+          // A feed that will not come: said, so a dead list is not a mystery.
+          console.warn(`[rekuest] the session would not follow ${frame.topic}:`, frame.error);
           for (const listener of this.topics.get(frame.topic)?.listeners ?? []) {
             listener.onRefused?.(frame.error);
           }
@@ -282,7 +300,14 @@ export class RekuestSession {
   }
 
   private onWelcome(session: string, resumed: boolean, limits: SessionLimits) {
-    if (!resumed) this.lastPos = 0;
+    if (!resumed) {
+      this.lastPos = 0;
+      // A new session where there was one (gone longer than its grace): the server watches
+      // nothing of ours any more, and what it sends again is a catch-up for every topic.
+      if (this.session !== null) {
+        for (const topic of this.topics.values()) topic.expired = true;
+      }
+    }
     this.session = session;
     this.limits = limits;
     this.everOpen = true;
@@ -332,6 +357,8 @@ export class RekuestSession {
   private onResync(name: string, snapshot: unknown, reason: string) {
     const topic = this.topics.get(name);
     if (!topic) return;
+    if (topic.expired && reason === "new") reason = "session_expired";
+    topic.expired = false;
     topic.seen.clear();
     topic.rev = (snapshot as { global_rev?: number })?.global_rev ?? 0;
     const events = (snapshot as { events?: { task_seq?: number | null }[] })?.events;
@@ -351,7 +378,7 @@ export class RekuestSession {
   watch(name: string, listener: TopicListener): () => void {
     let topic = this.topics.get(name);
     if (!topic) {
-      topic = { listeners: new Set(), seen: new Set(), rev: 0 };
+      topic = { listeners: new Set(), seen: new Set(), rev: 0, expired: false };
       this.topics.set(name, topic);
       this.dropped.delete(name);
       this.send({ type: "WATCH", topic: name });

@@ -1,7 +1,7 @@
 import { useServiceInstance } from "@/core/connection/arkitekt/host";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { RekuestService } from "../service";
-import type { RekuestSession, SessionStatus, TopicListener } from "./client";
+import type { RekuestSession, SessionStatus } from "./client";
 
 /** This window's caller session (under the rekuest guard, like `useRekuest`). */
 export const useRekuestSession = (): RekuestSession =>
@@ -31,6 +31,7 @@ export const sourceOf = (status: SessionStatus): FeedSource => {
     case "reconnecting":
       return "session";
     case "unsupported":
+    case "fallback":
     case "disabled":
       return "graphql";
     default:
@@ -40,38 +41,3 @@ export const sourceOf = (status: SessionStatus): FeedSource => {
 
 export const useFeedSource = (session: RekuestSession | null | undefined): FeedSource =>
   sourceOf(useRekuestSessionStatus(session));
-
-/**
- * Follow one rekuest feed: over the session (`topic`, its items and resyncs to
- * `listener`) while there is one, else through `fallback` (the GraphQL
- * subscription the feed always had; it returns its teardown). `topic` null:
- * nothing to follow. The listener and fallback are read through refs, so a
- * render does not resubscribe.
- */
-export const useRekuestFeed = (
-  topic: string | null,
-  listener: TopicListener,
-  fallback: () => (() => void) | void,
-) => {
-  const session = useRekuestSession();
-  const source = useFeedSource(session);
-  const listenerRef = useRef(listener);
-  const fallbackRef = useRef(fallback);
-  listenerRef.current = listener;
-  fallbackRef.current = fallback;
-
-  useEffect(() => {
-    if (!topic) return undefined;
-    if (source === "session") {
-      return session.watch(topic, {
-        onData: (item) => listenerRef.current.onData(item),
-        onResync: (snapshot, reason) => listenerRef.current.onResync(snapshot, reason),
-        onRefused: (error) => listenerRef.current.onRefused?.(error),
-      });
-    }
-    if (source === "graphql") {
-      return fallbackRef.current() ?? undefined;
-    }
-    return undefined;
-  }, [session, source, topic]);
-};

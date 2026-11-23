@@ -62,7 +62,7 @@ const welcome = async (session = "s-1", resumed = false) => {
 describe("RekuestSession", () => {
   beforeEach(() => {
     FakeSocket.all = [];
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout"], shouldAdvanceTime: true });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout", "Date"], shouldAdvanceTime: true });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -174,6 +174,42 @@ describe("RekuestSession", () => {
     expect(session.getStatus()).toBe("connecting");
     vi.advanceTimersByTime(3_000);
     expect(FakeSocket.all.length).toBe(2);
+  });
+
+  it("a window back after its grace catches every list up, not just a first look", async () => {
+    const session = make();
+    const reasons: string[] = [];
+    session.watch("tasks:mine", { onData: () => {}, onResync: (_, reason) => reasons.push(reason) });
+    const first = await welcome("s-1");
+    first.push({ type: "RESYNC", pos: 1, topic: "tasks:mine", reason: "new", snapshot: { rows: [] } });
+    first.drop();
+    vi.advanceTimersByTime(3_000);
+    // Gone too long: a new session, which watches the topic again from nothing.
+    const second = await welcome("s-2", false);
+    expect(second.ofType("WATCH")).toEqual([{ type: "WATCH", topic: "tasks:mine" }]);
+    second.push({ type: "RESYNC", pos: 1, topic: "tasks:mine", reason: "new", snapshot: { rows: [] } });
+    expect(reasons).toEqual(["new", "session_expired"]);
+  });
+
+  it("falls back to GraphQL when it cannot tell why it never opens, and moves over once it does", async () => {
+    const session = make({
+      fetch: (async () => {
+        throw new TypeError("a 404 this origin may not read");
+      }) as unknown as typeof fetch,
+    });
+    const dropFresh = async () => {
+      FakeSocket.all.at(-1)!.drop();
+      await flush();
+      await flush();
+    };
+    await dropFresh();
+    expect(session.getStatus()).toBe("connecting");
+    vi.advanceTimersByTime(11_000);
+    await dropFresh();
+    expect(session.getStatus()).toBe("fallback");
+    vi.advanceTimersByTime(40_000);
+    await welcome("s-1");
+    expect(session.getStatus()).toBe("open");
   });
 
   it("does not connect when turned off", () => {
