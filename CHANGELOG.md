@@ -1,3 +1,10 @@
+# [8.30.0](https://github.com/arkitektio/orkestrator/compare/v8.29.0...v8.30.0) (2026-11-23)
+
+
+### Features
+
+* collaborations by lok key; share a workflow across services ([7e16d26](https://github.com/arkitektio/orkestrator/commit/7e16d261bde5bab3a0f2c7c206d1e076af2da576))
+
 # [8.29.0](https://github.com/arkitektio/orkestrator/compare/v8.28.0...v8.29.0) (2026-11-23)
 
 
