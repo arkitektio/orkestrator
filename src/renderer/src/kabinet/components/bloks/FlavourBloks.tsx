@@ -19,6 +19,7 @@ import { AsyncBoundary } from "@/core/ui/AsyncBoundary";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
+import { BlokDebugSync, refuseEveryAction, useBlokDebugRecorder } from "@/core/blok/debug";
 import { ComponentContext, KabinetBlokFragment, useFlavourBloksQuery } from "@/kabinet/api/graphql";
 
 /**
@@ -113,6 +114,8 @@ const BlokPreview = ({ blok }: { blok: KabinetBlokFragment }) => {
     [blok.componentTree],
   );
   const initialState = React.useMemo(() => demoModel(roots, parseBlokDeclarations(blok)), [roots, blok]);
+  const debug = useBlokDebugRecorder({ key: `kabinet:${blok.id}`, label: `${blok.key} (demo values)`, kind: "flavour" });
+  const refuseAction = React.useMemo(() => (debug ? refuseEveryAction(debug, "a preview never acts") : REFUSE_EVERY_ACTION), [debug]);
   return (
     <AsyncBoundary loadingFallback={null} errorFallback={(error) => <RenderFailure error={error} />}>
       <BlokRenderer
@@ -122,8 +125,10 @@ const BlokPreview = ({ blok }: { blok: KabinetBlokFragment }) => {
         // The bordered box frames it; a preview offers no view controls.
         chrome="none"
         sceneControls={false}
-        refuseAction={REFUSE_EVERY_ACTION}
-      />
+        refuseAction={refuseAction}
+      >
+        {debug && <BlokDebugSync recorder={debug} />}
+      </BlokRenderer>
     </AsyncBoundary>
   );
 };

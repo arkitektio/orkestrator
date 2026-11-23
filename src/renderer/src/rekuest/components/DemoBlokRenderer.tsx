@@ -4,6 +4,7 @@ import {demoModel, type BlokDeclarations} from '@arkitektio/bsx/renderer/declara
 import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
+import {BlokDebugSync, useBlokDebugRecorder} from '@/core/blok/debug';
 
 type DemoBlokData = BlokDeclarations & {
   id?: string | null;
@@ -33,6 +34,8 @@ export const DemoBlokRenderer = (props: DemoBlokRendererProps) => {
   const {roots, truncatedIds} = useBlokDocument(blok.componentTree as unknown[] | null);
   // Its `demo`, mirroring the roots: every read answered by it, nothing pending, nothing run.
   const initialState = React.useMemo(() => demoModel(roots, blok), [roots, blok]);
+  const key = surfaceId ?? `${blok.id ?? 'blok'}-demo`;
+  const debug = useBlokDebugRecorder({key: `demo:${key}`, label: `${blok.id ?? 'draft'} (demo values)`, kind: 'demo'});
 
   return (
     <RekuestDemoHost>
@@ -40,10 +43,11 @@ export const DemoBlokRenderer = (props: DemoBlokRendererProps) => {
         // A demo is a preview: its scene offers no view controls unless the host asks for them.
         sceneControls={false}
         {...rendererProps}
-        surfaceId={surfaceId ?? `${blok.id ?? 'blok'}-demo`}
+        surfaceId={key}
         uiComponents={roots}
         initialState={initialState}
       >
+        {debug && <BlokDebugSync recorder={debug} />}
         <BlokTruncationNotice truncatedIds={truncatedIds} />
       </BlokRenderer>
     </RekuestDemoHost>

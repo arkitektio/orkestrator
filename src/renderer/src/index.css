@@ -123,6 +123,18 @@
   from { opacity: 0; transform: translateY(6px) scale(0.985); }
 }
 
+/* A row arriving at the top of the blok debugger's event log: it opens from
+ * nothing (grid rows 0fr → 1fr, so the rows below slide down instead of
+ * jumping) while its content drops in from above and fades up. */
+@keyframes debug-row-open {
+  from { grid-template-rows: 0fr; }
+  to { grid-template-rows: 1fr; }
+}
+
+@keyframes debug-row-drop {
+  from { opacity: 0; transform: translateY(-8px); }
+}
+
 /* The update island's label: a new Orkestrator arrived, so it says so in
  * colour. A gradient clipped to the glyphs; `.rainbow-drift` moves it slowly
  * sideways, and only while the download runs: animating background-position
@@ -196,6 +208,12 @@
   }
   @keyframes rainbow-drift {
     from, to { background-position: 0% 50%; }
+  }
+  @keyframes debug-row-open {
+    from, to { grid-template-rows: 1fr; }
+  }
+  @keyframes debug-row-drop {
+    from, to { opacity: 1; transform: none; }
   }
 }
 

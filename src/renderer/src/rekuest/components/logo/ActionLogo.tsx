@@ -3,6 +3,7 @@ import BlokRenderer from "@arkitektio/bsx/renderer/BlokRenderer";
 import { logoDataModel } from "@arkitektio/bsx/logo/demo";
 import { useBlokRuntime } from "@arkitektio/bsx/renderer/runtime/index";
 import { cn } from "@/core/util/utils";
+import { BlokDebugSync, refuseEveryAction, useBlokDebugRecorder } from "@/core/blok/debug";
 import { BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
 import { useMyLatestTask } from "@/rekuest/lib/taskIndex";
 import { useBlokDocument } from "../blokDocument";
@@ -11,9 +12,6 @@ import { BlokLogo } from "./BlokLogo";
 
 /** Where an action logo reads its task: `task`, null until the viewer runs the action. */
 export const ACTION_LOGO_TASK_ROOT = "task";
-
-/** Logos never act. */
-const REFUSE_EVERY_ACTION = () => true;
 
 /**
  * An action's logo (a `<Blok kind="action" context="logo">`), drawn against the
@@ -52,6 +50,9 @@ const LiveActionLogo = ({
   const { data } = useLogoBlokQuery({ variables: { id: blokId } });
   const blok = data?.blok;
   const { roots } = useBlokDocument((blok?.componentTree as unknown[] | null) ?? null);
+  const debug = useBlokDebugRecorder({ key: `logo:${blokId}`, label: `action logo ${blokId}`, kind: "logo" });
+  // Logos never act.
+  const refuseAction = React.useMemo(() => refuseEveryAction(debug, "a logo never acts"), [debug]);
   const initialState = React.useMemo(
     () => ({ ...logoDataModel(blok?.demo), [ACTION_LOGO_TASK_ROOT]: record }),
     // The record changes with every progress report; the sync below writes it, so the state is seeded once.
@@ -71,8 +72,9 @@ const LiveActionLogo = ({
           uiComponents={roots}
           initialState={initialState}
           chrome="none"
-          refuseAction={REFUSE_EVERY_ACTION}
+          refuseAction={refuseAction}
         >
+          {debug && <BlokDebugSync recorder={debug} />}
           <ActionLogoTaskSync record={record} />
         </BlokRenderer>
       )}

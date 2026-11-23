@@ -4,6 +4,7 @@ import { liveModel, treeQueries, treeSubscriptions } from "@arkitektio/bsx/rende
 import type { BlokSourceStatus } from "@arkitektio/bsx/renderer/runtime/index";
 import type { PortBlokRendererProps } from "@arkitektio/bsx/ports/widgets/custom/PortBlokWidget";
 import { useServiceReads } from "@/core/modules/hooks/useServiceReads";
+import { BlokDebugSync, refuseEveryAction, useBlokDebugRecorder } from "@/core/blok/debug";
 import { collectDemandedLatestTasks, collectDemandedStateInterfaces } from "../components/blokDemands";
 import { depsStatePath } from "../components/blokStateSync";
 import { MaterializedBlokRuntimeSync } from "../components/MaterializedBlokRenderer";
@@ -20,9 +21,6 @@ export const PortBlokRunProvider = PortBlokRunContext.Provider;
 
 const NO_MAPPINGS: RunAgentMapping[] = [];
 
-/** A port blok reads; it never acts. */
-const REFUSE_EVERY_ACTION = () => true;
-
 /**
  * A port's own blok (a BLOK assign widget), drawn with what this app knows beyond the form: the
  * states of the agents a run would get (`self`, `deps.<key>`), the services its queries ask, and
@@ -36,6 +34,21 @@ export const PortBlokRenderer = ({ tree, data, writePort, children }: PortBlokRe
   const agentMappings = React.useMemo(() => (run ? agentMappingsOf(run.binding, run.self) : NO_MAPPINGS), [run]);
   const viewer = useBlokViewer();
   const readExecutor = useServiceReads();
+  const id = React.useId();
+  const portKey = (data.port as { key?: unknown } | undefined)?.key;
+  const debug = useBlokDebugRecorder({ key: `port:${id}`, label: `port ${typeof portKey === "string" ? portKey : tree.id}`, kind: "port" });
+  // A port blok reads; it never acts.
+  const refuseAction = React.useMemo(() => refuseEveryAction(debug, "a port blok only writes its port"), [debug]);
+  const tappedWritePort = React.useMemo(
+    () =>
+      debug
+        ? ((operation: Parameters<typeof writePort>[0], value?: unknown) => {
+            debug.record({ stream: "out", title: `port.${operation}`, detail: value });
+            return writePort(operation, value);
+          }) as typeof writePort
+        : writePort,
+    [debug, writePort],
+  );
 
   const roots = React.useMemo(() => [tree], [tree]);
   const queries = React.useMemo(() => treeQueries(roots), [roots]);
@@ -76,16 +89,17 @@ export const PortBlokRenderer = ({ tree, data, writePort, children }: PortBlokRe
       uiComponents={roots}
       initialState={initialState}
       statuses={statuses}
-      refuseAction={REFUSE_EVERY_ACTION}
+      refuseAction={refuseAction}
       viewer={viewer}
       queries={queries}
       subscriptions={subscriptions}
       readExecutor={readExecutor}
-      writePort={writePort}
+      writePort={tappedWritePort}
       // As bsx draws a port blok by default: the field's box is the form's.
       chrome="none"
       sizing="intrinsic"
     >
+      {debug && <BlokDebugSync recorder={debug} />}
       <MaterializedBlokRuntimeSync materializedBlok={synced} demandedStates={demandedStates} demandedTasks={demandedTasks} />
       {children}
     </BlokRenderer>

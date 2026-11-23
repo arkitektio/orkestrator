@@ -36,3 +36,12 @@ export const DebugContext = React.createContext<DebugContextType>({
 });
 
 export const useDebug = () => useContext(DebugContext);
+
+/**
+ * Only whether debug mode is on. For what renders often (every blok, every
+ * logo): `useDebug()` changes with each page query's report, this only when
+ * debug mode is switched.
+ */
+export const DebugModeContext = React.createContext(false);
+
+export const useDebugMode = () => useContext(DebugModeContext);

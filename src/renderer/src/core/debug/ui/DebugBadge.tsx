@@ -11,6 +11,8 @@ import { Bug, Check, Copy, MonitorCog } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ReportBugButton } from "./ReportBugButton";
+import { BlokDebugScopePanel } from "@/core/blok/debug/BlokDebugScopePanel";
+import { windowBlokDebug } from "@/core/blok/debug/registry";
 
 const serialize = (value: unknown): string => {
   if (value === undefined) return "—";
@@ -215,7 +217,12 @@ export const DebugBadge = () => {
             <TabsTrigger value="errors" className="text-xs">Errors {errors.length}</TabsTrigger>
             <TabsTrigger value="requests" className="text-xs">Failed requests {requests.length}</TabsTrigger>
             <TabsTrigger value="console" className="text-xs">Console {consoleLines.length}</TabsTrigger>
+            <TabsTrigger value="bloks" className="text-xs">Bloks</TabsTrigger>
           </TabsList>
+          {/* Scrolls itself: its list and its event log each have their own scroller. */}
+          <TabsContent value="bloks" className="h-[60vh]">
+            <BlokDebugScopePanel scope={windowBlokDebug} />
+          </TabsContent>
           <ScrollArea className="max-h-[60vh]">
             <TabsContent value="queries" className="space-y-4 p-3">
               {visible.map((entry) => (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DebugContext, type DebugEntry } from "./DebugContext";
+import { DebugContext, DebugModeContext, type DebugEntry } from "./DebugContext";
 
 /** Where "debug mode is on" is kept, so it survives a reload. */
 export const DEBUG_STORAGE_KEY = "orkestrator.debug";
@@ -38,7 +38,7 @@ export const DebugProvider = (props: { children: React.ReactNode }) => {
   );
   return (
     <DebugContext.Provider value={value}>
-      {props.children}
+      <DebugModeContext.Provider value={debug}>{props.children}</DebugModeContext.Provider>
     </DebugContext.Provider>
   );
 };

@@ -94,7 +94,15 @@ const OpenedMaterializedBlok = (
     );
   }
 
-  return <MaterializedBlokRenderer {...rendererProps} materializedBlok={materializedBlok} args={args} onArgsChange={setArgs} />;
+  return (
+    <MaterializedBlokRenderer
+      debugLabel={materializedBlok.name || materializedBlok.blok.name || undefined}
+      {...rendererProps}
+      materializedBlok={materializedBlok}
+      args={args}
+      onArgsChange={setArgs}
+    />
+  );
 };
 
 export default MaterializedBlokById;

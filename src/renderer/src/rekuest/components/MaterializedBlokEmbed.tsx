@@ -188,6 +188,8 @@ export const MaterializedBlokEmbed = ({
             <MaterializedBlokRenderer
               materializedBlok={materialized}
               surfaceId={`embed-${materialized.id}`}
+              debugLabel={name || undefined}
+              debugKind="task"
               args={args}
               onArgsChange={setArgs}
               task={task}

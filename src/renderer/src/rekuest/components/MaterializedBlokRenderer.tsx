@@ -25,6 +25,8 @@ import {useBlokTravelMoment, useBlokTravelSource} from '@/rekuest/travel/context
 import {useServiceReads} from '@/core/modules/hooks/useServiceReads';
 import {BlokStateSync, depsStatePath} from './blokStateSync';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
+import {TaskEventKind, type TaskEventFragment} from '../api/graphql';
+import {BlokDebugSync, useBlokDebugRecorder, type BlokDebugKind, type BlokDebugRecorder} from '@/core/blok/debug';
 import {collectDemandedLatestTasks, collectDemandedStateInterfaces} from './blokDemands';
 import {latestTaskPath, latestTaskRecord, pickLatestTask} from './blokLatestTask';
 import {usePastLatestTasks} from './usePastLatestTasks';
@@ -139,6 +141,10 @@ type MaterializedBlokRendererProps = Omit<
   assign?: BlokAssignRecord | null;
   /** What else writes into the blok's runtime, rendered inside it. */
   syncs?: React.ReactNode;
+  /** How the blok debugger (debug mode) names it; its id when left out. */
+  debugLabel?: string;
+  /** What the blok debugger files it under. */
+  debugKind?: BlokDebugKind;
 };
 
 const RECORD_FIELDS = ['id', 'status', 'progress', 'message', 'error', 'returns', 'ask', 'answer', 'args'] as const;
@@ -241,6 +247,40 @@ export const MaterializedBlokRuntimeSync = (props: {
   </>
 );
 
+/** How loud a task event reads in the Debug sidebar. */
+const logLevelOf = (event: TaskEventFragment): 'info' | 'warn' | 'error' | undefined => {
+  if (event.kind === TaskEventKind.Failed || event.kind === TaskEventKind.Critical || event.kind === TaskEventKind.Lost) return 'error';
+  if (event.kind !== TaskEventKind.Log) return undefined;
+  const level = String(event.level ?? '').toUpperCase();
+  if (level === 'ERROR' || level === 'CRITICAL') return 'error';
+  if (level === 'WARN' || level === 'WARNING') return 'warn';
+  return 'info';
+};
+
+/** Records what a host callback is asked to do, and how it ends, when a recorder listens. */
+const tapped = <Args extends unknown[]>(
+  debug: BlokDebugRecorder | null,
+  title: string,
+  handler: ((...args: Args) => unknown) | undefined,
+): ((...args: Args) => unknown) | undefined => {
+  if (!debug || !handler) return handler;
+  return (...args: Args) => {
+    debug.record({stream: 'out', title, detail: args.length === 1 ? args[0] : args});
+    try {
+      const result = handler(...args);
+      if (result instanceof Promise) {
+        result.catch((error: unknown) =>
+          debug.record({stream: 'in', title: `${title} failed`, note: describeError(error).message, level: 'error', detail: error}),
+        );
+      }
+      return result;
+    } catch (error) {
+      debug.record({stream: 'in', title: `${title} failed`, note: describeError(error).message, level: 'error', detail: error});
+      throw error;
+    }
+  };
+};
+
 /**
  * Agent calls go straight to the bound agent: `agent` + `interface`. The
  * `operation` names an implementation interface on that agent (for `self`, the
@@ -254,6 +294,7 @@ export const MaterializedBlokRuntimeSync = (props: {
  */
 const useMaterializedDispatchAction = (
   agentMappings: MaterializedBlokData['agentMappings'],
+  debug: BlokDebugRecorder | null,
 ) => {
   const {assign} = useAssign();
   const agentIdByDependency = React.useMemo(
@@ -262,11 +303,13 @@ const useMaterializedDispatchAction = (
   );
 
   return React.useCallback<BlokDispatchActionHandler>(
-    (action, _component, observe) => {
+    (action, component, observe) => {
       const agentId = agentIdByDependency.get(action.dependency);
+      const call = `${action.dependency}.${action.operation}`;
 
       if (!agentId) {
         const error = `Blok dependency "${action.dependency}" is not bound to an agent.`;
+        debug?.record({stream: 'out', title: `call ${call}`, note: 'not sent: no agent is bound', level: 'error', detail: {action, component: component.id}});
         console.error(error);
         observe?.({end: 'failed', error});
         return;
@@ -282,11 +325,24 @@ const useMaterializedDispatchAction = (
 
       const reference = uuidv4();
       silenceTask(reference);
+      debug?.record({
+        stream: 'out',
+        title: `call ${call}`,
+        note: `to ${agentId} from <${component.component}> ${component.id}`,
+        detail: {action, agent: agentId, reference, pins, component: component.id},
+      });
 
       return new Promise<void>(resolve => {
         // Registered before the assign so no early event is missed; the
         // tracker unregisters itself on the terminal event.
         const untrack = trackTask(reference, event => {
+          debug?.record({
+            stream: event.kind === TaskEventKind.Log ? 'log' : 'in',
+            title: event.kind === TaskEventKind.Log ? event.message || 'log' : `${event.kind} ${call}`,
+            note: event.kind === TaskEventKind.Log ? `${call} · ${event.level ?? 'log'}` : event.message ?? undefined,
+            level: logLevelOf(event),
+            detail: event,
+          });
           const update = observe && taskUpdateFromEvent(event);
           if (update) observe(update);
           if (isTerminalEvent(event.kind)) resolve();
@@ -309,9 +365,13 @@ const useMaterializedDispatchAction = (
               : {}),
           }),
         ).then(
-          task => observe?.({id: task.id, status: 'queued'}),
+          task => {
+            debug?.record({stream: 'in', title: `assigned ${call}`, note: `task ${task.id}`, detail: task});
+            observe?.({id: task.id, status: 'queued'});
+          },
           (error: unknown) => {
             const reason = describeError(error).message;
+            debug?.record({stream: 'in', title: `assign refused ${call}`, note: reason, level: 'error', detail: error});
             untrack();
             observe?.({end: 'failed', error: reason});
             resolve();
@@ -320,7 +380,7 @@ const useMaterializedDispatchAction = (
         );
       });
     },
-    [agentIdByDependency, assign],
+    [agentIdByDependency, assign, debug],
   );
 };
 
@@ -633,10 +693,29 @@ const MaterializedBlokView = (
     pickDependencies?: (key: string, picks: Record<string, unknown>) => void;
   },
 ) => {
-  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, onControl, assign, persistence, syncs, boundAs, pickDependencies, ...rendererProps} = props;
-  const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
+  const {materializedBlok, args, onArgsChange, task, onAnswer, onStart, onControl, assign, persistence, syncs, boundAs, pickDependencies, debugLabel, debugKind, ...rendererProps} = props;
+  const debug = useBlokDebugRecorder({key: materializedBlok.id, label: debugLabel ?? materializedBlok.id, kind: debugKind ?? 'materialized'});
+  const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings, debug);
   const travelAt = useBlokTravelMoment();
   const travelling = useBlokTravelSource() !== null;
+  const refuseAction = React.useMemo<BlokRefuseActionHandler | undefined>(() => {
+    if (!travelling) return undefined;
+    if (!debug) return refuseWhileTravelling;
+    return (action, component) => {
+      debug.record({stream: 'out', title: `call ${action.dependency}.${action.operation}`, note: 'refused: viewing the past', level: 'warn', detail: {action, component: component.id}});
+      return refuseWhileTravelling(action, component);
+    };
+  }, [debug, travelling]);
+  const answerTask = React.useMemo(() => tapped(debug, 'task.answer', onAnswer), [debug, onAnswer]);
+  const startRun = React.useMemo(() => tapped(debug, 'assign.start', onStart), [debug, onStart]);
+  const controlTask = React.useMemo(
+    () => tapped(debug, 'task.control', onControl) as typeof onControl,
+    [debug, onControl],
+  );
+  const pick = React.useMemo(
+    () => tapped(debug, 'deps.pick', pickDependencies) as typeof pickDependencies,
+    [debug, pickDependencies],
+  );
   const viewer = useBlokViewer();
   const readExecutor = useServiceReads();
   const componentState = useBlokComponentStore(materializedBlok.id);
@@ -711,7 +790,7 @@ const MaterializedBlokView = (
         keptValues={persistence?.initial}
         keptLocals={persistence?.locals}
         dispatchAction={dispatchAction}
-        refuseAction={travelling ? refuseWhileTravelling : undefined}
+        refuseAction={refuseAction}
         unavailableDependencies={unavailableDependencies}
         unboundDependencies={materializedBlok.unboundDependencies}
         travelAt={travelAt}
@@ -719,13 +798,15 @@ const MaterializedBlokView = (
         queries={queries}
         subscriptions={subscriptions}
         readExecutor={readExecutor}
-        answerTask={onAnswer}
-        startRun={onStart}
+        answerTask={answerTask}
+        startRun={startRun}
         // bsx before it knew `task.cancel()` and its kin takes no such prop.
-        {...({controlTask: onControl} as object)}
-        pickDependencies={pickDependencies}
+        {...({controlTask} as object)}
+        pickDependencies={pick}
         componentState={componentState}
       >
+        {/* First, so it subscribes before the syncs below write their opening values. */}
+        {debug && <BlokDebugSync recorder={debug} />}
         {/* Inside a host's canvas nothing can render the notice's element. */}
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}
         <MaterializedBlokRuntimeSync

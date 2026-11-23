@@ -12,6 +12,7 @@ import {
 import { cn } from "@/core/util/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
 import { BlokArgsForm } from "@/rekuest/components/BlokArgsForm";
+import { BlokDebugTab, useBlokDebugTab } from "@/rekuest/components/BlokDebugTab";
 import { ArgPortRows, SignatureColumn } from "@/rekuest/components/action/ActionSignature";
 import {
   BLOK_ARGS_PARAM,
@@ -132,6 +133,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
   const travel = useBlokTravel();
   const { openDialog } = useDialog();
   const [args, setArgs] = useBlokArgs();
+  const debug = useBlokDebugTab();
   const ports = materializedBlok.blok.args;
   // Asked for on the way in, and again on "Reinstantiate"; between those
   // changing the item is the tree's to do.
@@ -225,6 +227,11 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
           <Sidebars.Tab label="Bindings">
             <BindingsSidebar materializedBlok={materializedBlok} />
           </Sidebars.Tab>
+          {debug.enabled && (
+            <Sidebars.Tab label="Debug">
+              <BlokDebugTab scope={debug.scope} />
+            </Sidebars.Tab>
+          )}
         </Sidebars>
       }
     >
@@ -242,6 +249,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
           ) : (
             <BlokTravelProvider source={travel.source}>
               <BlokRunHostProvider value={partsHost}>
+               <BlokDebugTab.Scope scope={debug.scope}>
                 <MaterializedBlokRenderer
                   key={materializedBlok.id}
                   materializedBlok={materializedBlok}
@@ -249,7 +257,9 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
                   chrome="minimal"
                   args={args}
                   onArgsChange={setArgs}
+                  debugLabel={materializedBlok.name || materializedBlok.blok.name || undefined}
                 />
+               </BlokDebugTab.Scope>
               </BlokRunHostProvider>
             </BlokTravelProvider>
           )}

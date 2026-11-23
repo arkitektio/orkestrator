@@ -5,6 +5,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { VerticalListRender } from "@/core/layout/VerticalListRender";
 import { PageSections } from "@/core/layout/PageSections";
 import { Sidebars } from "@/core/layout/Sidebars";
+import { BlokDebugTab, useBlokDebugTab } from "../components/BlokDebugTab";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
@@ -236,8 +237,10 @@ export const AgentPage = asDetailQueryRoute(
 
     const recentTasks = data.agent.tasks.slice(0, 5);
     const bloks = useAgentBloks(agentId);
+    const blokDebug = useBlokDebugTab();
 
     return (
+     <BlokDebugTab.Scope scope={blokDebug.scope}>
       <RekuestAgent.ModelPage
         title={data.agent.name}
         help={REKUEST_HELP.agent}
@@ -257,6 +260,11 @@ export const AgentPage = asDetailQueryRoute(
             <Sidebars.Tab label="Tasks">
               <AgentTasksSidebar agent={data.agent.id} />
             </Sidebars.Tab>
+            {blokDebug.enabled && (
+              <Sidebars.Tab label="Debug">
+                <BlokDebugTab scope={blokDebug.scope} />
+              </Sidebars.Tab>
+            )}
           </Sidebars>
         }
         pageActions={
@@ -395,6 +403,7 @@ export const AgentPage = asDetailQueryRoute(
         </div>
 
       </RekuestAgent.ModelPage>
+     </BlokDebugTab.Scope>
     );
   },
 );

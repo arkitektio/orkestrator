@@ -296,6 +296,8 @@ export const ActionBlokRenderer = ({actionBlok, run, showAsk, args: filling, par
       {/* A Space's plain `room` key is the declaring app's. */}
       <RoomHost app={actionBlok.blok.app?.identifier}>
         <MaterializedBlokRenderer
+          debugLabel={`${actionBlok.phase.toLowerCase()} · ${actionBlok.context.toLowerCase()}${run.task ? ` · task ${run.task.id}` : ''}`}
+          debugKind={assigning ? 'assign' : 'action'}
           {...rendererProps}
           materializedBlok={materializedBlok}
           args={args}

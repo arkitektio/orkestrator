@@ -88,6 +88,7 @@ export const REKUEST_HELP = {
         <>Press <b>Bounce</b> to send the agent a bounce request.</>,
         <>Press <b>Copy Python</b> to copy a Python declaration of this agent’s actions to the clipboard.</>,
         <>Right-click the agent and choose <b>Create Blok from Agent</b> to get a custom blok made from its states and actions, already bound to this agent; it opens in the editor for you to change. With several agents selected, the same makes one blok with a part for each of them.</>,
+        <>In debug mode (Settings → Developer), the <b>Debug</b> tab lists the bloks drawn on this page. Pick one to see what it sends, receives, writes and logs, and what it holds now under <b>Live state</b>.</>,
       ]}
       tips={[
         <>The dot next to the name is green when the agent is online and red when it is offline, with the time it was last seen.</>,
@@ -357,6 +358,7 @@ export const REKUEST_HELP = {
         <>Click the name under <b>Made from the template</b> in the <b>Bindings</b> tab to open its template.</>,
         <>Press <b>Edit</b> to change it in BSX, with the draft running live on its agents as you type. Saving changes its template, so the other bloks made from it change too. One its app provides is made your own first.</>,
         <>Press <b>Export…</b> to save it as a file to install elsewhere. The dialog says what goes in, and that which agents it runs on stays here.</>,
+        <>In debug mode (Settings → Developer), open the <b>Debug</b> tab to follow what the blok does. Pick a blok from the list at its top; under <b>Events</b>, <b>Out</b> lists the actions it calls, <b>In</b> the task events and agent states that come back, <b>State</b> every value it writes and <b>Logs</b> the tasks' log lines, newest first. Click a row to see its value; type in the filter to narrow the list. <b>Live state</b> shows everything the blok holds right now. Pause, clear or copy the record with the buttons at the top.</>,
         <>Press <b>History</b> in the header to see the panel as it was earlier. In the bar below it, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Click the time to jump to another one. Press <b>Go live</b> to return to the present.</>,
         <>Press <b>Revisions</b> in that bar to go through the past one recorded change of an agent at a time instead: the arrows go to the revision before or after, the slider runs over all revisions since the agent started, and typing a number into <b>Revision</b> and pressing Enter goes straight to it. With more than one agent, choose whose revisions to step through. Press <b>Time</b> to get the slider back.</>,
         <>Press <b>Reinstantiate</b> to choose again what the blok is opened for. The form starts from what it shows now; press <b>Open</b> to show the new items, or <b>Cancel</b> to keep them.</>,
@@ -429,6 +431,7 @@ export const REKUEST_HELP = {
         <>Press <b>Cancel</b> to stop a task that is still running. <b>Pause</b> and <b>Interrupt</b> are in the <b>More</b> menu.</>,
         <>Press <b>Resume</b> on a paused task to let it continue. The <b>More</b> menu offers <b>Step to next breakpoint</b>.</>,
         <>Press <b>Rerun</b> to run the task again with the same inputs (in the <b>More</b> menu while the task still runs). You are taken to the new task.</>,
+        <>In debug mode (Settings → Developer), the <b>Debug</b> tab lists the bloks drawn on this page. Pick one to see what it sends, receives, writes and logs, and what it holds now under <b>Live state</b>.</>,
       ]}
       tips={[
         <>The <b>Info</b> tab of the sidebar says what the task ran, who started it, where it ran and how long it took, with its ids to copy.</>,

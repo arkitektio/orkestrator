@@ -1,6 +1,7 @@
 import { reportErrorAs } from "@/core/notify";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
+import { BlokDebugTab, useBlokDebugTab } from "../components/BlokDebugTab";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
@@ -157,6 +158,7 @@ export const TPage = asDetailQueryRoute(
     const calls = useTaskCalls();
 
     const { openDialog } = useDialog();
+    const blokDebug = useBlokDebugTab();
     const doCancel = () =>
       cancel(data.task.id).catch(reportErrorAs("Couldn't cancel the task"));
     const doResume = (step: boolean) =>
@@ -342,6 +344,7 @@ export const TPage = asDetailQueryRoute(
     );
 
     return (
+     <BlokDebugTab.Scope scope={blokDebug.scope}>
       <RekuestTask.ModelPage
         title={data?.task?.action.name}
         help={REKUEST_HELP.task}
@@ -360,6 +363,11 @@ export const TPage = asDetailQueryRoute(
                 <TaskTimeLine task={data.task} />
               </div>
             </Sidebars.Tab>
+            {blokDebug.enabled && (
+              <Sidebars.Tab label="Debug">
+                <BlokDebugTab scope={blokDebug.scope} />
+              </Sidebars.Tab>
+            )}
           </>
         }
         object={data.task}
@@ -559,6 +567,7 @@ export const TPage = asDetailQueryRoute(
           )}
         </div>
       </RekuestTask.ModelPage>
+     </BlokDebugTab.Scope>
     );
   },
 );
