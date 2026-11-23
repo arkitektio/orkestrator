@@ -9,6 +9,7 @@ import { EnhanceButton } from "./components/EnhanceButton";
 import { AgentUpdater } from "./components/functional/AgentUpdater";
 import { TaskUpdater } from "./components/functional/TaskUpdater";
 import { TaskIsland } from "./components/global/TaskIsland";
+import { SessionSyncIndicator } from "./session/SessionSyncIndicator";
 import { HomeTasks } from "./dashboard/HomeTasks";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
 import { ActionDisplay } from "./displays/ActionDisplay";
@@ -154,5 +155,7 @@ export const REKUEST_MODULE = defineModule({
     // What you pinned, on an empty ⌘K.
     paletteSources: [PinnedSource],
     railIslands: [TaskIsland],
+    // Beside the agent: whether live task and state updates flow.
+    footerIndicators: [SessionSyncIndicator],
   },
 });

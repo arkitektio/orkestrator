@@ -137,6 +137,12 @@ export type ModuleBuiltins = {
   paletteHitActions?: readonly ComponentType<PaletteHitActionProps>[];
   /** EXTENSION: islands in the rail (live status), each behind the module's guard. */
   railIslands?: readonly ComponentType[];
+  /**
+   * EXTENSION: small glyphs beside the agent in the rail's footer, each behind the module's
+   * guard: a state of the module's connection worth seeing everywhere (rekuest: live updates
+   * reconnecting). One icon each, rendering null while there is nothing to say.
+   */
+  footerIndicators?: readonly ComponentType[];
   /** Named requests on its own service, by `"<namespace>.<name>"` (spec: `request`). */
   operations?: Record<string, OperationHandler>;
   /**

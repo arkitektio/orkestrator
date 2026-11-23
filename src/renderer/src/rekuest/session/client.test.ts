@@ -180,6 +180,46 @@ describe("RekuestSession", () => {
     expect(reasons).toEqual(["new", "session_expired"]);
   });
 
+  it("says since when updates stopped, and that they flow again once resumed", async () => {
+    const session = make();
+    expect(session.getSync()).toMatchObject({ status: "connecting", catchingUp: false });
+    expect(session.getSync().since).not.toBeNull();
+    const first = await welcome("s-1");
+    expect(session.getSync()).toEqual({ status: "open", since: null, catchingUp: false });
+    const dropped = Date.now();
+    first.drop();
+    vi.advanceTimersByTime(3_000);
+    const away = session.getSync();
+    expect(away.status).toBe("reconnecting");
+    expect(away.since).toBeGreaterThanOrEqual(dropped);
+    // A failed attempt in between keeps the first moment it stopped.
+    FakeSocket.all.at(-1)!.drop();
+    expect(session.getSync().since).toBe(away.since);
+    vi.advanceTimersByTime(5_000);
+    await welcome("s-1", true);
+    // Resumed: what was missed is replayed, nothing to catch up.
+    expect(session.getSync()).toEqual({ status: "open", since: null, catchingUp: false });
+  });
+
+  it("catches up after a new session until every topic was sent again, or gives up waiting", async () => {
+    const session = make();
+    const listener = { onData: () => {}, onResync: () => {} };
+    session.watch("tasks:mine", listener);
+    session.watch("task:7", listener);
+    session.watch("tasks:org", listener);
+    const first = await welcome("s-1");
+    first.drop();
+    vi.advanceTimersByTime(3_000);
+    const second = await welcome("s-2", false);
+    expect(session.getSync().catchingUp).toBe(true);
+    second.push({ type: "RESYNC", pos: 1, topic: "tasks:mine", reason: "new", snapshot: { rows: [] } });
+    second.push({ type: "REFUSED", pos: 2, topic: "tasks:org", error: "Not yours." });
+    expect(session.getSync().catchingUp).toBe(true);
+    vi.advanceTimersByTime(15_000);
+    // task:7's snapshot never came: the window stops saying it waits.
+    expect(session.getSync().catchingUp).toBe(false);
+  });
+
   it("keeps trying a server that never opens, and opens once it does", async () => {
     const session = make();
     FakeSocket.all.at(-1)!.drop();

@@ -22,6 +22,7 @@ import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
 import { useMeshDirectness } from "@/core/connection/mesh/useMeshDirectness";
 
 import { useRailSwitcherRequests } from "@/core/connection/profile/ui/railSwitcher";
+import { ModuleFooterIndicators } from "@/core/modules/registries";
 
 /**
  * How the org switcher marks a tunnel: a thin ring on the avatar and a small
@@ -227,6 +228,10 @@ export const RailFooter = () => {
               </span>
             )}
           </span>
+
+          {/* Whether the modules' live updates flow (rekuest: reconnecting, catching up):
+              nothing while they do. */}
+          <ModuleFooterIndicators />
 
           {/* The agent's state stays in sight; switching it is in the menu. */}
           {agent && (

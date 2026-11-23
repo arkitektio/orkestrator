@@ -479,6 +479,29 @@ export const ModuleRailIslands = () => {
   );
 };
 
+/** Every module's footer indicators (beside the agent), each module's behind its guard. */
+export const ModuleFooterIndicators = () => {
+  useModuleHostVersion();
+  return (
+    <>
+      {(moduleDefinitions() as readonly ModuleDefinition[]).map((definition) => {
+        const indicators = definition.builtins.footerIndicators;
+        if (!indicators?.length) return null;
+        const Guard = moduleGuard(namespaceOf(definition));
+        return (
+          <RoleGuard key={namespaceOf(definition)} require={definition.roles}>
+            <Guard>
+              {indicators.map((Indicator, index) => (
+                <Indicator key={index} />
+              ))}
+            </Guard>
+          </RoleGuard>
+        );
+      })}
+    </>
+  );
+};
+
 /**
  * Every module's always-on components (updaters, registrars), each
  * module's behind its guard.

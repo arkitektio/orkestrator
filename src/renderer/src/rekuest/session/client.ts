@@ -30,6 +30,22 @@ export type SessionStatus =
   /** Disposed (the service was replaced or disconnected). */
   | "closed";
 
+/**
+ * Whether what the window shows is live, for an indicator. Live updates flow while `status` is
+ * "open" and `catchingUp` is false; otherwise `since` says since when they have not.
+ */
+export type SessionSync = {
+  status: SessionStatus;
+  /** When updates stopped flowing (the socket went, or never came); null while they flow. */
+  since: number | null;
+  /** Back on a new session (away longer than the grace): every topic is being sent again
+   *  whole, and until it is, what it shows may be out of date. */
+  catchingUp: boolean;
+};
+
+/** How long a catch-up is waited for before the window stops saying it is catching up. */
+const CATCH_UP_MAX_MS = 15_000;
+
 export type TopicListener = {
   onData: (item: unknown) => void;
   /** Replace what you hold for the topic (`reason`: new, resumed, too_far_behind, …). */
@@ -96,6 +112,10 @@ export class RekuestSession {
   private socket: WebSocket | null = null;
   private status: SessionStatus = "connecting";
   private statusListeners = new Set<() => void>();
+  private sync: SessionSync = { status: "connecting", since: Date.now(), catchingUp: false };
+  /** Topics a new session still owes their first snapshot (see `SessionSync.catchingUp`). */
+  private owed = new Set<string>();
+  private catchUpTimer: ReturnType<typeof setTimeout> | null = null;
   private session: string | null = null;
   private lastPos = 0;
   private everOpen = false;
@@ -124,6 +144,9 @@ export class RekuestSession {
 
   getStatus = (): SessionStatus => this.status;
 
+  /** Whether updates flow, and since when they have not (same listeners as the status). */
+  getSync = (): SessionSync => this.sync;
+
   subscribeStatus = (listener: () => void): (() => void) => {
     this.statusListeners.add(listener);
     return () => this.statusListeners.delete(listener);
@@ -137,7 +160,40 @@ export class RekuestSession {
   private setStatus(status: SessionStatus) {
     if (this.status === status) return;
     this.status = status;
+    this.publish();
+  }
+
+  /** Tell the listeners, with a fresh `sync` if anything in it changed. */
+  private publish() {
+    const flowing = this.status === "open";
+    const since = flowing ? null : (this.sync.since ?? Date.now());
+    const catchingUp = flowing && this.owed.size > 0;
+    const sync = this.sync;
+    if (sync.status !== this.status || sync.since !== since || sync.catchingUp !== catchingUp) {
+      this.sync = { status: this.status, since, catchingUp };
+    }
     for (const listener of [...this.statusListeners]) listener();
+  }
+
+  private owe(topics: Iterable<string>) {
+    for (const topic of topics) this.owed.add(topic);
+    if (this.catchUpTimer) clearTimeout(this.catchUpTimer);
+    this.catchUpTimer = null;
+    if (this.owed.size === 0) return;
+    // A snapshot that never comes (a topic the server refuses now) does not keep the window
+    // saying so for ever.
+    this.catchUpTimer = setTimeout(() => this.settle([...this.owed]), CATCH_UP_MAX_MS);
+  }
+
+  private settle(topics: Iterable<string>) {
+    let changed = false;
+    for (const topic of topics) changed = this.owed.delete(topic) || changed;
+    if (!changed) return;
+    if (this.owed.size === 0 && this.catchUpTimer) {
+      clearTimeout(this.catchUpTimer);
+      this.catchUpTimer = null;
+    }
+    this.publish();
   }
 
   // -----------------------------------------------------------------------------------------
@@ -252,6 +308,7 @@ export class RekuestSession {
         } else if (frame.topic) {
           // A feed that will not come: said, so a dead list is not a mystery.
           console.warn(`[rekuest] the session would not follow ${frame.topic}:`, frame.error);
+          this.settle([frame.topic]);
           for (const listener of this.topics.get(frame.topic)?.listeners ?? []) {
             listener.onRefused?.(frame.error);
           }
@@ -272,6 +329,7 @@ export class RekuestSession {
       // nothing of ours any more, and what it sends again is a catch-up for every topic.
       if (this.session !== null) {
         for (const topic of this.topics.values()) topic.expired = true;
+        this.owe(this.topics.keys());
       }
     }
     this.session = session;
@@ -322,6 +380,7 @@ export class RekuestSession {
   }
 
   private onResync(name: string, snapshot: unknown, reason: string) {
+    this.settle([name]);
     const topic = this.topics.get(name);
     if (!topic) return;
     if (topic.expired && reason === "new") reason = "session_expired";
@@ -357,6 +416,7 @@ export class RekuestSession {
       current.listeners.delete(listener);
       if (current.listeners.size > 0) return;
       this.topics.delete(name);
+      this.settle([name]);
       if (!this.send({ type: "UNWATCH", topic: name })) this.dropped.add(name);
     };
   }
@@ -392,6 +452,8 @@ export class RekuestSession {
   dispose() {
     this.disposed = true;
     this.stopTimers();
+    if (this.catchUpTimer) clearTimeout(this.catchUpTimer);
+    this.owed.clear();
     for (const timer of this.timers) clearTimeout(timer);
     for (const pending of this.pending.values()) {
       pending.reject(new Error("The session was closed."));
