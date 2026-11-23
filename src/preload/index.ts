@@ -245,6 +245,18 @@ const api = {
     set: (checks: "all" | "no-bounds" | "none") => ipcRenderer.invoke("gpu-checks:set", checks),
     relaunch: () => ipcRenderer.invoke("gpu-checks:relaunch"),
   },
+  /**
+   * EXPERIMENTAL: the MCP server in main (`src/main/mcp`). The settings card
+   * switches it; the main window's bridge (`core/mcp`) answers what main asks.
+   */
+  mcp: {
+    get: () => ipcRenderer.invoke("mcp:get"),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke("mcp:set-enabled", enabled),
+    rotateToken: () => ipcRenderer.invoke("mcp:rotate-token"),
+    installInClaude: () => ipcRenderer.invoke("mcp:install-in-claude"),
+    onRequest: (cb: (request: unknown) => void) => subscribe<unknown>("mcp:request", cb),
+    respond: (response: unknown) => ipcRenderer.send("mcp:response", response),
+  },
   onDownloadProgress: (downloadId: string, cb: (data: any) => void) => {
     const channel = `download-progress-${downloadId}`;
     const listener = (_e: any, data: any) => cb(data);

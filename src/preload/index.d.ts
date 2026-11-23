@@ -191,6 +191,14 @@ declare global {
       tabs: {
         onOpen: (cb: (payload: { path: string }) => void) => () => void;
       };
+      mcp: {
+        get: () => Promise<import("../main/mcp/wire").McpState>;
+        setEnabled: (enabled: boolean) => Promise<import("../main/mcp/wire").McpState>;
+        rotateToken: () => Promise<import("../main/mcp/wire").McpState>;
+        installInClaude: () => Promise<import("../main/mcp/wire").McpInstallResult>;
+        onRequest: (cb: (request: import("../main/mcp/wire").McpBridgeRequest) => void) => () => void;
+        respond: (response: import("../main/mcp/wire").McpBridgeResponse) => void;
+      };
       dialogs: {
         onOpen: (cb: (request: ForwardedDialog) => void) => () => void;
         takePending: () => Promise<ForwardedDialog | null>;

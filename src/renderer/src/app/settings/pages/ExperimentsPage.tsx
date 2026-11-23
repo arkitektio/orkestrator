@@ -1,11 +1,12 @@
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Card, CardContent } from "@/core/ui/card";
+import { McpServerCard } from "../components/McpServerCard";
 import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";
 
 /**
  * Recent work, on by default. Switching one off falls back to how the app worked before that
- * feature landed.
+ * feature landed. Below them, what is only here to be tried: off by default.
  */
 export const ExperimentsPage = () => (
   <SettingsPage slug="experiments">
@@ -29,6 +30,8 @@ export const ExperimentsPage = () => (
           />
         </CardContent>
       </Card>
+      {/* Not a recent feature on by default: off, and meant to stay off for most. */}
+      <McpServerCard />
     </SettingsForm>
   </SettingsPage>
 );

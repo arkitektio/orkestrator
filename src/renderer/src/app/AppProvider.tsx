@@ -112,12 +112,20 @@ import { CommandPaletteProvider } from "@/core/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/core/command/Host";
 import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
 import { TabsProvider } from "@/core/tabs/TabsProvider";
+import { McpBridge } from "@/core/mcp/McpBridge";
 import { VoiceInput } from "@/core/voice";
 import type { WindowRole } from "@/core/util/windowRole";
 
 /** The quick bar's navigation goes to the main window, as a tab. Module-level: stable. */
 const forwardToMain = (path: string) => window.api?.palette?.openInMain?.(path);
 /** …and so do the dialogs its actions open (a reply's compose sheet): shown in the main window. */
+/**
+ * Pages the experimental MCP server never describes or pictures: a person's
+ * money, mail and whereabouts are not for a model that happens to be asked
+ * about a scene.
+ */
+const MCP_PRIVATE_PATHS = ["/bank", "/kuvert", "/lokate"];
+
 const forwardDialogToMain = (request: DialogRequest) => window.api?.palette?.openDialogInMain?.(request);
 
 
@@ -197,6 +205,9 @@ export const AppProvider = ({
                                       {/* Dictation into the palette and text fields.
                                           Renders nothing until Settings → Voice input is on. */}
                                       <VoiceInput />
+                                      {/* EXPERIMENTAL: answers main's MCP server, when that is
+                                          switched on (Settings → Experiments). */}
+                                      <McpBridge privatePaths={MCP_PRIVATE_PATHS} />
                                     </Arkitekt.Guard>
                                     )}
                                     <SmartSurface />

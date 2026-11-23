@@ -27,6 +27,7 @@ import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
 import { HardwareService } from "./modules/HardwareService";
 import { GpuChecksService, applyGpuChecks } from "./modules/GpuChecks";
+import { McpService } from "./mcp/McpService";
 import Store from "electron-store";
 import { BluetoothService } from "./bluetooth/BluetoothService";
 import { WifiService } from "./wifi/WifiService";
@@ -252,6 +253,16 @@ appManager.register(new AssetFetchService(certificateTrust));
 appManager.register(shellService);
 appManager.register(hardwareService);
 appManager.register(new GpuChecksService(transport, gpuChecks));
+// EXPERIMENTAL, off by default: an MCP server so an LLM client on this computer
+// can see what is open here (Settings → Experiments). See ./mcp/McpService.
+appManager.register(
+  new McpService(transport, windowManager, {
+    dir: join(app.getPath("userData"), "mcp"),
+    execPath: process.execPath,
+    openPath: (path) => shell.openPath(path),
+    showItemInFolder: (path) => shell.showItemInFolder(path),
+  }),
+);
 appManager.register(bluetoothService);
 appManager.register(wifiService);
 appManager.register(factoryResetService);
