@@ -1,5 +1,6 @@
 import { NO_RECONNECT_CODES } from "@/core/constants";
 import { aliasToWsPath } from "@/core/connection/arkitekt/alias/helpers";
+import { agentConnectionKey, sameAgentConnection } from "./connectionKey";
 import type { AppContext } from "@/core/connection/arkitekt/provider";
 import type { AvailableService } from "@/core/connection/arkitekt/types";
 import { TokenResponse } from "@/core/connection/arkitekt/fakts/tokenSchema";
@@ -89,6 +90,8 @@ export class OrkestratorAgent {
   shouldReconnect = true;
   reconnectAttempts = 0;
   token: string
+  /** The connection this agent was built for (`agentConnectionKey`). */
+  private connectionKey: string | null = null;
   agentUrl: string;
   navigate: (path: string) => void;
   ui: AgentUi;
@@ -133,6 +136,7 @@ export class OrkestratorAgent {
     }
 
     this.token = getAccessToken(this.context.connection.token)
+    this.connectionKey = agentConnectionKey(context);
 
     if (window.api) {
       // Capture the disposers so disconnect() can remove these IPC listeners —
@@ -159,6 +163,10 @@ export class OrkestratorAgent {
    * the Apollo client / agent URL do not change.
    */
   public setContext(context: AppContext) {
+    // Only this agent's own connection (a token refresh of it). During a switch the store
+    // already holds the next hub's connection before this agent is torn down: its token is
+    // not for the takt this agent talks to, and registering with it is refused (3003).
+    if (!sameAgentConnection(this.connectionKey, context)) return;
     this.context = context;
     try {
       if (context.connection) {

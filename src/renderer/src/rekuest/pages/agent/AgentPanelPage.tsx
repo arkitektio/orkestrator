@@ -1,11 +1,13 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { useDialog } from "@/core/dialogs/registry";
 import { RekuestAgent } from "@/core/linkers";
 import { PageAction } from "@/core/ui/page-action";
 import { useAgentQuery, useMaterializedBlokQuery } from "@/rekuest/api/graphql";
 import { Copy, LayoutPanelTop } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { BlokDebugTab, useBlokDebugTab } from "../../components/BlokDebugTab";
 import MaterializedBlokById from "../../components/MaterializedBlokById";
 import { PinMaterializedBlokAction } from "../../components/PinBlokActions";
 import { REKUEST_HELP } from "../../help";
@@ -38,6 +40,8 @@ const AgentPanelPage = asDetailQueryRoute(useAgentQuery, ({ data }) => {
     ?.materializedBlok;
   const blok = materialized?.blok;
   const panelName = materialized?.name || blok?.name;
+  // In debug mode, the panel's blok in a Debug tab, like any blok's page.
+  const debug = useBlokDebugTab();
 
   return (
     <RekuestAgent.ModelPage
@@ -46,6 +50,15 @@ const AgentPanelPage = asDetailQueryRoute(useAgentQuery, ({ data }) => {
       object={data.agent}
       // The breadcrumbs read the names, not the numbers.
       crumbs={{ [data.agent.id]: data.agent.name, ...(panel && panelName ? { [panel]: panelName } : {}) }}
+      sidebars={
+        debug.enabled ? (
+          <Sidebars>
+            <Sidebars.Tab label="Debug">
+              <BlokDebugTab scope={debug.scope} />
+            </Sidebars.Tab>
+          </Sidebars>
+        ) : undefined
+      }
       pageActions={
         <>
           {/* Pinned for the viewer like any materialization: on Home and in the palette. */}
@@ -64,14 +77,16 @@ const AgentPanelPage = asDetailQueryRoute(useAgentQuery, ({ data }) => {
       }
     >
       <div className="h-full w-full p-3">
-        <MaterializedBlokById
-          key={panel}
-          materializedBlokId={panel}
-          surfaceId={`agent-panel-${panel}`}
-          chrome="none"
-          emptyFallback={<PanelMissing />}
-          errorFallback={<PanelMissing />}
-        />
+        <BlokDebugTab.Scope scope={debug.scope}>
+          <MaterializedBlokById
+            key={panel}
+            materializedBlokId={panel}
+            surfaceId={`agent-panel-${panel}`}
+            chrome="none"
+            emptyFallback={<PanelMissing />}
+            errorFallback={<PanelMissing />}
+          />
+        </BlokDebugTab.Scope>
       </div>
     </RekuestAgent.ModelPage>
   );

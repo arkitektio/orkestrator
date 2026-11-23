@@ -79,10 +79,11 @@ export const AgentProvider: React.FC<{
   const awaitDialogRef = useRef(awaitDialog);
   awaitDialogRef.current = awaitDialog;
 
-  // A stable identity for "the connection we're bound to": the login and the
-  // hub. A token refresh keeps both, so it does not churn the agent; a switch
-  // to another login on the same hub is another agent (another user, org or
-  // client), with a socket, session and journal of its own.
+  // A stable identity for "the connection we're bound to": the login, the hub
+  // and rekuest's address, all from one store write. A token refresh keeps
+  // them, so it does not churn the agent; another login or hub is another
+  // agent, with a socket, session and journal of its own. `null` (no agent)
+  // until rekuest has answered on the new hub.
   const connectionKey = useArkitektStore(agentConnectionKey);
 
   useEffect(() => {
