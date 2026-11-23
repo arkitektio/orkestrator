@@ -21,6 +21,7 @@ import { Minus, Plus } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { BackdropFields } from "../components/BackdropFields";
 import { ColorModeField } from "../components/ColorModeField";
+import { MenuShadowField } from "../components/MenuShadowField";
 import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";
 import { ThemeCustomizer } from "../components/ThemeCustomizer";
@@ -166,6 +167,16 @@ export const AppearancePage = () => (
         </CardHeader>
         <CardContent className="space-y-6">
           <PageZoomField />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Menus</CardTitle>
+          <CardDescription>How the right-click menu sits over the page.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <MenuShadowField />
         </CardContent>
       </Card>
 

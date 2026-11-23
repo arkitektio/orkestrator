@@ -279,7 +279,7 @@ export const QueryError = ({ error, onRetry, resource, id }: QueryErrorProps) =>
           }
           hints={[
             <>Try again in a few seconds; restarts are brief.</>,
-            <>If it keeps failing, Settings → Services shows which services answer.</>,
+            <>If it keeps failing, Settings → Hub shows which services answer.</>,
           ]}
           actions={
             <>

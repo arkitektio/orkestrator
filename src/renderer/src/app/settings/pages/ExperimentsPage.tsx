@@ -1,40 +1,16 @@
 import { SwitchField } from "@/core/forms/SwitchField";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/core/ui/card";
-import { FlaskConical } from "lucide-react";
-import { MenuShadowField } from "../components/MenuShadowField";
+import { Card, CardContent } from "@/core/ui/card";
 import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";
 
-export const GeneralPage = () => (
-  <SettingsPage slug="general">
+/**
+ * Recent work, on by default. Switching one off falls back to how the app worked before that
+ * feature landed.
+ */
+export const ExperimentsPage = () => (
+  <SettingsPage slug="experiments">
     <SettingsForm>
       <Card>
-        <CardHeader>
-          <CardTitle>Browsing</CardTitle>
-          <CardDescription>How pages and items behave as you move around.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <MenuShadowField />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FlaskConical className="w-5 h-5" />
-            Experiments
-          </CardTitle>
-          <CardDescription>
-            Recent work, on by default. Switch one off if it misbehaves — the app falls back to
-            how it worked before that feature landed.
-          </CardDescription>
-        </CardHeader>
         <CardContent className="space-y-6">
           <SwitchField
             name="experimentMenuPrefetch"
@@ -57,4 +33,4 @@ export const GeneralPage = () => (
   </SettingsPage>
 );
 
-export default GeneralPage;
+export default ExperimentsPage;

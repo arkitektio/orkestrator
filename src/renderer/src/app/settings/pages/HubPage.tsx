@@ -1,4 +1,4 @@
-import { Arkitekt, Guard } from "@/core/connection/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import {
   ActionLabel,
   ActionTrigger,
@@ -18,78 +18,81 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/core/ui/dialog";
-import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronRight, Send, Settings, Stethoscope, XCircle } from "lucide-react";
+import { useState } from "react";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { reportError, toast } from "@/core/notify";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
-import { toHubHealthFacts, type HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
-import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
-import { useMyHubHealthQuery, useWatchHubHealthSubscription } from "@/lok/api/graphql";
+import type { HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
 import type { ProbeTarget } from "../../../../../main/doctor/protocol";
 import { DeploymentDiagram } from "../components/DeploymentDiagram";
 import { FaktsViewer } from "../components/FaktsViewer";
+import { HubFacts } from "../components/HubFacts";
 import { HubHealthCard } from "../components/HubHealthCard";
-import { ServiceCard } from "../components/ServiceCard";
+import { splitServices } from "../components/hubServices";
+import { ServiceRow } from "../components/ServiceRow";
 import { SettingsPage } from "../components/SettingsPage";
 
-const ServiceGrid = ({ services, hub }: { services: ServiceRuntimeState[]; hub?: HubHealthFacts }) => {
-  // Live, so a card says "through the mesh" exactly when requests go through it.
+/** Every service of the hub: what it granted this app as rows, the optional rest folded away. */
+const HubServices = ({ hub }: { hub?: HubHealthFacts }) => {
+  const services = Arkitekt.useServiceStates();
+  // Live, so a row says "through the mesh" exactly when requests go through it.
   const { payload: mesh } = useMeshes();
-  return services.length > 0 ? (
-    <>
-      <DeploymentDiagram services={services} hub={hub} mesh={mesh} />
-      <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
-        {services.map((service) => (
-          <ServiceCard key={service.key} service={service} hub={hub} mesh={mesh} />
-        ))}
-      </div>
-    </>
-  ) : (
-    <Card>
-      <CardContent className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Server className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No active services found</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-
-/** Only mounted under `Guard.Lok`: the hub's word, then the services with it. */
-const ServicesWithHub = ({ services }: { services: ServiceRuntimeState[] }) => {
-  const fakts = Arkitekt.useFakts();
-  const { data, refetch } = useMyHubHealthQuery();
-  const raw = data?.mycontext.hub;
-  // Each report arrives as it is made (`hubHealth`, normalized into the cache).
-  useWatchHubHealthSubscription({ variables: { hub: raw?.id ?? null }, skip: !raw });
-  // A hub that goes quiet sends nothing: read it again when it would stop
-  // counting as online (`offlineAt`), so "offline" shows without a poll.
-  const offlineAt = raw?.offlineAt;
-  useEffect(() => {
-    if (!offlineAt) return undefined;
-    const wait = new Date(offlineAt).getTime() - Date.now() + 1_000;
-    if (wait <= 0) return undefined;
-    const timer = window.setTimeout(() => void refetch(), wait);
-    return () => window.clearTimeout(timer);
-  }, [offlineAt, refetch]);
-  const hub = raw ? toHubHealthFacts(raw, fakts?.instances ?? {}) : undefined;
+  const { listed, notGranted } = splitServices(services);
+  const granted = listed.filter((service) => service.configured);
 
   return (
     <>
       {hub && <HubHealthCard hub={hub} />}
-      <ServiceGrid services={services} hub={hub} />
+      {granted.length > 0 && <DeploymentDiagram services={granted} hub={hub} mesh={mesh} />}
+      <Card>
+        <CardHeader>
+          <CardTitle>Services</CardTitle>
+          <CardDescription>
+            What the hub grants this app, how this computer reaches each one, and whether it
+            answers. Open one for its details.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-3">
+          {listed.length > 0 ? (
+            <div className="divide-y">
+              {listed.map((service) => (
+                <ServiceRow key={service.key} service={service} mesh={mesh} />
+              ))}
+            </div>
+          ) : (
+            <p className="px-3 text-sm text-muted-foreground">The hub grants this app no services.</p>
+          )}
+        </CardContent>
+      </Card>
+      {notGranted.length > 0 && (
+        <details className="group rounded-lg border" data-testid="not-granted">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm text-muted-foreground hover:text-foreground">
+            <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
+            Optional services not granted ({notGranted.length})
+          </summary>
+          <div className="space-y-2 px-3 pb-3">
+            <p className="px-3 text-xs text-muted-foreground">
+              This app can work with these, but the hub did not grant them: it does not run them,
+              or your organisation has not given this app access. The parts of the app that need
+              them stay hidden.
+            </p>
+            <div className="divide-y">
+              {notGranted.map((service) => (
+                <ServiceRow key={service.key} service={service} mesh={mesh} />
+              ))}
+            </div>
+          </div>
+        </details>
+      )}
     </>
   );
 };
 
 /** What the deployment provides (fakts), whether each service answers, and a way to tell the coordination server so. */
-export const ServicesPage = () => {
+export const HubPage = () => {
   const fakts = Arkitekt.useFakts();
-  const services = Arkitekt.useAvailableServices();
   const configurationIssues = Arkitekt.useConfigurationIssues();
   const reportStatus = Arkitekt.useReportStatus();
   const activeProfile = Arkitekt.useActiveProfile();
@@ -127,7 +130,7 @@ export const ServicesPage = () => {
 
   return (
     <SettingsPage
-      slug="services"
+      slug="hub"
       pageActions={
         <>
           <PageAction
@@ -182,13 +185,7 @@ export const ServicesPage = () => {
         </Card>
       )}
 
-      <Guard.Lok
-        notConnectedFallback={<ServiceGrid services={services} />}
-        connectingFallback={<ServiceGrid services={services} />}
-        bootingFallback={<ServiceGrid services={services} />}
-      >
-        <ServicesWithHub services={services} />
-      </Guard.Lok>
+      <HubFacts>{(hub) => <HubServices hub={hub} />}</HubFacts>
 
       <Card>
         <CardHeader>
@@ -222,4 +219,4 @@ export const ServicesPage = () => {
   );
 };
 
-export default ServicesPage;
+export default HubPage;

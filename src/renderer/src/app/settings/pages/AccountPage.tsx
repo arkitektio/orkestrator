@@ -78,7 +78,7 @@ export const AccountPage = () => {
             {/* Trouble reaching this account's deployment is a connection
                 problem, and the doctor for it lives with the services. */}
             <Button variant="ghost" className="gap-2" asChild>
-              <Link to={settingsLink("services")}>
+              <Link to={settingsLink("hub")}>
                 <Stethoscope className="w-4 h-4" />
                 Can't connect?
               </Link>

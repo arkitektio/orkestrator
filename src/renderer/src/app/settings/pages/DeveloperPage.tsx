@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/core/ui/card";
-import { UpdateChecker } from "@/app/settings/components/UpdateChecker";
 import { useDebug } from "@/core/debug/DebugContext";
 import { Bug } from "lucide-react";
 import { SettingsPage } from "../components/SettingsPage";
@@ -18,16 +17,6 @@ export const DeveloperPage = () => {
 
   return (
     <SettingsPage slug="developer">
-      <Card>
-        <CardHeader>
-          <CardTitle>Application updates</CardTitle>
-          <CardDescription>Check for and manage application updates.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <UpdateChecker />
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

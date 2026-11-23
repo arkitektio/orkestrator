@@ -39,7 +39,7 @@ export const PEEK_GRACE_MS = 250;
  * `shell/SceneContextMenu`).
  *
  * Two ways in, one card:
- * - HOVER (the `experimentAnnotationHover` experiment, Settings → General):
+ * - HOVER (the `experimentAnnotationHover` experiment, Settings → Experiments):
  *   the button sits just up-right of where the pointer ENTERED the shape
  *   (`roiSelectionStore.hoverPoint`), next to the pointer rather than on the
  *   box corner, which for a long path can be half a screen from the stroke.

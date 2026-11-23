@@ -13,7 +13,7 @@ import { smartSections } from "./hostRegistries";
  * call time, so it works from document listeners and copes with a service
  * coming up later.
  *
- * An experiment (Settings → General): with `experimentMenuPrefetch` off there
+ * An experiment (Settings → Experiments): with `experimentMenuPrefetch` off there
  * is no prefetcher at all — the context stays null, which every consumer
  * already handles, so the menu simply queries when it opens.
  */

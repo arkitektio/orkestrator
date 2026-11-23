@@ -21,13 +21,13 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
       ]}
     />
   ),
-  general: (
+  experiments: (
     <PageHelp
-      intro="Everyday behaviour of the app, and a few recent features you can switch off if they get in the way."
+      intro="Recent features, on by default. Switch one off if it gets in the way: the app then works as it did before that feature landed."
       steps={[
-        <>Switch <b>Hover previews</b> off if the detail card that appears when hovering over items distracts you.</>,
         <>Switch <b>Menu prefetching</b> off if right-click menus misbehave. They then load when opened instead of on hover.</>,
-        <>Switch <b>Live tasks in the sidebar</b> on to see running tasks at the bottom of the rail from every page.</>,
+        <>Switch <b>Annotation hover button</b> off to stop the button that follows the pointer over annotations in a scene.</>,
+        <>Switch <b>Live tasks in the sidebar</b> off to see running tasks only on their own page.</>,
       ]}
       tips={[
         <>Changes are saved as you make them.</>,
@@ -41,6 +41,7 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
         <>Under <b>Colour</b>, choose light or dark mode and the brand colours the app is tinted with.</>,
         <>Switch <b>Scene theme sync</b> on to tint the app to the main layer’s colormap while a scene or image is open.</>,
         <>Under <b>Size</b>, zoom the page content in or out. The sidebar keeps its size.</>,
+        <>Under <b>Menus</b>, choose how strongly the right-click menu lifts off the page.</>,
         <>Switch <b>Translucent sidebar</b> on to let the desktop show through the sidebar, and set how much.</>,
       ]}
     />
@@ -115,17 +116,32 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
       ]}
     />
   ),
-  services: (
+  connection: (
     <PageHelp
-      intro="The services your deployment provides, and whether this computer can reach each of them. Start here when a part of the app says its service is unavailable."
+      intro="Whether this window's live connections are up. Start here when the yellow sign next to the agent in the sidebar shows, or tasks stop updating."
       steps={[
-        <>Read the service list to see which services are reachable and which are not.</>,
-        <>Under <b>Connection doctor</b>, press <b>Run diagnostics</b> to check every address from this computer: name lookup, connection, certificate and answer.</>,
-        <>Press <b>Inspect Configuration</b> to see the configuration this app received from the deployment.</>,
-        <>Press <b>Report Status</b> to tell the deployment which services this computer can reach.</>,
+        <>Read <b>Agent</b> to see whether apps you run can reach you here. Turn the switch on its card to engage or disengage.</>,
+        <>Read <b>Live updates</b> to see whether tasks, their events, agents and states arrive in this window. While they do not, <b>Why</b> says what went wrong.</>,
+        <>Press the copy button next to <b>Session</b> to copy its id for a bug report.</>,
       ]}
       tips={[
-        <>A <b>Configuration issues</b> box means the deployment did not announce a service a module expects. That is for the administrator to fix.</>,
+        <>Tasks keep running while live updates are down. Back within the <b>Catch-up window</b>, this window gets exactly what it missed.</>,
+        <>Click the yellow sign next to the agent in the sidebar to come here.</>,
+      ]}
+    />
+  ),
+  hub: (
+    <PageHelp
+      intro="The hub this app is connected to, the services it grants, and how this computer reaches each one. Start here when a part of the app says its service is unavailable."
+      steps={[
+        <>Read the <b>Services</b> list: each row says how this computer reaches the service (encrypted or not, directly or through the mesh) and whether it answers.</>,
+        <>Click a service to open its page, with its address, release, the hub's own word on it and its configuration.</>,
+        <>On a service's page, press <b>Run diagnostics</b> under <b>Connection doctor</b> to check only that service's addresses.</>,
+        <>Open <b>Optional services not granted</b> to see what this app could also use, but the hub does not grant.</>,
+        <>Press <b>Inspect Configuration</b> to see the configuration this app received from the hub, or <b>Report Status</b> to tell the hub which services this computer can reach.</>,
+      ]}
+      tips={[
+        <>A <b>Configuration issues</b> box means the hub did not grant a service a module expects. That is for the administrator to fix.</>,
         <>The doctor changes nothing unless you ask it to.</>,
       ]}
     />
@@ -144,11 +160,19 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
       ]}
     />
   ),
+  updates: (
+    <PageHelp
+      intro="Which version of Orkestrator runs on this computer, and getting the next one."
+      steps={[
+        <>Check for a new version, and choose the <b>Update channel</b> it comes from.</>,
+      ]}
+    />
+  ),
+
   developer: (
     <PageHelp
-      intro="Application updates, and tools for looking under the hood when something goes wrong."
+      intro="Tools for looking under the hood when something goes wrong."
       steps={[
-        <>Under <b>Application updates</b>, check for a new version and choose the <b>Update channel</b>.</>,
         <>Press <b>Open DevTools</b> to see console logs. Useful to attach to a bug report.</>,
         <>Toggle <b>Debug mode</b> to show extra diagnostic detail across the app.</>,
         <>Under <b>View as roles</b>, preview the app as a user with fewer roles.</>,

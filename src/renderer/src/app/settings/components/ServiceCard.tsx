@@ -96,7 +96,13 @@ const HubLine = ({ service, hub }: { service: ServiceRuntimeState; hub: HubHealt
 };
 
 /** What the service's state means, as one status. */
-const statusOf = (service: ServiceRuntimeState): { label: string; tone: Tone; pulse?: boolean } => {
+export const statusOf = (service: ServiceRuntimeState): { label: string; tone: Tone; pulse?: boolean } => {
+  if (!service.configured) {
+    // The hub did not grant it: no problem for an optional one, a broken setup for a required one.
+    return service.definition.optional
+      ? { label: "Not granted", tone: "muted" }
+      : { label: "Missing", tone: "bad" };
+  }
   switch (service.status) {
     case "ready":
       return service.revalidating

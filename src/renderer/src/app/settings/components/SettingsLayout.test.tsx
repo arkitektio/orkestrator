@@ -29,7 +29,7 @@ const renderAt = (path: string) =>
 
 describe("SettingsLayout", () => {
   it("links to every section and shows the page beside them", () => {
-    renderAt("/settings/general");
+    renderAt("/settings/experiments");
     const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     for (const section of SETTINGS_SECTIONS) {
       expect(hrefs).toContain(`/settings/${section.slug}`);

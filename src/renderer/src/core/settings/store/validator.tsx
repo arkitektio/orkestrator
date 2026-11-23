@@ -95,7 +95,7 @@ export const settingsValidator = zod.object({
    */
   globalPaletteShortcut: zod.string().nullable(),
 
-  // ── Experiments (Settings → General) ──
+  // ── Experiments (Settings → Experiments) ──
   // Recent work that ships ON: each flag is the off switch for a feature that
   // is still settling, so a user who hits a bad frame can put the app back to
   // the behaviour it had before it landed. Deleting a flag means the feature

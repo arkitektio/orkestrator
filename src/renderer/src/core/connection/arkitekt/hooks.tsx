@@ -118,6 +118,10 @@ export const useAvailableServices = (): ServiceRuntimeState[] =>
     useShallow((state) => Object.values(state.serviceStates).filter((entry) => entry.configured)),
   );
 
+/** Every service this app knows, granted by the hub or not (`configured`). */
+export const useServiceStates = (): ServiceRuntimeState[] =>
+  useArkitektStore(useShallow((state) => Object.values(state.serviceStates)));
+
 export const useAvailableModules = (): ModuleRuntimeState[] =>
   useArkitektStore(
     useShallow((state) => Object.values(state.moduleStates).filter((entry) => entry.status !== "hidden")),
