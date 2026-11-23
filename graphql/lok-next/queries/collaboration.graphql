@@ -1,0 +1,14 @@
+# The active organization's collaborations (a guest: their own), a page at a
+# time; `filters: { search }` narrows by name.
+query Collaborations($filters: CollaborationFilter, $pagination: OffsetPaginationInput) {
+  collaborations(filters: $filters, pagination: $pagination) {
+    ...Collaboration
+  }
+}
+
+# One collaboration, by its key (the route's `:id`, see the Collaboration fragment).
+query GetCollaboration($id: ID!) {
+  collaboration(key: $id) {
+    ...Collaboration
+  }
+}

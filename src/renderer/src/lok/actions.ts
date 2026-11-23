@@ -1,8 +1,42 @@
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { BellRing, Building2, CheckCircle2, ShieldOff } from 'lucide-react'
+import { BellRing, Building2, CheckCircle2, Link2, Pencil, ShieldOff, Trash2 } from 'lucide-react'
 import { ADMIN_ROLE } from '@/core/connection/roles'
 
+/** The collaboration a local action runs on: the first selected, by its key. */
+const pickedCollaboration = (items: readonly { identifier: string; id: string }[]): string => {
+  const collaboration = items.find((item) => item.identifier === '@lok/collaboration')
+  if (!collaboration) throw new Error('Which collaboration?')
+  return String(collaboration.id)
+}
+
 export const LOK_ACTIONS = {
+  share_collaboration: {
+    title: 'Share',
+    description: 'Make a link that grants this collaboration to whoever accepts it',
+    icon: Link2,
+    conditions: [{ type: 'identifier', identifier: '@lok/collaboration' }, { type: 'nopartner' }],
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('sharecollaboration', { collaboration: pickedCollaboration(state.left) }, { size: 'medium' })
+    }
+  },
+  rename_collaboration: {
+    title: 'Rename',
+    description: 'Change the collaboration\'s name or description',
+    icon: Pencil,
+    conditions: [{ type: 'identifier', identifier: '@lok/collaboration' }, { type: 'nopartner' }],
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('updatecollaboration', { collaboration: pickedCollaboration(state.left) }, { size: 'small' })
+    }
+  },
+  delete_collaboration: {
+    title: 'Delete Collaboration',
+    description: 'Take the collaboration from everyone it was shared with',
+    icon: Trash2,
+    conditions: [{ type: 'identifier', identifier: '@lok/collaboration' }, { type: 'nopartner' }],
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('deletecollaboration', { collaboration: pickedCollaboration(state.left) }, { size: 'small' })
+    }
+  },
   notify_user: {
     description: "Push a message to the user's registered phones",
     title: 'Notify + send message',

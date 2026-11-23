@@ -1,0 +1,17 @@
+# A collaboration as lok keeps it: one key across all of the organization's
+# services. lok names and grants it; each service holds what was put in it.
+# The client names it by that key everywhere (`id: key`: its route, its smart
+# object, its cache entry), as every service does; `lokId` is lok's own id,
+# which renaming and deleting take.
+fragment Collaboration on Collaboration {
+  id: key
+  lokId: id
+  key
+  name
+  description
+  createdAt
+  createdBy {
+    id
+    username
+  }
+}

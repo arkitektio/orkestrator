@@ -1,5 +1,21 @@
 directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
 
+directive @identified(by: String!) on OBJECT
+
+"""Objects to put in a collaboration at once: all of them, or none"""
+input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """
+  The collaboration's name, kept here when these are the first things put in
+  """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
+  objects: [CollaborationObjectRef!]!
+}
+
 """A lat/lon rectangle, e.g. a map viewport."""
 input BoxInput {
   east: Float!
@@ -19,6 +35,87 @@ type ChangeSet {
   points: [Point!]!
   trips: [Trip!]!
   visits: [Visit!]!
+}
+
+"""
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
+  """The object's id"""
+  object: ID!
+}
+
+"""An object, by its structure and id"""
+input CollaborationObjectRef {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+How many collaborations the organization has (a guest: theirs), and how much is in them
+"""
+type CollaborationStats {
+  """How many collaborations"""
+  count: Int!
+
+  """How many objects are in them altogether, brought along ones included"""
+  itemCount: Int!
 }
 
 """Date (isoformat)"""
@@ -106,14 +203,39 @@ type ModeStat {
 
 type Mutation {
   """
+  Put several of your visits, trips or places in a collaboration at once; all or none.
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
+  """
+  Put one of your visits (with the place it was matched to), trips or places in a collaboration (lok's, by its key) for its guests to read. Never a location fix or a device. The first thing put in makes lokate's row of the collaboration.
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
+  Take everything lokate holds in a collaboration (by its key) out of it: its guests read none of it here any more. lok's collaboration and its grants stay.
+  """
+  deleteCollaboration(key: ID!): ID!
+
+  """
   Delete all of your data on this server (confirm = "DELETE"). Returns how many points, visits, trips and places were deleted.
   """
   deleteServerCopy(confirm: String!): Int!
 
   """
+  Take a visit, trip or place out of a collaboration, with what it brought that nothing else there needs.
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
   In one transaction, make this device's visits and trips starting at or after `from` exactly the ones sent.
   """
   replaceSegments(from: DateTime!, trips: [TripInput!]!, visits: [VisitInput!]!): ReplaceResult!
+
+  """
+  Put what a workflow (its root task) created in lokate in a collaboration. A timeline is backed up by phones, not made by workflows: every structure is reported unknown and nothing is put in.
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
 
   """
   Merge places and tombstones, last write wins on updatedAt; newer server copies come back in `stale`.
@@ -183,8 +305,16 @@ input PlaceFilter {
   DISTINCT: Boolean
   NOT: PlaceFilter
   OR: PlaceFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
   inBox: BoxInput
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   near: NearInput
   search: String
 }
@@ -293,6 +423,19 @@ type Query {
   """
   changes(cursor: String = null, limit: Int = 1000): ChangeSet!
 
+  """What lokate holds in a collaboration, by its key (lok's)."""
+  collaboration(key: ID!): Collaboration!
+
+  """
+  The organization's collaborations lokate holds visits, trips or places in (a guest: the ones granted to them).
+  """
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
+
+  """
+  Count the collaborations `collaborations` lists, and the objects in them.
+  """
+  collaborationsStats: CollaborationStats!
+
   """
   One calendar day (in `timezone`, IANA name): its visits and trips in order, and totals.
   """
@@ -371,6 +514,51 @@ type ReplaceResult {
   visits: Int!
 }
 
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
+}
+
 """Totals for one day, week or month."""
 type StatsBucket {
   byMode: [ModeStat!]!
@@ -439,7 +627,15 @@ input TripFilter {
   DISTINCT: Boolean
   NOT: TripFilter
   OR: TripFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   devices: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   minDistance: Float
   modes: [TripMode!]
   since: DateTime
@@ -507,9 +703,17 @@ input VisitFilter {
   DISTINCT: Boolean
   NOT: VisitFilter
   OR: VisitFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   devices: [ID!]
   hasPlace: Boolean
   inBox: BoxInput
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   minDuration: Float
   near: NearInput
   places: [ID!]
@@ -531,6 +735,33 @@ input VisitInput {
 input VisitOrder @oneOf {
   end: Ordering
   start: Ordering
+}
+
+"""
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
 }
 
 scalar _Any

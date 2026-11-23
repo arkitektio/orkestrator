@@ -1,6 +1,6 @@
 overwrite: true
 schema:
-  "https://go.arkitekt.live/lok/schema":
+  "http://jhnnsrs-lab/lok/schema":
      handleAsSDL: true
 
 documents: "graphql/lok-next/**/*.graphql"

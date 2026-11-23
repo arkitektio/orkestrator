@@ -117,6 +117,16 @@ export type AcquisitionMetadataInput = {
   metadataString: Scalars['String']['input'];
 };
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 export type AddModelsToWorkspaceInput = {
   models: Array<Scalars['ID']['input']>;
   workspace: Scalars['ID']['input'];
@@ -298,6 +308,8 @@ export type AnnotationCollectionFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the collections drawn over this dataset (or over a lens of it), following the derivation edge */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the collections drawn over this coordinate system: pass a segment's clock for the events and epochs marking the whole segment, or an experiment's world for those on its timeline */
@@ -307,6 +319,8 @@ export type AnnotationCollectionFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
@@ -332,12 +346,16 @@ export type AnnotationFilter = {
   containsPoint?: InputMaybe<Array<Scalars['Float']['input']>>;
   /** Filter by the coordinate system this annotation is drawn in (its collection's own) */
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the annotations drawn over this dataset (or over a lens of it), following their collection's derivation edge */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
   id?: InputMaybe<Scalars['UUID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to annotations whose bounding box overlaps this box (GiST-backed) -- every event and epoch between two instants is `{min: [t0], max: [t1]}`. Only meaningful within one frame: pass `collection` or `coordinateSystem` alongside. A box of lower rank is zero-filled on the missing coordinates */
   intersects?: InputMaybe<BoundingBoxInput>;
   kind?: InputMaybe<AnnotationKindChoices>;
@@ -581,6 +599,8 @@ export type ArrayDatasetFilter = {
   createdThroughBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the rekuest task id the item was created through */
   createdThroughTask?: InputMaybe<Scalars['String']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the datasets computed from this one -- the filtered, decimated and sorted datasets that named a space of it as their parent. Every child, not just the ones it places: a fusion that named it second is listed, and so is a child whose derivation is UNMAPPABLE, since it still came from here */
   derivedFrom?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
@@ -595,6 +615,8 @@ export type ArrayDatasetFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the dataset carries a resolution pyramid: true for the multiscale ones, false for those with a single level */
   multiscale?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<StrFilterLookup>;
@@ -983,6 +1005,8 @@ export type Collaboration = {
   itemCount: Scalars['Int']['output'];
   /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
   items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
   name: Scalars['String']['output'];
 };
 
@@ -1014,7 +1038,18 @@ export type CollaborationItem = {
 
 /** An object to put in, or take out of, a collaboration */
 export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
   collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
   /** The structure the object is known by: @mikro/scene */
   identifier: Scalars['String']['input'];
   /** The object's id */
@@ -1393,6 +1428,8 @@ export type CoordinateSystemFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the spaces this dataset's data lives in: its own sample grid, and the grids of its sliced lenses */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the spaces carrying every one of these axis types, e.g. [TIME] for clocks and the spaces sampled on one. The same question `hasAxisTypes` asks of array datasets, asked of the space itself */
@@ -1400,6 +1437,8 @@ export type CoordinateSystemFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
@@ -1497,12 +1536,6 @@ export type CreateClockOffsetInput = {
   offset?: InputMaybe<Scalars['Duration']['input']>;
   onto: Scalars['ID']['input'];
   validity?: InputMaybe<PlacementValidity>;
-};
-
-/** A new collaboration */
-export type CreateCollaborationInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
 };
 
 /** Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
@@ -2239,13 +2272,21 @@ export type ExperimentFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   createdBy?: InputMaybe<Scalars['ID']['input']>;
+  /** True: what some change was made under an automated task. False: only what no task ever touched (human / direct API) */
   createdByAgent?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to what a change was made with this client: directly, or as the agent executing its task */
   createdWith?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   mine?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<StrFilterLookup>;
+  /** Filter to what a change ran under this root task (the workflow): created or modified by it */
   provenanceRootTask?: InputMaybe<Scalars['String']['input']>;
+  /** Filter to what a change ran under this task id */
   provenanceTask?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   world?: InputMaybe<Scalars['ID']['input']>;
@@ -2309,6 +2350,8 @@ export type ExperimentLayerFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ExperimentLayerFilter>;
   OR?: InputMaybe<ExperimentLayerFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the layers drawing this array dataset, through any of its lenses */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the layers of this experiment */
@@ -2316,6 +2359,8 @@ export type ExperimentLayerFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by how the layer draws: TRACE, SPIKES, EVENTS or ANNOTATION */
   kind?: InputMaybe<ExperimentLayerKind>;
   name?: InputMaybe<StrFilterLookup>;
@@ -2515,6 +2560,8 @@ export type FileFilter = {
   createdThroughBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the rekuest task id the item was created through */
   createdThroughTask?: InputMaybe<Scalars['String']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the files written out of this container -- the NWB file a dataset was exported to. The opposite direction from `sourceOf` */
   exportedFrom?: InputMaybe<FileLinkContainerRef>;
   /** Filter by file extension, case-insensitively and with the leading dot optional: `abf`, `.abf` and `ABF` are the same request. A normalizing convenience over `name: {iEndsWith: ".abf"}`, which is still there if you want the raw lookup */
@@ -2528,6 +2575,8 @@ export type FileFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the files linked to this container in *either* direction: read into it or written out of it. Use `sourceOf` or `exportedFrom` when the direction matters */
   linkedTo?: InputMaybe<FileLinkContainerRef>;
   /** Filter to the files holding one sort of thing. Derived from the extension at query time and stored nowhere -- see `FileMimeGroup`, which explains why this reads the name rather than `contentType`. A curated list, so treat it as a picker convenience and filter on `name` or `contentType` when you need an exact answer */
@@ -2835,10 +2884,14 @@ export type FolderFilter = {
   createdThroughBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the rekuest task id the item was created through */
   createdThroughTask?: InputMaybe<Scalars['String']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   isDefault?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
@@ -3210,11 +3263,15 @@ export type LensFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<LensFilter>;
   OR?: InputMaybe<LensFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the dataset this lens selects over */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges */
   placeableIn?: InputMaybe<PlaceableFilter>;
   /** Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key lenses do not declare is refused rather than ignored */
@@ -3485,8 +3542,12 @@ export type ModelCollectionFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   createdBy?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   mine?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   search?: InputMaybe<Scalars['String']['input']>;
@@ -3589,9 +3650,11 @@ export type ModelWorkspaceOrder =
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several objects in a collaboration (by its key) at once, a whole before its parts, each with what it needs to be seen: all of them, or none */
+  addManyToCollaboration: Collaboration;
   /** Add neuron models to a workspace (optionally into a group) */
   addModelsToWorkspace: ModelWorkspace;
-  /** Put an object in a collaboration, with what it needs to be seen: an experiment brings the data its layers draw, a dataset its stores, its spaces and their edges, and its anchors */
+  /** Put an object in a collaboration (lok's, by its key), with what it needs to be seen: an experiment brings the data its layers draw, a dataset its stores, its spaces and their edges, and its anchors. The collaboration's row here is made the first time something is put in */
   addToCollaboration: Collaboration;
   /** Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, whatever is laid out over it (its layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive */
   clearCoordinateSystem: Array<Scalars['ID']['output']>;
@@ -3607,8 +3670,6 @@ export type Mutation = {
   createArrayDataset: ArrayDataset;
   /** Place one clock on another -- a segment in its session, a session or a run in an experiment's world -- with one offset edge shared by everything timed on it. Refused when the two are already related */
   createClockOffset: Transformation;
-  /** Create an empty collaboration, to put objects in and grant a guest */
-  createCollaboration: Collaboration;
   /** Attach metadata spokes to an array, table or sparse dataset after ingest: the rig state, acquisition metadata, a value histogram, a channel label, a recording or stimulus site, or the simulation state, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced. A value unit is array-only: a table's units are its columns' */
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (a space nothing lives in: a clock, a world) and, in one call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it */
@@ -3661,7 +3722,7 @@ export type Mutation = {
   deleteAnnotationCollection: Scalars['ID']['output'];
   /** Delete an existing array dataset, with its levels, its lenses, every interpretation of it, and the coordinate systems nothing else lives in. Its stores are flagged, not deleted: `purge_orphaned_stores` collects them after a grace period */
   deleteArrayDataset: Scalars['ID']['output'];
-  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  /** Take everything elektro put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay */
   deleteCollaboration: Scalars['ID']['output'];
   /** Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one */
   deleteCoordinateSystem: Scalars['ID']['output'];
@@ -3787,6 +3848,8 @@ export type Mutation = {
   requestZarrUpload: ZarrUploadGrant;
   /** Revert folder to a previous version */
   revertFolder: Folder;
+  /** Put what a workflow (its root task) created in elektro in a collaboration, as it is now: what it makes later is not. A part of something made before the workflow, and not shared, is left out and reported; `dryRun` only says what would be put in */
+  shareWorkflow: WorkflowShare;
   /** Delete a file link. Neither the file nor the container is touched */
   unlinkFile: Scalars['ID']['output'];
   /** Edit an annotation. Only the supplied fields change; new vectors re-derive the bounding box */
@@ -3825,6 +3888,11 @@ export type Mutation = {
   updateWaveformLayer: WaveformLayer;
   /** Update a workspace mapping (e.g. change its group) */
   updateWorkspaceMapping: WorkspaceMapping;
+};
+
+
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
 };
 
 
@@ -3870,11 +3938,6 @@ export type MutationCreateArrayDatasetArgs = {
 
 export type MutationCreateClockOffsetArgs = {
   input: CreateClockOffsetInput;
-};
-
-
-export type MutationCreateCollaborationArgs = {
-  input: CreateCollaborationInput;
 };
 
 
@@ -4009,7 +4072,7 @@ export type MutationDeleteArrayDatasetArgs = {
 
 
 export type MutationDeleteCollaborationArgs = {
-  id: Scalars['ID']['input'];
+  key: Scalars['ID']['input'];
 };
 
 
@@ -4313,6 +4376,11 @@ export type MutationRevertFolderArgs = {
 };
 
 
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
+};
+
+
 export type MutationUnlinkFileArgs = {
   input: UnlinkFileInput;
 };
@@ -4577,13 +4645,21 @@ export type NeuronModelFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
   createdBy?: InputMaybe<Scalars['ID']['input']>;
+  /** True: what some change was made under an automated task. False: only what no task ever touched (human / direct API) */
   createdByAgent?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to what a change was made with this client: directly, or as the agent executing its task */
   createdWith?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   mine?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<StrFilterLookup>;
+  /** Filter to what a change ran under this root task (the workflow): created or modified by it */
   provenanceRootTask?: InputMaybe<Scalars['String']['input']>;
+  /** Filter to what a change ran under this task id */
   provenanceTask?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -4892,7 +4968,7 @@ export type Query = {
   cells: Array<Cell>;
   /** List everything filed in a folder: its sub-folders, files, array, table and sparse datasets and annotation collections */
   children: Array<FolderChild>;
-  /** Get a single collaboration by ID */
+  /** Get a single collaboration by its key (lok's): what was put in it here */
   collaboration: Collaboration;
   /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
   collaborations: Array<Collaboration>;
@@ -5031,7 +5107,7 @@ export type QueryChildrenArgs = {
 
 
 export type QueryCollaborationArgs = {
-  id: Scalars['ID']['input'];
+  key: Scalars['ID']['input'];
 };
 
 
@@ -5825,6 +5901,27 @@ export type SettingInput = {
   text?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
 /** The integrator truth: the anchored values were computed by integrating a neuron model -- the model, NEURON's dt and tstop. elektro's own spoke, the synthetic rig. A run is its clock: the outputs timed onto one clock are one run, and agree on it */
 export type SimulationState = {
   __typename?: 'SimulationState';
@@ -5842,6 +5939,19 @@ export type SimulationStateInput = {
   dt?: InputMaybe<Scalars['Duration']['input']>;
   duration: Scalars['Duration']['input'];
   model: Scalars['ID']['input'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
 };
 
 /** A slice along a named axis, with optional start, stop and step */
@@ -6023,12 +6133,16 @@ export type SparseDatasetFilter = {
   createdThroughBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the rekuest task id the item was created through */
   createdThroughTask?: InputMaybe<Scalars['String']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
   /** Filter by the folder this sparse dataset is filed in */
   folder?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to datasets holding a layout indexed on this axis -- the ones that can answer about it in one contiguous read rather than by scanning */
   indexesAxis?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<StrFilterLookup>;
@@ -6381,6 +6495,8 @@ export type TableDatasetFilter = {
   createdThroughBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the rekuest task id the item was created through */
   createdThroughTask?: InputMaybe<Scalars['String']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the dataset the table was computed from, following its derivation edge */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
@@ -6393,6 +6509,8 @@ export type TableDatasetFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
@@ -7100,6 +7218,23 @@ export type WaveformLayerPlacementValidityArgs = {
 export type WindowInput = {
   start?: InputMaybe<Scalars['Duration']['input']>;
   stop?: InputMaybe<Scalars['Duration']['input']>;
+};
+
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
 };
 
 export type WorkspaceMapping = {
@@ -8415,6 +8550,13 @@ export type DeleteNeuronModelMutationVariables = Exact<{
 
 
 export type DeleteNeuronModelMutation = { __typename?: 'Mutation', deleteNeuronModel: string };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type GeneralZarrAccessGrantFragment = { __typename?: 'GeneralZarrAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
@@ -11643,6 +11785,52 @@ export function useDeleteNeuronModelMutation(baseOptions?: ApolloReactHooks.Muta
 export type DeleteNeuronModelMutationHookResult = ReturnType<typeof useDeleteNeuronModelMutation>;
 export type DeleteNeuronModelMutationResult = Apollo.MutationResult<DeleteNeuronModelMutation>;
 export type DeleteNeuronModelMutationOptions = Apollo.BaseMutationOptions<DeleteNeuronModelMutation, DeleteNeuronModelMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const RequestGeneralZarrAccessDocument = gql`
     mutation RequestGeneralZarrAccess($input: RequestGeneralZarrAccessInput!) {
   requestGeneralZarrAccess(input: $input) {

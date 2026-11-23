@@ -1,5 +1,8 @@
 import { MIKRO_BLOKS } from "./bloks";
 import { defineModule } from "@/core/modules/host/define";
+import { HeldInMikro } from "./components/collaboration/HeldInMikro";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { MIKRO_ACTIONS } from "./actions";
 import { HomeDatasets } from "./dashboard/HomeDatasets";
 import { AnnotationDisplay } from "./displays/AnnotationDisplay";
@@ -36,6 +39,8 @@ export const MIKRO_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "mikro.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./MikroNextModule"),
     navLinks: MIKRO_NAV_LINKS,
     displays: {
@@ -77,6 +82,14 @@ export const MIKRO_MODULE = defineModule({
         priority: 40,
         match: { identifiers: ["@lok/user"] },
         Component: HomeDatasets,
+      },
+      {
+        // What mikro holds of a collaboration, on lok's page of it (by its key).
+        id: "mikro.collaborationcontents",
+        title: "Mikro",
+        placement: "main",
+        match: { identifiers: ["@lok/collaboration"] },
+        Component: HeldInMikro,
       },
     ],
     search: MikroEntitySearch,

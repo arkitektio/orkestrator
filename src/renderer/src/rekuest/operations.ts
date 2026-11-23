@@ -1,7 +1,9 @@
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
 import type { OperationHandler } from "@/core/modules/host/operations";
 import type { JSONObject } from "@/core/types";
 import {
   CreateBlokDocument,
+  ShareWorkflowDocument,
   type CreateBlokInput,
   type CreateBlokMutation,
   type CreateBlokMutationVariables,
@@ -31,5 +33,7 @@ const installBlok: OperationHandler = {
 };
 
 export const REKUEST_OPERATIONS: Record<string, OperationHandler> = {
+  // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+  "rekuest.shareWorkflow": shareWorkflowOperation("rekuest", ShareWorkflowDocument),
   "rekuest.installBlok": installBlok,
 };

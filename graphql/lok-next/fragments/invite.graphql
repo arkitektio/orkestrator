@@ -28,7 +28,6 @@ fragment CollaborationLink on Invite {
   mesh
   valid
   collaborations {
-    instance
     collaboration
     roles
   }

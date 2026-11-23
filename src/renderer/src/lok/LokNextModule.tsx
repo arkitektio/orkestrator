@@ -26,6 +26,8 @@ import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import { ADMIN_ROLE } from "@/core/connection/roles";
 import ClientsPage from "./pages/ClientsPage";
+import CollaborationPage from "./pages/CollaborationPage";
+import CollaborationsPage from "./pages/CollaborationsPage";
 import ReleasesPage from "./pages/ReleasesPage";
 import ProvisionDevicePage from "./pages/ProvisionDevicePage";
 interface Props { }
@@ -58,6 +60,8 @@ export const LokNextModule: React.FC<Props> = () => {
         <Route path="services/:id" element={<ServicePage />} />
         <Route path="bugreports" element={<BugReportsPage />} />
         <Route path="bugreports/:id" element={<BugReportPage />} />
+        <Route path="collaborations" element={<CollaborationsPage />} />
+        <Route path="collaborations/:id" element={<CollaborationPage />} />
         <Route path="mandates" element={<MandatesPage />} />
         <Route path="mandates/:id" element={<MandatePage />} />
         <Route

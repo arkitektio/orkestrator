@@ -1,6 +1,6 @@
-# The links that grant one collaboration of a service instance, picked by the
-# server. Without a collaboration: every link the caller may see.
-query CollaborationLinks($collaboration: CollaborationRefInput) {
+# The links that grant one collaboration (by its key), picked by the server.
+# Without a collaboration: every link the caller may see.
+query CollaborationLinks($collaboration: ID) {
   invites(filters: { collaboration: $collaboration }) {
     ...CollaborationLink
   }

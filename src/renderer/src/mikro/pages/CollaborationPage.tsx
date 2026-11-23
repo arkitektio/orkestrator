@@ -145,6 +145,10 @@ const Page = asDetailQueryRoute(useGetCollaborationQuery, ({ data }) => {
         <div className="flex flex-col gap-1">
           <div className="text-xl font-semibold">{collaboration.name}</div>
           {collaboration.description && <div className="text-sm text-muted-foreground">{collaboration.description}</div>}
+          {/* The collaboration is lok's: its links, name and what else holds it are there. */}
+          <SmartLink identifier="@lok/collaboration" object={collaboration.id} className="text-sm text-muted-foreground hover:underline">
+            Open the collaboration: its links, and what other services hold of it
+          </SmartLink>
         </div>
         <section className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm font-medium">

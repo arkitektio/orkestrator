@@ -262,6 +262,70 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "AddManyToCollaborationInput",
+        "description": "Objects to put in a collaboration at once: all of them, or none",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "collaboration",
+            "description": "The collaboration's key (lok's)",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The collaboration's name, kept here when these are the first things put in",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "objects",
+            "description": "What to put in; a whole before its parts",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "CollaborationObjectRef",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "AgentCall",
         "description": "Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest.",
@@ -2655,9 +2719,63 @@
             "deprecationReason": null
           },
           {
+            "name": "itemCount",
+            "description": "How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)",
+            "args": [
+              {
+                "name": "brought",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "items",
-            "description": "What is in the collaboration; what is part of these is in it too",
-            "args": [],
+            "description": "What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)",
+            "args": [
+              {
+                "name": "brought",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -2673,6 +2791,22 @@
                     "ofType": null
                   }
                 }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": "The collaboration's key across the hub: what lok grants, and what names it in every service",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -2797,7 +2931,7 @@
         "inputFields": [
           {
             "name": "collaboration",
-            "description": null,
+            "description": "The collaboration's key (lok's)",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -2811,6 +2945,62 @@
             "isDeprecated": false,
             "deprecationReason": null
           },
+          {
+            "name": "identifier",
+            "description": "The structure the object is known by: @mikro/scene",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The collaboration's name, kept here when this is the first thing put in",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "object",
+            "description": "The object's id",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "CollaborationObjectRef",
+        "description": "An object, by its structure and id",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
           {
             "name": "identifier",
             "description": "The structure the object is known by: @mikro/scene",
@@ -3100,46 +3290,6 @@
               "ofType": null
             },
             "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "CreateCollaborationInput",
-        "description": "A new collaboration",
-        "isOneOf": false,
-        "fields": null,
-        "inputFields": [
-          {
-            "name": "description",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -4655,6 +4805,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdUnder",
+            "description": "Only what the workflow (its root task id) created",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work",
             "type": {
@@ -4681,6 +4843,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "inCollaboration",
+            "description": "Only what is in this collaboration (its key): put in, or part of what was",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -6895,8 +7069,41 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "addManyToCollaboration",
+            "description": "Put several objects in a collaboration (by its key) at once, a whole before its parts, each with what it needs to be seen: all of them, or none",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "AddManyToCollaborationInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Collaboration",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "addToCollaboration",
-            "description": "Put an object in a collaboration, with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows",
+            "description": "Put an object in a collaboration (lok's, by its key), with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows. The collaboration's row here is made the first time something is put in",
             "args": [
               {
                 "name": "input",
@@ -7019,39 +7226,6 @@
               "name": null,
               "ofType": {
                 "name": "Run",
-                "kind": "OBJECT",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createCollaboration",
-            "description": "Create an empty collaboration, to put objects in and grant a guest",
-            "args": [
-              {
-                "name": "input",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "name": "CreateCollaborationInput",
-                    "kind": "INPUT_OBJECT",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "Collaboration",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -7193,10 +7367,10 @@
           },
           {
             "name": "deleteCollaboration",
-            "description": "Delete a collaboration: whoever was granted it sees nothing of it any more",
+            "description": "Take everything fluss put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay",
             "args": [
               {
-                "name": "id",
+                "name": "key",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -7382,6 +7556,39 @@
               "name": null,
               "ofType": {
                 "name": "Collaboration",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "shareWorkflow",
+            "description": "Put what a workflow (its root task) created in fluss in a collaboration, as it is now: its runs, with their events and snapshots and the flows they execute. What it makes later is not; `dryRun` only says what would be put in",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ShareWorkflowInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "WorkflowShare",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -8695,6 +8902,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdUnder",
+            "description": "Only what the workflow (its root task id) created",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work",
             "type": {
@@ -8721,6 +8940,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "inCollaboration",
+            "description": "Only what is in this collaboration (its key): put in, or part of what was",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -9397,6 +9628,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdUnder",
+            "description": "Only what the workflow (its root task id) created",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "flows",
             "description": "Filter to the runs of these PythonFlow versions",
             "type": {
@@ -9431,6 +9674,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "inCollaboration",
+            "description": "Only what is in this collaboration (its key): put in, or part of what was",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -9646,10 +9901,10 @@
           },
           {
             "name": "collaboration",
-            "description": "Get a single collaboration by ID",
+            "description": "Get a single collaboration by its key (lok's): what was put in it here",
             "args": [
               {
-                "name": "id",
+                "name": "key",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -9680,7 +9935,20 @@
           {
             "name": "collaborations",
             "description": "List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)",
-            "args": [],
+            "args": [
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -14035,6 +14303,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdUnder",
+            "description": "Only what the workflow (its root task id) created",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ids",
             "description": "Filter by a list of IDs",
             "type": {
@@ -14049,6 +14329,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "inCollaboration",
+            "description": "Only what is in this collaboration (its key): put in, or part of what was",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -14445,6 +14737,186 @@
         "fields": null,
         "inputFields": null,
         "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "ShareWorkflowInput",
+        "description": "Put what a workflow created in a collaboration, as it is now",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "collaboration",
+            "description": "The collaboration's key (lok's)",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "dryRun",
+            "description": "Only say what would be put in, and what left out",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": "false",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The collaboration's name, kept here when this puts the first things in",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "rootTask",
+            "description": "The workflow: the id of the task a person started, the root of every task it caused",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "SharedObject",
+        "description": "An object, by its structure and id",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "identifier",
+            "description": "The structure the object is known by: @mikro/scene",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "object",
+            "description": "The object's id",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "SkippedObject",
+        "description": "Created in the workflow, but part of something made before it that is not shared: left out",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "identifier",
+            "description": "The structure the object is known by",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "object",
+            "description": "The object's id",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "whole",
+            "description": "The id of what it is part of: put that in, and share the workflow again, to bring it",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "wholeIdentifier",
+            "description": "The structure of what it is part of",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -16536,6 +17008,138 @@
       },
       {
         "kind": "OBJECT",
+        "name": "WorkflowShare",
+        "description": "What sharing a workflow put in a collaboration here (or, tried, would put in)",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "added",
+            "description": "Put in, with what each needs to be seen",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "SharedObject",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "collaboration",
+            "description": "The collaboration's key",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "covered",
+            "description": "How many parts came along with their whole, without being put in themselves",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "dryRun",
+            "description": "Whether nothing was written",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "skipped",
+            "description": "Left out: parts of something made before the workflow and not shared",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "SkippedObject",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "unknown",
+            "description": "Structures here that cannot say what created their objects: not looked at",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "String",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
         "name": "Workspace",
         "description": "A Workspace is the top-level container that groups the Flows of an organization, mirroring the concept of a project or folder. It is the entry point users edit flows within.",
         "isOneOf": null,
@@ -16805,6 +17409,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdUnder",
+            "description": "Only what the workflow (its root task id) created",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work",
             "type": {
@@ -16831,6 +17447,18 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "inCollaboration",
+            "description": "Only what is in this collaboration (its key): put in, or part of what was",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,

@@ -1,5 +1,7 @@
 directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
 
+directive @identified(by: String!) on OBJECT
+
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
 """Represents an executable action in the system."""
@@ -614,6 +616,20 @@ enum ActionTimestampField {
   CREATED_AT
 }
 
+"""Objects to put in a collaboration at once: all of them, or none"""
+input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """
+  The collaboration's name, kept here when these are the first things put in
+  """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
+  objects: [CollaborationObjectRef!]!
+}
+
 """Represents a compute agent that can execute implementations."""
 type Agent {
   """
@@ -725,7 +741,7 @@ type Agent {
   states: [State!]!
 
   """
-  The app this agent says controls its lifecycle (e.g. 'plugin_engine'), as stated on its last registration. Self-declared: a hint for pickers (descriptor @rekuest/supervisor), never authority.
+  The app that provisioned this agent's client (e.g. 'plugin_engine'), as lok signed it into the token of its last registration. Null for an agent whose client nobody provisioned. Pickers match it as the descriptor @rekuest/supervisor.
   """
   supervisor: String
 
@@ -939,7 +955,12 @@ input AgentFilter {
   stateDemands: [StateDemandInput!]
 
   """
-  Agents whose self-declared supervisor is this app (e.g. 'plugin_engine').
+  Agents whose client an app provisioned (true), or nobody (false), as of their last registration.
+  """
+  supervised: Boolean
+
+  """
+  Agents whose client this app provisioned (e.g. 'plugin_engine'), as lok signed it into their token.
   """
   supervisor: String
 
@@ -2511,6 +2532,87 @@ input ClientFilter {
 """A way to order apps"""
 input ClientOrder @oneOf {
   definedAt: Ordering
+}
+
+"""
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
+  """The object's id"""
+  object: ID!
+}
+
+"""An object, by its structure and id"""
+input CollaborationObjectRef {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+How many collaborations the organization has (a guest: theirs), and how much is in them
+"""
+type CollaborationStats {
+  """How many collaborations"""
+  count: Int!
+
+  """How many objects are in them altogether, brought along ones included"""
+  itemCount: Int!
 }
 
 """The input for collecting a shelved item in a drawer."""
@@ -4911,6 +5013,16 @@ type Module {
 """Root mutation type for executing write operations on the API."""
 type Mutation {
   """
+  Put several tasks in a collaboration (by its key) at once, each with what it needs to be seen: all of them, or none
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
+  """
+  Put a task in a collaboration (lok's, by its key), with what it needs to be seen: the action it ran, the tasks it caused as they are now, and the bloks it asked or informed with. Its events and logs are in with it, live. The collaboration's row here is made the first time something is put in
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
   Put an action on your auto list: under your runs an agent that asks for it gets it without a hold. Optionally only when one action asks. Yours alone: it changes nothing for anyone else.
   """
   allowAction(input: AllowActionInput!): ActionAllowance!
@@ -4991,6 +5103,11 @@ type Mutation {
 
   """Delete a blok by ID."""
   deleteBlok(input: DeleteBlokInput!): Boolean!
+
+  """
+  Take everything rekuest put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay
+  """
+  deleteCollaboration(key: ID!): ID!
 
   """Delete a dashboard by ID."""
   deleteDashboard(input: DeleteDashboardInput!): Boolean!
@@ -5101,6 +5218,11 @@ type Mutation {
   registerModule(input: RegisterModuleInput!): Module!
 
   """
+  Take a task out of a collaboration, with what it brought that nothing else there needs
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
   A media upload grant for one asset. Issued for a file the caller's own agent declares (it registered with it), or, to an admin, for a file an agent of the organization names a source for; and only if its size passes the policy.
   """
   requestAssetUpload(input: RequestAssetUploadInput!): AssetUploadGrant!
@@ -5136,6 +5258,11 @@ type Mutation {
   Keep where an agent stands in a space (a room), for everyone: the space a blok's `room` names, made when none has it yet.
   """
   savePlacement(input: SavePlacementInput!): Placement!
+
+  """
+  Put a workflow (a root task of the organization: one someone started, or a schedule or trigger did) in a collaboration, as it is now: the root and every task it caused, with their actions, events and logs. Tasks it causes later are not; `dryRun` only says what would be put in
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
 
   """Shelve data into a memory drawer."""
   shelveInMemoryDrawer(input: ShelveInMemoryDrawerInput!): MemoryDrawer!
@@ -5764,6 +5891,19 @@ type Query {
   """List all registered clients."""
   clients(filters: ClientFilter, ordering: [ClientOrder!]! = [], pagination: OffsetPaginationInput): [Client!]!
 
+  """Get a single collaboration by its key (lok's): what was put in it here"""
+  collaboration(key: ID!): Collaboration!
+
+  """
+  List the organization's collaborations that hold tasks here: what a guest granted one sees of rekuest (a guest: the collaborations granted to them)
+  """
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
+
+  """
+  How many collaborations hold tasks here (a guest: of those granted to them), and how many objects are in them
+  """
+  collaborationsStats: CollaborationStats!
+
   """Get dashboard by ID."""
   dashboard(id: ID!): Dashboard!
 
@@ -6006,6 +6146,11 @@ type Query {
   All structures: those the org's action ports reference, and those a service of this hub hosts.
   """
   structures(pagination: OffsetPaginationInput = null, search: String = null): [Structure!]!
+
+  """
+  The apps that provisioned the organization's agents (e.g. 'plugin_engine'), as lok signed them into their tokens, with how many agents each (narrowed by filters, e.g. connected).
+  """
+  supervisors(filters: AgentFilter = null): [Supervisor!]!
 
   """Fetch task by ID."""
   task(id: ID!): Task!
@@ -6759,6 +6904,32 @@ input SessionOrder @oneOf {
   startedAt: Ordering
 }
 
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
 input ShelveInMemoryDrawerInput {
   """
   The description of the drawer. This is used to identify the drawer in the system.
@@ -7084,6 +7255,25 @@ enum SignalKind {
 input SignalOrder @oneOf {
   occurredAt: Ordering
   receivedAt: Ordering
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
 }
 
 type SliderAssignWidget implements AssignWidget {
@@ -7722,6 +7912,24 @@ type Subscription {
   watchState(agentId: ID = null, interface: String = null, stateId: ID = null): StateSnapshotEventStatePatchEvent! @deprecated(reason: "Follow the caller session's `state:<agent>/<interface>` topic on takt (`/session`) instead.")
 }
 
+"""
+An app that provisioned agents of the organization (a plugin engine, a launcher), as lok signed it into their tokens. Its agents are `agents(filters: {supervisor: identifier})`.
+"""
+type Supervisor {
+  """
+  How many of the organization's agents it provisioned (of those the filters keep).
+  """
+  agentCount: Int!
+
+  """How many of those have a live connection now."""
+  connectedCount: Int!
+
+  """
+  The app's identifier, as the agents carry it in `supervisor` (e.g. 'plugin_engine').
+  """
+  identifier: String!
+}
+
 """Tracks the assignment of an implementation to a specific task."""
 type Task {
   """List of resources or entities this task acted upon."""
@@ -8160,11 +8368,24 @@ input TaskFilter {
   """Only tasks created before this timestamp"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
+  """
+  Keep only workflows someone started (true): root tasks no schedule ran and no trigger or signal fired: what a person would share (`shareWorkflow` takes any root task). False keeps every other task
+  """
+  humanInduced: Boolean
+
   """Filter by IDs of the tasks"""
   ids: [ID!]
 
   """Filter by the implementation the task is currently mapped to"""
   implementation: ID
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by whether the task has finished"""
   isDone: Boolean
@@ -9029,6 +9250,33 @@ input WiregramInput {
 
   """The triggers it wants."""
   triggers: [WireTriggerInput!] = []
+}
+
+"""
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
 }
 
 scalar _Any

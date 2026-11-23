@@ -22,6 +22,20 @@ input AcquisitionMetadataInput {
   metadataString: String!
 }
 
+"""Objects to put in a collaboration at once: all of them, or none"""
+input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """
+  The collaboration's name, kept here when these are the first things put in
+  """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
+  objects: [CollaborationObjectRef!]!
+}
+
 input AddModelsToWorkspaceInput {
   models: [ID!]!
   workspace: ID!
@@ -261,6 +275,9 @@ input AnnotationCollectionFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the collections drawn over this dataset (or over a lens of it), following the derivation edge
   """
@@ -279,6 +296,11 @@ input AnnotationCollectionFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -318,6 +340,9 @@ input AnnotationFilter {
   """
   coordinateSystem: ID
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the annotations drawn over this dataset (or over a lens of it), following their collection's derivation edge
   """
@@ -327,6 +352,11 @@ input AnnotationFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to annotations whose bounding box overlaps this box (GiST-backed) -- every event and epoch between two instants is `{min: [t0], max: [t1]}`. Only meaningful within one frame: pass `collection` or `coordinateSystem` alongside. A box of lower rank is zero-filled on the missing coordinates
@@ -626,6 +656,9 @@ input ArrayDatasetFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the datasets computed from this one -- the filtered, decimated and sorted datasets that named a space of it as their parent. Every child, not just the ones it places: a fusion that named it second is listed, and so is a child whose derivation is UNMAPPABLE, since it still came from here
   """
@@ -651,6 +684,11 @@ input ArrayDatasetFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter by whether the dataset carries a resolution pyramid: true for the multiscale ones, false for those with a single level
@@ -1231,6 +1269,11 @@ type Collaboration {
   What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
   """
   items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
   name: String!
 }
 
@@ -1255,8 +1298,23 @@ type CollaborationItem {
 
 """An object to put in, or take out of, a collaboration"""
 input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
   collaboration: ID!
 
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
+  """The object's id"""
+  object: ID!
+}
+
+"""An object, by its structure and id"""
+input CollaborationObjectRef {
   """The structure the object is known by: @mikro/scene"""
   identifier: String!
 
@@ -1788,6 +1846,9 @@ input CoordinateSystemFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the spaces this dataset's data lives in: its own sample grid, and the grids of its sliced lenses
   """
@@ -1801,6 +1862,11 @@ input CoordinateSystemFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -1940,12 +2006,6 @@ input CreateClockOffsetInput {
   offset: Duration = null
   onto: ID!
   validity: PlacementValidity = null
-}
-
-"""A new collaboration"""
-input CreateCollaborationInput {
-  description: String = null
-  name: String!
 }
 
 """
@@ -2955,13 +3015,35 @@ input ExperimentFilter {
   createdAfter: DateTime
   createdBefore: DateTime
   createdBy: ID
+
+  """
+  True: what some change was made under an automated task. False: only what no task ever touched (human / direct API)
+  """
   createdByAgent: Boolean
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
+  """
+  Filter to what a change was made with this client: directly, or as the agent executing its task
+  """
   createdWith: String
   id: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   mine: Boolean
   name: StrFilterLookup
+
+  """
+  Filter to what a change ran under this root task (the workflow): created or modified by it
+  """
   provenanceRootTask: String
+
+  """Filter to what a change ran under this task id"""
   provenanceTask: String
   search: String
   world: ID = null
@@ -3011,6 +3093,9 @@ input ExperimentLayerFilter {
   NOT: ExperimentLayerFilter
   OR: ExperimentLayerFilter
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the layers drawing this array dataset, through any of its lenses
   """
@@ -3022,6 +3107,11 @@ input ExperimentLayerFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by how the layer draws: TRACE, SPIKES, EVENTS or ANNOTATION"""
   kind: ExperimentLayerKind
@@ -3315,6 +3405,9 @@ input FileFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the files written out of this container -- the NWB file a dataset was exported to. The opposite direction from `sourceOf`
   """
@@ -3339,6 +3432,11 @@ input FileFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the files linked to this container in *either* direction: read into it or written out of it. Use `sourceOf` or `exportedFrom` when the direction matters
@@ -3713,11 +3811,19 @@ input FolderFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   description: StrFilterLookup
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   isDefault: Boolean
   name: StrFilterLookup
 
@@ -4231,12 +4337,20 @@ input LensFilter {
   NOT: LensFilter
   OR: LensFilter
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """Filter by the dataset this lens selects over"""
   dataset: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges
@@ -4560,8 +4674,16 @@ input ModelCollectionFilter {
   createdAfter: DateTime
   createdBefore: DateTime
   createdBy: ID
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   mine: Boolean
   name: StrFilterLookup
   search: String
@@ -4693,11 +4815,16 @@ input ModelWorkspaceOrder @oneOf {
 }
 
 type Mutation {
+  """
+  Put several objects in a collaboration (by its key) at once, a whole before its parts, each with what it needs to be seen: all of them, or none
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
   """Add neuron models to a workspace (optionally into a group)"""
   addModelsToWorkspace(input: AddModelsToWorkspaceInput!): ModelWorkspace!
 
   """
-  Put an object in a collaboration, with what it needs to be seen: an experiment brings the data its layers draw, a dataset its stores, its spaces and their edges, and its anchors
+  Put an object in a collaboration (lok's, by its key), with what it needs to be seen: an experiment brings the data its layers draw, a dataset its stores, its spaces and their edges, and its anchors. The collaboration's row here is made the first time something is put in
   """
   addToCollaboration(input: CollaborationObjectInput!): Collaboration!
 
@@ -4733,9 +4860,6 @@ type Mutation {
   Place one clock on another -- a segment in its session, a session or a run in an experiment's world -- with one offset edge shared by everything timed on it. Refused when the two are already related
   """
   createClockOffset(input: CreateClockOffsetInput!): Transformation!
-
-  """Create an empty collaboration, to put objects in and grant a guest"""
-  createCollaboration(input: CreateCollaborationInput!): Collaboration!
 
   """
   Attach metadata spokes to an array, table or sparse dataset after ingest: the rig state, acquisition metadata, a value histogram, a channel label, a recording or stimulus site, or the simulation state, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced. A value unit is array-only: a table's units are its columns'
@@ -4856,9 +4980,9 @@ type Mutation {
   deleteArrayDataset(input: DeleteArrayDatasetInput!): ID!
 
   """
-  Delete a collaboration: whoever was granted it sees nothing of it any more
+  Take everything elektro put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay
   """
-  deleteCollaboration(id: ID!): ID!
+  deleteCollaboration(key: ID!): ID!
 
   """
   Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one
@@ -5099,6 +5223,11 @@ type Mutation {
 
   """Revert folder to a previous version"""
   revertFolder(input: RevertInput!): Folder!
+
+  """
+  Put what a workflow (its root task) created in elektro in a collaboration, as it is now: what it makes later is not. A part of something made before the workflow, and not shared, is left out and reported; `dryRun` only says what would be put in
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
 
   """Delete a file link. Neither the file nor the container is touched"""
   unlinkFile(input: UnlinkFileInput!): ID!
@@ -5397,13 +5526,35 @@ input NeuronModelFilter {
   createdAfter: DateTime
   createdBefore: DateTime
   createdBy: ID
+
+  """
+  True: what some change was made under an automated task. False: only what no task ever touched (human / direct API)
+  """
   createdByAgent: Boolean
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
+  """
+  Filter to what a change was made with this client: directly, or as the agent executing its task
+  """
   createdWith: String
   id: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   mine: Boolean
   name: StrFilterLookup
+
+  """
+  Filter to what a change ran under this root task (the workflow): created or modified by it
+  """
   provenanceRootTask: String
+
+  """Filter to what a change ran under this task id"""
   provenanceTask: String
   search: String
 }
@@ -5814,8 +5965,8 @@ type Query {
   """
   children(filters: FolderChildrenFilter = null, order: ChildrenOrder = null, pagination: ChildrenPaginationInput = null, parent: ID!): [FolderChild!]!
 
-  """Get a single collaboration by ID"""
-  collaboration(id: ID!): Collaboration!
+  """Get a single collaboration by its key (lok's): what was put in it here"""
+  collaboration(key: ID!): Collaboration!
 
   """
   List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
@@ -6751,6 +6902,32 @@ input SettingInput {
   text: String = null
 }
 
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
 """
 The integrator truth: the anchored values were computed by integrating a neuron model -- the model, NEURON's dt and tstop. elektro's own spoke, the synthetic rig. A run is its clock: the outputs timed onto one clock are one run, and agree on it
 """
@@ -6775,6 +6952,25 @@ input SimulationStateInput {
   dt: Duration = null
   duration: Duration!
   model: ID!
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
 }
 
 """A slice along a named axis, with optional start, stop and step"""
@@ -7030,6 +7226,9 @@ input SparseDatasetFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   description: StrFilterLookup
 
   """Filter by the folder this sparse dataset is filed in"""
@@ -7038,6 +7237,11 @@ input SparseDatasetFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to datasets holding a layout indexed on this axis -- the ones that can answer about it in one contiguous read rather than by scanning
@@ -7507,6 +7711,9 @@ input TableDatasetFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter by the dataset the table was computed from, following its derivation edge
   """
@@ -7525,6 +7732,11 @@ input TableDatasetFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -8486,6 +8698,33 @@ A stretch of time on the dataset's OWN clock, e.g. the first 200 ms of a sweep. 
 input WindowInput {
   start: Duration = null
   stop: Duration = null
+}
+
+"""
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
 }
 
 type WorkspaceMapping {

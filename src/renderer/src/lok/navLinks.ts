@@ -1,4 +1,4 @@
-import { AppWindow, Bluetooth, Boxes, Bug, Cpu, KeyRound, Plug, Radio, Server, Tag, User, UserCircle, Users } from "lucide-react";
+import { AppWindow, Bluetooth, Boxes, Bug, Cpu, Handshake, KeyRound, Plug, Radio, Server, Tag, User, UserCircle, Users } from "lucide-react";
 
 import { ADMIN_ROLE } from "@/core/connection/roles";
 import type { NavLinkDecl } from "@/core/modules/host/define";
@@ -8,6 +8,7 @@ export const LOK_NAV_LINKS: NavLinkDecl[] = [
   // The organization and its people: what the Team rail tile opens.
   { label: "Team", route: "/lok", keywords: ["members", "people", "organization", "users", "home", "invites", "roles"], group: "Team", icon: Users, description: "Everyone in the organization", home: true },
   { label: "Me", route: "/lok/me", keywords: ["profile", "account"], group: "Team", icon: UserCircle, description: "Your profile" },
+  { label: "Collaborations", route: "/lok/collaborations", keywords: ["share", "guests", "invite", "links", "workflow"], group: "Team", icon: Handshake, description: "What guests are let in to" },
   { label: "Mandates", route: "/lok/mandates", keywords: ["approvals", "installed apps", "act as me", "revoke"], group: "Team", icon: KeyRound, description: "Apps allowed to act as you" },
   { label: "Bug reports", route: "/lok/bugreports", keywords: ["issues", "problems", "feedback", "errors"], group: "Team", icon: Bug, description: "What people reported from inside an app" },
   { label: "Morse recorder", route: "/lok/record", keywords: ["morse", "record", "space bar"], group: "Tools", icon: Radio, description: "Tap Morse code, read it as text" },

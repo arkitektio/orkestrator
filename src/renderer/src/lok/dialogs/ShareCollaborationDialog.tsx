@@ -1,11 +1,10 @@
-import { useServiceInstanceId } from "@/core/connection/arkitekt/host";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { useOperation } from "@/core/modules/hooks/useOperation";
 import type { JSONObject } from "@/core/types";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { CopyButton, useCopyToClipboard } from "@/core/ui/copy-button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { DialogBody, DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
@@ -15,7 +14,8 @@ import { Check, Link2, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useGetCollaborationQuery } from "../api/graphql";
 
-export type ShareCollaborationFormProps = { collaboration: string };
+/** `collaboration`: its key, the same on every service of the organization. */
+export type ShareCollaborationDialogProps = { collaboration: string };
 
 /** A link lok made for a collaboration, as `lok.collaborationLinks` answers it. */
 type Link = {
@@ -38,13 +38,13 @@ const ACCESS = {
 const EXPIRY = { "7": "In 7 days", "30": "In 30 days", never: "Never" } as const;
 
 /**
- * Share a collaboration by link: lok makes an invite that grants it to whoever opens the link
- * and signs in (or signs up), with the roles chosen here, and nothing else of the organization.
- * The links made so far are listed with what they grant, and can be revoked: revoking also
- * takes the collaboration back from whoever accepted it.
+ * Share a collaboration by link: lok makes an invite that grants it (by its key, on every
+ * service of the organization) to whoever opens the link and signs in (or signs up), with the
+ * roles chosen here, and nothing else of the organization. The links made so far are listed
+ * with what they grant, and can be revoked: revoking also takes the collaboration back from
+ * whoever accepted it.
  */
-export const ShareCollaborationForm = ({ collaboration }: ShareCollaborationFormProps) => {
-  const instance = useServiceInstanceId("mikro");
+export const ShareCollaborationDialog = ({ collaboration }: ShareCollaborationDialogProps) => {
   const { data } = useGetCollaborationQuery({ variables: { id: collaboration } });
   const share = useOperation<Link>("lok.shareCollaboration");
   const listLinks = useOperation<Link[]>("lok.collaborationLinks");
@@ -59,14 +59,13 @@ export const ShareCollaborationForm = ({ collaboration }: ShareCollaborationForm
   const { copy, copied } = useCopyToClipboard();
 
   const refresh = useCallback(() => {
-    if (!instance) return;
-    listLinks({ instance, collaboration })
+    listLinks({ collaboration })
       .then((next) => {
         setLinks(next);
         setListError(null);
       })
       .catch(setListError);
-  }, [instance, collaboration, listLinks]);
+  }, [collaboration, listLinks]);
 
   useEffect(refresh, [refresh]);
 
@@ -74,9 +73,7 @@ export const ShareCollaborationForm = ({ collaboration }: ShareCollaborationForm
   // clipboard, which the button's check says). Failures show in the dialog.
   const { submit: create, submitting: pending } = useDialogSubmit(
     async () => {
-      if (!instance) return;
       const args: JSONObject = {
-        instance,
         collaboration,
         roles: [...ACCESS[access].roles],
         expiresInDays: expiry === "never" ? null : Number(expiry),
@@ -99,19 +96,16 @@ export const ShareCollaborationForm = ({ collaboration }: ShareCollaborationForm
     { errorTitle: "Couldn't revoke the link", close: false },
   );
 
-  if (!instance) {
-    return <div className="text-sm text-muted-foreground">mikro is not connected: there is nothing to share yet.</div>;
-  }
-
   return (
     <>
       <DialogHeader>
         <DialogTitle>Share {data?.collaboration.name ?? "collaboration"}</DialogTitle>
         <DialogDescription>
           Whoever opens the link and signs in becomes a guest of your organization, and sees only what is in
-          this collaboration.
+          this collaboration, on every service.
         </DialogDescription>
       </DialogHeader>
+      <DialogBody>
       <div className="mt-2 grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <Label>Access</Label>
@@ -182,6 +176,7 @@ export const ShareCollaborationForm = ({ collaboration }: ShareCollaborationForm
           </div>
         ))}
       </div>
+      </DialogBody>
     </>
   );
 };

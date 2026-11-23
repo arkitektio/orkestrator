@@ -289,12 +289,36 @@ export enum ClientRole {
   Interface = 'INTERFACE'
 }
 
-/** One collaboration of a service instance. */
-export type CollaborationRefInput = {
-  /** The collaboration's id in that service. */
-  collaboration: Scalars['ID']['input'];
-  /** The service instance the collaboration lives in. */
-  instance: Scalars['ID']['input'];
+/** What a guest of the organization is let in to: one key across all of its services, each of which holds what was put in it there (`addToCollaboration`, `shareWorkflow` with the key). lok names it and grants it (`createInvite(collaborations:)`); it never sees what is in it. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<User>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** The key every service of the organization names the collaboration by. */
+  key: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+/**
+ * What a guest of an organization is let in to: one key across all of its services.
+ *
+ * lok names it and grants it; what is in it, each service of the organization
+ * holds itself (``arkitekt_service.collaborations``), under a row with the same
+ * ``key``, made the first time something is put in there. lok never learns what
+ * is in it: a guest's token lists the keys (``collabs``), and each service shows
+ * what it put in them.
+ */
+export type CollaborationFilter = {
+  AND?: InputMaybe<CollaborationFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<CollaborationFilter>;
+  OR?: InputMaybe<CollaborationFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only these collaborations, by their key. */
+  keys?: InputMaybe<Array<Scalars['ID']['input']>>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** A communication channel through which a user can be notified (e.g. a push token). */
@@ -364,6 +388,11 @@ export type CreateBugReportInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
 export type CreateGroupProfileInput = {
   avatar: Scalars['ID']['input'];
   group: Scalars['ID']['input'];
@@ -371,9 +400,9 @@ export type CreateGroupProfileInput = {
 };
 
 export type CreateInviteInput = {
-  /** For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the hubs the granted collaborations run on, nothing else of the mesh. */
+  /** For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the organization's hubs, nothing else of the mesh. */
   allowMesh?: Scalars['Boolean']['input'];
-  /** Grant only these collaborations of the organization's service instances, each with the roles that hold inside it, instead of making the holder a member. */
+  /** Grant only these collaborations of the organization, each with the roles that hold inside it, instead of making the holder a member. */
   collaborations?: InputMaybe<Array<SharedCollaborationInput>>;
   expiresInDays?: InputMaybe<Scalars['Int']['input']>;
   /** For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires. */
@@ -432,6 +461,10 @@ export type DeclineMembershipRequestInput = {
 };
 
 export type DeleteBugReportInput = {
+  id: Scalars['ID']['input'];
+};
+
+export type DeleteCollaborationInput = {
   id: Scalars['ID']['input'];
 };
 
@@ -694,7 +727,7 @@ export type Invite = {
   inviteUrl: Scalars['String']['output'];
   /** For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires. */
   maxUses?: Maybe<Scalars['Int']['output']>;
-  /** For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only the hubs the granted collaborations run on. */
+  /** For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only its hubs. */
   mesh: Scalars['Boolean']['output'];
   /** Whether anyone with the link can preview the invitation before signing in. */
   public: Scalars['Boolean']['output'];
@@ -730,8 +763,8 @@ export type InviteFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<InviteFilter>;
   OR?: InputMaybe<InviteFilter>;
-  /** Only the invites granting this collaboration. */
-  collaboration?: InputMaybe<CollaborationRefInput>;
+  /** Only the invites granting this collaboration (its key). */
+  collaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Only the links that grant collaborations (true), or only the invites to become a member (false). */
   grantsCollaborations?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1187,6 +1220,7 @@ export type Mutation = {
   approveMembershipRequest: Membership;
   cancelInvite: Invite;
   createBugReport: BugReport;
+  createCollaboration: Collaboration;
   createGroupProfile: GroupProfile;
   createInvite: Invite;
   createMandate: Mandate;
@@ -1196,6 +1230,8 @@ export type Mutation = {
   declineInvite: Invite;
   declineMembershipRequest: MembershipRequest;
   deleteBugReport: Scalars['ID']['output'];
+  /** Delete a collaboration, and every grant of it. */
+  deleteCollaboration: Scalars['ID']['output'];
   forwardBugReport: BugReport;
   issueChildMandateKey: IssuedMandateKey;
   issueMandateKey: IssuedMandateKey;
@@ -1207,6 +1243,7 @@ export type Mutation = {
   resolveBugReport: BugReport;
   revokeMandate: Mandate;
   unresolveBugReport: BugReport;
+  updateCollaboration: Collaboration;
   updateDevice: Device;
   updateGroupProfile: GroupProfile;
   updateMembershipColors: Membership;
@@ -1243,6 +1280,11 @@ export type MutationCancelInviteArgs = {
 
 export type MutationCreateBugReportArgs = {
   input: CreateBugReportInput;
+};
+
+
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
 };
 
 
@@ -1288,6 +1330,11 @@ export type MutationDeclineMembershipRequestArgs = {
 
 export type MutationDeleteBugReportArgs = {
   input: DeleteBugReportInput;
+};
+
+
+export type MutationDeleteCollaborationArgs = {
+  input: DeleteCollaborationInput;
 };
 
 
@@ -1343,6 +1390,11 @@ export type MutationRevokeMandateArgs = {
 
 export type MutationUnresolveBugReportArgs = {
   input: UnresolveBugReportInput;
+};
+
+
+export type MutationUpdateCollaborationArgs = {
+  input: UpdateCollaborationInput;
 };
 
 
@@ -1421,7 +1473,7 @@ export type Organization = {
   /** The roles that are available in the organization */
   roles: Array<Role>;
   slug: Scalars['String']['output'];
-  /** The users that are part of the organization */
+  /** The users that are part of the organization. Only yourself for a guest who was only granted some collaborations. */
   users: Array<User>;
 };
 
@@ -1552,6 +1604,9 @@ export type Query = {
   clients: Array<Client>;
   /** The clients of the organization other services know by these ids (a token's `client_id` claim), in one query. */
   clientsByClientId: Array<ClientByClientId>;
+  collaboration: Collaboration;
+  /** The active organization's collaborations (a guest: theirs). */
+  collaborations: Array<Collaboration>;
   device: Device;
   /** Look a device up by its device id: the id the other services know it by (`Device.deviceId`, a token's `client_device` claim, rekuest's `Agent.device.deviceId`). The raw id a client reports about itself is accepted too. */
   deviceByDeviceId: Device;
@@ -1640,6 +1695,18 @@ export type QueryClientsArgs = {
 
 export type QueryClientsByClientIdArgs = {
   clientIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type QueryCollaborationArgs = {
+  id?: InputMaybe<Scalars['ID']['input']>;
+  key?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryCollaborationsArgs = {
+  filters?: InputMaybe<CollaborationFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -2150,22 +2217,18 @@ export type ServiceReleaseFilter = {
 export type ServiceReleaseOrdering =
   { id: Ordering; };
 
-/** One collaboration a collaboration invite grants: a collaboration of a service instance, with the roles that hold inside it. */
+/** One collaboration a collaboration invite grants, by its key, with the roles that hold inside it. */
 export type SharedCollaboration = {
   __typename?: 'SharedCollaboration';
-  /** The collaboration's id in that service. */
-  collaboration: Scalars['String']['output'];
-  /** The service instance the collaboration lives in. */
-  instance: Scalars['ID']['output'];
+  /** The collaboration's key: what every service of the organization names it by. */
+  collaboration: Scalars['ID']['output'];
   /** Identifiers of the organization's roles that hold inside the collaboration. Empty: view only. */
   roles: Array<Scalars['String']['output']>;
 };
 
 export type SharedCollaborationInput = {
-  /** The collaboration's id in that service. */
-  collaboration: Scalars['String']['input'];
-  /** The service instance the collaboration lives in (on a hub of the organization): its id, or, when called from an app, the app's own requirement key for it (e.g. 'mikro'), resolved through the app's service mappings. */
-  instance: Scalars['ID']['input'];
+  /** The collaboration's key (`createCollaboration`): one across all of the organization's services. */
+  collaboration: Scalars['ID']['input'];
   /** Identifiers of the organization's roles that hold for the guest inside the collaboration. Empty: view only. */
   roles?: Array<Scalars['String']['input']>;
 };
@@ -2245,6 +2308,12 @@ export type TimeBucket = {
 
 export type UnresolveBugReportInput = {
   id: Scalars['ID']['input'];
+};
+
+export type UpdateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateDeviceInput = {
@@ -2487,6 +2556,8 @@ export type ListClientFragment = { __typename?: 'Client', id: string, name: stri
 
 export type ClientChipFragment = { __typename?: 'Client', id: string, clientId: string, name: string, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, release?: { __typename?: 'Release', id: string, version: any, app: { __typename?: 'App', id: string, identifier: any } } | null };
 
+export type CollaborationFragment = { __typename?: 'Collaboration', key: string, name: string, description?: string | null, createdAt: any, id: string, lokId: string, createdBy?: { __typename?: 'User', id: string, username: string } | null };
+
 export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceId: string, clientCount: number, deviceGroups: Array<(
     { __typename?: 'DeviceGroup' }
     & ListDeviceGroupFragment
@@ -2520,7 +2591,7 @@ export type HubHealthFragment = { __typename?: 'Hub', id: string, name: string, 
 
 export type TeamInviteFragment = { __typename?: 'Invite', id: string, createdAt: any, valid: boolean, status: string, expiresAt?: any | null, token: string, inviteUrl: string, roles: Array<{ __typename?: 'Role', id: string, identifier: string }>, acceptedBy?: { __typename?: 'User', id: string, username: string } | null };
 
-export type CollaborationLinkFragment = { __typename?: 'Invite', id: string, inviteUrl: string, expiresAt?: any | null, uses: number, maxUses?: number | null, mesh: boolean, valid: boolean, collaborations?: Array<{ __typename?: 'SharedCollaboration', instance: string, collaboration: string, roles: Array<string> }> | null };
+export type CollaborationLinkFragment = { __typename?: 'Invite', id: string, inviteUrl: string, expiresAt?: any | null, uses: number, maxUses?: number | null, mesh: boolean, valid: boolean, collaborations?: Array<{ __typename?: 'SharedCollaboration', collaboration: string, roles: Array<string> }> | null };
 
 export type LayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
@@ -2649,6 +2720,33 @@ export type DeleteBugReportMutationVariables = Exact<{
 
 
 export type DeleteBugReportMutation = { __typename?: 'Mutation', deleteBugReport: string };
+
+export type CreateCollaborationMutationVariables = Exact<{
+  input: CreateCollaborationInput;
+}>;
+
+
+export type CreateCollaborationMutation = { __typename?: 'Mutation', createCollaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
+export type UpdateCollaborationMutationVariables = Exact<{
+  input: UpdateCollaborationInput;
+}>;
+
+
+export type UpdateCollaborationMutation = { __typename?: 'Mutation', updateCollaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
+export type DeleteCollaborationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteCollaborationMutation = { __typename?: 'Mutation', deleteCollaboration: string };
 
 export type UpdateDeviceMutationVariables = Exact<{
   input: UpdateDeviceInput;
@@ -2958,6 +3056,27 @@ export type ClientChipsQuery = { __typename?: 'Query', clientsByClientId: Array<
       & ClientChipFragment
     ) }> };
 
+export type CollaborationsQueryVariables = Exact<{
+  filters?: InputMaybe<CollaborationFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type CollaborationsQuery = { __typename?: 'Query', collaborations: Array<(
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  )> };
+
+export type GetCollaborationQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetCollaborationQuery = { __typename?: 'Query', collaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
 export type MyContextQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3050,7 +3169,7 @@ export type MyHubHealthQuery = { __typename?: 'Query', mycontext: { __typename?:
     ) | null } };
 
 export type CollaborationLinksQueryVariables = Exact<{
-  collaboration?: InputMaybe<CollaborationRefInput>;
+  collaboration?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -3493,6 +3612,20 @@ export const ClientChipFragmentDoc = gql`
   }
 }
     `;
+export const CollaborationFragmentDoc = gql`
+    fragment Collaboration on Collaboration {
+  id: key
+  lokId: id
+  key
+  name
+  description
+  createdAt
+  createdBy {
+    id
+    username
+  }
+}
+    `;
 export const ListDeviceGroupFragmentDoc = gql`
     fragment ListDeviceGroup on DeviceGroup {
   id
@@ -3687,7 +3820,6 @@ export const CollaborationLinkFragmentDoc = gql`
   mesh
   valid
   collaborations {
-    instance
     collaboration
     roles
   }
@@ -4217,6 +4349,103 @@ export function useDeleteBugReportMutation(baseOptions?: ApolloReactHooks.Mutati
 export type DeleteBugReportMutationHookResult = ReturnType<typeof useDeleteBugReportMutation>;
 export type DeleteBugReportMutationResult = Apollo.MutationResult<DeleteBugReportMutation>;
 export type DeleteBugReportMutationOptions = Apollo.BaseMutationOptions<DeleteBugReportMutation, DeleteBugReportMutationVariables>;
+export const CreateCollaborationDocument = gql`
+    mutation CreateCollaboration($input: CreateCollaborationInput!) {
+  createCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export type CreateCollaborationMutationFn = Apollo.MutationFunction<CreateCollaborationMutation, CreateCollaborationMutationVariables>;
+
+/**
+ * __useCreateCollaborationMutation__
+ *
+ * To run a mutation, you first call `useCreateCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCollaborationMutation, { data, loading, error }] = useCreateCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateCollaborationMutation, CreateCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateCollaborationMutation, CreateCollaborationMutationVariables>(CreateCollaborationDocument, options);
+      }
+export type CreateCollaborationMutationHookResult = ReturnType<typeof useCreateCollaborationMutation>;
+export type CreateCollaborationMutationResult = Apollo.MutationResult<CreateCollaborationMutation>;
+export type CreateCollaborationMutationOptions = Apollo.BaseMutationOptions<CreateCollaborationMutation, CreateCollaborationMutationVariables>;
+export const UpdateCollaborationDocument = gql`
+    mutation UpdateCollaboration($input: UpdateCollaborationInput!) {
+  updateCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export type UpdateCollaborationMutationFn = Apollo.MutationFunction<UpdateCollaborationMutation, UpdateCollaborationMutationVariables>;
+
+/**
+ * __useUpdateCollaborationMutation__
+ *
+ * To run a mutation, you first call `useUpdateCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateCollaborationMutation, { data, loading, error }] = useUpdateCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateCollaborationMutation, UpdateCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateCollaborationMutation, UpdateCollaborationMutationVariables>(UpdateCollaborationDocument, options);
+      }
+export type UpdateCollaborationMutationHookResult = ReturnType<typeof useUpdateCollaborationMutation>;
+export type UpdateCollaborationMutationResult = Apollo.MutationResult<UpdateCollaborationMutation>;
+export type UpdateCollaborationMutationOptions = Apollo.BaseMutationOptions<UpdateCollaborationMutation, UpdateCollaborationMutationVariables>;
+export const DeleteCollaborationDocument = gql`
+    mutation DeleteCollaboration($id: ID!) {
+  deleteCollaboration(input: {id: $id})
+}
+    `;
+export type DeleteCollaborationMutationFn = Apollo.MutationFunction<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>;
+
+/**
+ * __useDeleteCollaborationMutation__
+ *
+ * To run a mutation, you first call `useDeleteCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteCollaborationMutation, { data, loading, error }] = useDeleteCollaborationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>(DeleteCollaborationDocument, options);
+      }
+export type DeleteCollaborationMutationHookResult = ReturnType<typeof useDeleteCollaborationMutation>;
+export type DeleteCollaborationMutationResult = Apollo.MutationResult<DeleteCollaborationMutation>;
+export type DeleteCollaborationMutationOptions = Apollo.BaseMutationOptions<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>;
 export const UpdateDeviceDocument = gql`
     mutation UpdateDevice($input: UpdateDeviceInput!) {
   updateDevice(input: $input) {
@@ -5303,6 +5532,77 @@ export function useClientChipsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type ClientChipsQueryHookResult = ReturnType<typeof useClientChipsQuery>;
 export type ClientChipsLazyQueryHookResult = ReturnType<typeof useClientChipsLazyQuery>;
 export type ClientChipsQueryResult = Apollo.QueryResult<ClientChipsQuery, ClientChipsQueryVariables>;
+export const CollaborationsDocument = gql`
+    query Collaborations($filters: CollaborationFilter, $pagination: OffsetPaginationInput) {
+  collaborations(filters: $filters, pagination: $pagination) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+
+/**
+ * __useCollaborationsQuery__
+ *
+ * To run a query within a React component, call `useCollaborationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCollaborationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCollaborationsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useCollaborationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<CollaborationsQuery, CollaborationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<CollaborationsQuery, CollaborationsQueryVariables>(CollaborationsDocument, options);
+      }
+export function useCollaborationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<CollaborationsQuery, CollaborationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<CollaborationsQuery, CollaborationsQueryVariables>(CollaborationsDocument, options);
+        }
+export type CollaborationsQueryHookResult = ReturnType<typeof useCollaborationsQuery>;
+export type CollaborationsLazyQueryHookResult = ReturnType<typeof useCollaborationsLazyQuery>;
+export type CollaborationsQueryResult = Apollo.QueryResult<CollaborationsQuery, CollaborationsQueryVariables>;
+export const GetCollaborationDocument = gql`
+    query GetCollaboration($id: ID!) {
+  collaboration(key: $id) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+
+/**
+ * __useGetCollaborationQuery__
+ *
+ * To run a query within a React component, call `useGetCollaborationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCollaborationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCollaborationQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetCollaborationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCollaborationQuery, GetCollaborationQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCollaborationQuery, GetCollaborationQueryVariables>(GetCollaborationDocument, options);
+      }
+export function useGetCollaborationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCollaborationQuery, GetCollaborationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCollaborationQuery, GetCollaborationQueryVariables>(GetCollaborationDocument, options);
+        }
+export type GetCollaborationQueryHookResult = ReturnType<typeof useGetCollaborationQuery>;
+export type GetCollaborationLazyQueryHookResult = ReturnType<typeof useGetCollaborationLazyQuery>;
+export type GetCollaborationQueryResult = Apollo.QueryResult<GetCollaborationQuery, GetCollaborationQueryVariables>;
 export const MyContextDocument = gql`
     query MyContext {
   mycontext {
@@ -5664,7 +5964,7 @@ export type MyHubHealthQueryHookResult = ReturnType<typeof useMyHubHealthQuery>;
 export type MyHubHealthLazyQueryHookResult = ReturnType<typeof useMyHubHealthLazyQuery>;
 export type MyHubHealthQueryResult = Apollo.QueryResult<MyHubHealthQuery, MyHubHealthQueryVariables>;
 export const CollaborationLinksDocument = gql`
-    query CollaborationLinks($collaboration: CollaborationRefInput) {
+    query CollaborationLinks($collaboration: ID) {
   invites(filters: {collaboration: $collaboration}) {
     ...CollaborationLink
   }

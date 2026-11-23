@@ -7,6 +7,12 @@ import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
 import { ResolveBugReportDialog } from "./dialogs/ResolveBugReportDialog";
 import { RevokeMandateDialog } from "./dialogs/RevokeMandateDialog";
+import {
+  CreateCollaborationDialog,
+  DeleteCollaborationDialog,
+  UpdateCollaborationDialog,
+} from "./dialogs/CollaborationDialogs";
+import { ShareCollaborationDialog } from "./dialogs/ShareCollaborationDialog";
 import { CreateServiceInstanceForm } from "./forms/CreateServiceInstance";
 import { UpdateComputeNodeForm } from "./forms/UpdateComputeNodeForm";
 import { UpdateServiceInstanceForm } from "./forms/UpdateServiceInstanceForm";
@@ -27,4 +33,9 @@ export const LOK_DIALOGS = {
   reportclientbug: ReportClientBugDialog,
   revokemandate: RevokeMandateDialog,
   resolvebugreport: needsRoles(ADMIN_ROLE, ResolveBugReportDialog),
+  // collaborations: lok's, one key across every service (dialogs/*Collaboration*)
+  createcollaboration: CreateCollaborationDialog,
+  updatecollaboration: UpdateCollaborationDialog,
+  deletecollaboration: DeleteCollaborationDialog,
+  sharecollaboration: ShareCollaborationDialog,
 };

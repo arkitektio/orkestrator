@@ -334,13 +334,39 @@ enum ClientRole {
   INTERFACE
 }
 
-"""One collaboration of a service instance."""
-input CollaborationRefInput {
-  """The collaboration's id in that service."""
-  collaboration: ID!
+"""
+What a guest of the organization is let in to: one key across all of its services, each of which holds what was put in it there (`addToCollaboration`, `shareWorkflow` with the key). lok names it and grants it (`createInvite(collaborations:)`); it never sees what is in it.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  createdBy: User
+  description: String
+  id: ID!
 
-  """The service instance the collaboration lives in."""
-  instance: ID!
+  """The key every service of the organization names the collaboration by."""
+  key: ID!
+  name: String!
+}
+
+"""
+What a guest of an organization is let in to: one key across all of its services.
+
+lok names it and grants it; what is in it, each service of the organization
+holds itself (``arkitekt_service.collaborations``), under a row with the same
+``key``, made the first time something is put in there. lok never learns what
+is in it: a guest's token lists the keys (``collabs``), and each service shows
+what it put in them.
+"""
+input CollaborationFilter {
+  AND: CollaborationFilter
+  DISTINCT: Boolean
+  NOT: CollaborationFilter
+  OR: CollaborationFilter
+  ids: [ID!]
+
+  """Only these collaborations, by their key."""
+  keys: [ID!]
+  search: String
 }
 
 """
@@ -432,6 +458,11 @@ input CreateBugReportInput {
   title: String = null
 }
 
+input CreateCollaborationInput {
+  description: String = null
+  name: String!
+}
+
 input CreateGroupProfileInput {
   avatar: ID!
   group: ID!
@@ -440,12 +471,12 @@ input CreateGroupProfileInput {
 
 input CreateInviteInput {
   """
-  For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the hubs the granted collaborations run on, nothing else of the mesh.
+  For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the organization's hubs, nothing else of the mesh.
   """
   allowMesh: Boolean! = true
 
   """
-  Grant only these collaborations of the organization's service instances, each with the roles that hold inside it, instead of making the holder a member.
+  Grant only these collaborations of the organization, each with the roles that hold inside it, instead of making the holder a member.
   """
   collaborations: [SharedCollaborationInput!] = null
   expiresInDays: Int = 7
@@ -529,6 +560,10 @@ input DeclineMembershipRequestInput {
 }
 
 input DeleteBugReportInput {
+  id: ID!
+}
+
+input DeleteCollaborationInput {
   id: ID!
 }
 
@@ -836,7 +871,7 @@ type Invite {
   maxUses: Int
 
   """
-  For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only the hubs the granted collaborations run on.
+  For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only its hubs.
   """
   mesh: Boolean!
 
@@ -865,8 +900,8 @@ input InviteFilter {
   NOT: InviteFilter
   OR: InviteFilter
 
-  """Only the invites granting this collaboration."""
-  collaboration: CollaborationRefInput
+  """Only the invites granting this collaboration (its key)."""
+  collaboration: ID
 
   """
   Only the links that grant collaborations (true), or only the invites to become a member (false).
@@ -1373,6 +1408,7 @@ type Mutation {
   approveMembershipRequest(input: ApproveMembershipRequestInput!): Membership!
   cancelInvite(input: CancelInviteInput!): Invite!
   createBugReport(input: CreateBugReportInput!): BugReport!
+  createCollaboration(input: CreateCollaborationInput!): Collaboration!
   createGroupProfile(input: CreateGroupProfileInput!): GroupProfile!
   createInvite(input: CreateInviteInput!): Invite!
   createMandate(input: CreateMandateInput!): Mandate!
@@ -1382,6 +1418,9 @@ type Mutation {
   declineInvite(input: DeclineInviteInput!): Invite!
   declineMembershipRequest(input: DeclineMembershipRequestInput!): MembershipRequest!
   deleteBugReport(input: DeleteBugReportInput!): ID!
+
+  """Delete a collaboration, and every grant of it."""
+  deleteCollaboration(input: DeleteCollaborationInput!): ID!
   forwardBugReport(input: ForwardBugReportInput!): BugReport!
   issueChildMandateKey(input: IssueChildMandateKeyInput!): IssuedMandateKey!
   issueMandateKey(input: IssueMandateKeyInput!): IssuedMandateKey!
@@ -1393,6 +1432,7 @@ type Mutation {
   resolveBugReport(input: ResolveBugReportInput!): BugReport!
   revokeMandate(input: RevokeMandateInput!): Mandate!
   unresolveBugReport(input: UnresolveBugReportInput!): BugReport!
+  updateCollaboration(input: UpdateCollaborationInput!): Collaboration!
   updateDevice(input: UpdateDeviceInput!): Device!
   updateGroupProfile(input: UpdateGroupProfileInput!): GroupProfile!
   updateMembershipColors(input: UpdateMembershipColorsInput!): Membership!
@@ -1466,7 +1506,9 @@ type Organization {
   roles: [Role!]!
   slug: String!
 
-  """The users that are part of the organization"""
+  """
+  The users that are part of the organization. Only yourself for a guest who was only granted some collaborations.
+  """
   users: [User!]!
 }
 
@@ -1567,6 +1609,10 @@ type Query {
   The clients of the organization other services know by these ids (a token's `client_id` claim), in one query.
   """
   clientsByClientId(clientIds: [ID!]!): [ClientByClientId!]!
+  collaboration(id: ID = null, key: ID = null): Collaboration!
+
+  """The active organization's collaborations (a guest: theirs)."""
+  collaborations(filters: CollaborationFilter, pagination: OffsetPaginationInput): [Collaboration!]!
   device(id: ID!): Device!
 
   """
@@ -1968,14 +2014,13 @@ input ServiceReleaseOrdering @oneOf {
 }
 
 """
-One collaboration a collaboration invite grants: a collaboration of a service instance, with the roles that hold inside it.
+One collaboration a collaboration invite grants, by its key, with the roles that hold inside it.
 """
 type SharedCollaboration {
-  """The collaboration's id in that service."""
-  collaboration: String!
-
-  """The service instance the collaboration lives in."""
-  instance: ID!
+  """
+  The collaboration's key: what every service of the organization names it by.
+  """
+  collaboration: ID!
 
   """
   Identifiers of the organization's roles that hold inside the collaboration. Empty: view only.
@@ -1984,13 +2029,10 @@ type SharedCollaboration {
 }
 
 input SharedCollaborationInput {
-  """The collaboration's id in that service."""
-  collaboration: String!
-
   """
-  The service instance the collaboration lives in (on a hub of the organization): its id, or, when called from an app, the app's own requirement key for it (e.g. 'mikro'), resolved through the app's service mappings.
+  The collaboration's key (`createCollaboration`): one across all of the organization's services.
   """
-  instance: ID!
+  collaboration: ID!
 
   """
   Identifiers of the organization's roles that hold for the guest inside the collaboration. Empty: view only.
@@ -2060,6 +2102,12 @@ type TimeBucket {
 
 input UnresolveBugReportInput {
   id: ID!
+}
+
+input UpdateCollaborationInput {
+  description: String = null
+  id: ID!
+  name: String = null
 }
 
 input UpdateDeviceInput {

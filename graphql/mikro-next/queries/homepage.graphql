@@ -135,16 +135,12 @@ query HomeResults($starts: [LineageRootInput!]!, $down: Int! = 3) {
 }
 
 # What the home page's filter row offers: the organization's members (by sub, the
-# key `RootFilter.owner` takes) and its collaborations, by name only.
+# key `RootFilter.owner` takes). Its collaborations are lok's (core/collaborations).
 query HomeFilterOptions {
   members {
     user {
       sub
     }
-  }
-  collaborations {
-    id
-    name
   }
 }
 

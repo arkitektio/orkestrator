@@ -1,0 +1,18 @@
+# A new collaboration in the active organization: empty until something is put
+# in it on a service (`addToCollaboration` / `shareWorkflow` with its key).
+mutation CreateCollaboration($input: CreateCollaborationInput!) {
+  createCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+
+mutation UpdateCollaboration($input: UpdateCollaborationInput!) {
+  updateCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+
+# Deletes the collaboration and every grant of it: its guests lose it.
+mutation DeleteCollaboration($id: ID!) {
+  deleteCollaboration(input: { id: $id })
+}

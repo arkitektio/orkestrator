@@ -536,6 +536,16 @@ export enum ActionTimestampField {
   CreatedAt = 'CREATED_AT'
 }
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** Represents a compute agent that can execute implementations. */
 export type Agent = {
   __typename?: 'Agent';
@@ -603,7 +613,7 @@ export type Agent = {
   specVersion?: Maybe<Scalars['String']['output']>;
   /** Current and historical states associated with the agent. */
   states: Array<State>;
-  /** The app this agent says controls its lifecycle (e.g. 'plugin_engine'), as stated on its last registration. Self-declared: a hint for pickers (descriptor @rekuest/supervisor), never authority. */
+  /** The app that provisioned this agent's client (e.g. 'plugin_engine'), as lok signed it into the token of its last registration. Null for an agent whose client nobody provisioned. Pickers match it as the descriptor @rekuest/supervisor. */
   supervisor?: Maybe<Scalars['String']['output']>;
   /** Tasks executed by this agent. */
   tasks: Array<Task>;
@@ -800,7 +810,9 @@ export type AgentFilter = {
   /** Filter by name of the agents */
   search?: InputMaybe<Scalars['String']['input']>;
   stateDemands?: InputMaybe<Array<StateDemandInput>>;
-  /** Agents whose self-declared supervisor is this app (e.g. 'plugin_engine'). */
+  /** Agents whose client an app provisioned (true), or nobody (false), as of their last registration. */
+  supervised?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Agents whose client this app provisioned (e.g. 'plugin_engine'), as lok signed it into their token. */
   supervisor?: InputMaybe<Scalars['String']['input']>;
   /** Filter by user ID */
   user?: InputMaybe<Scalars['ID']['input']>;
@@ -1890,6 +1902,76 @@ export type ClientFilter = {
 /** A way to order apps */
 export type ClientOrder =
   { definedAt: Ordering; };
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
+  items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
+};
 
 /** The input for collecting a shelved item in a drawer. */
 export type CollectInput = {
@@ -3535,6 +3617,10 @@ export type ModuleBloksArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several tasks in a collaboration (by its key) at once, each with what it needs to be seen: all of them, or none */
+  addManyToCollaboration: Collaboration;
+  /** Put a task in a collaboration (lok's, by its key), with what it needs to be seen: the action it ran, the tasks it caused as they are now, and the bloks it asked or informed with. Its events and logs are in with it, live. The collaboration's row here is made the first time something is put in */
+  addToCollaboration: Collaboration;
   /** Put an action on your auto list: under your runs an agent that asks for it gets it without a hold. Optionally only when one action asks. Yours alone: it changes nothing for anyone else. */
   allowAction: ActionAllowance;
   /** Assign a task to an agent. */
@@ -3579,6 +3665,8 @@ export type Mutation = {
   deleteAgent: Scalars['ID']['output'];
   /** Delete a blok by ID. */
   deleteBlok: Scalars['Boolean']['output'];
+  /** Take everything rekuest put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete a dashboard by ID. */
   deleteDashboard: Scalars['Boolean']['output'];
   /** Delete a registered implementation. */
@@ -3635,6 +3723,8 @@ export type Mutation = {
   refreshMediaUpload: MediaUploadGrant;
   /** Register a module: the components and operations a UI app can render and evaluate beyond the spec's catalogs, and the catalogs it implements whole (upsert by name in the caller's organization). Bloks (`module`) and definitions (`catalogs`) that name it are validated against it. */
   registerModule: Module;
+  /** Take a task out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** A media upload grant for one asset. Issued for a file the caller's own agent declares (it registered with it), or, to an admin, for a file an agent of the organization names a source for; and only if its size passes the policy. */
   requestAssetUpload: AssetUploadGrant;
   /** Request temporary S3 read credentials for a media file */
@@ -3653,6 +3743,8 @@ export type Mutation = {
   revokeAllowance: Scalars['ID']['output'];
   /** Keep where an agent stands in a space (a room), for everyone: the space a blok's `room` names, made when none has it yet. */
   savePlacement: Placement;
+  /** Put a workflow (a root task of the organization: one someone started, or a schedule or trigger did) in a collaboration, as it is now: the root and every task it caused, with their actions, events and logs. Tasks it causes later are not; `dryRun` only says what would be put in */
+  shareWorkflow: WorkflowShare;
   /** Shelve data into a memory drawer. */
   shelveInMemoryDrawer: MemoryDrawer;
   /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
@@ -3675,6 +3767,18 @@ export type Mutation = {
   updateSchedule: Schedule;
   /** Change a trigger. */
   updateTrigger: Trigger;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -3807,6 +3911,12 @@ export type MutationDeleteAgentArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationDeleteBlokArgs = {
   input: DeleteBlokInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationDeleteCollaborationArgs = {
+  key: Scalars['ID']['input'];
 };
 
 
@@ -3979,6 +4089,12 @@ export type MutationRegisterModuleArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationRequestAssetUploadArgs = {
   input: RequestAssetUploadInput;
 };
@@ -4029,6 +4145,12 @@ export type MutationRevokeAllowanceArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationSavePlacementArgs = {
   input: SavePlacementInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -4496,6 +4618,12 @@ export type Query = {
   checkoutAgent: AgentWithValues;
   /** List all registered clients. */
   clients: Array<Client>;
+  /** Get a single collaboration by its key (lok's): what was put in it here */
+  collaboration: Collaboration;
+  /** List the organization's collaborations that hold tasks here: what a guest granted one sees of rekuest (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
+  /** How many collaborations hold tasks here (a guest: of those granted to them), and how many objects are in them */
+  collaborationsStats: CollaborationStats;
   /** Get dashboard by ID. */
   dashboard: Dashboard;
   /** All dashboards. */
@@ -4624,6 +4752,8 @@ export type Query = {
   structurePackages: Array<StructurePackage>;
   /** All structures: those the org's action ports reference, and those a service of this hub hosts. */
   structures: Array<Structure>;
+  /** The apps that provisioned the organization's agents (e.g. 'plugin_engine'), as lok signed them into their tokens, with how many agents each (narrowed by filters, e.g. connected). */
+  supervisors: Array<Supervisor>;
   /** Fetch task by ID. */
   task: Task;
   /** Get task boundaries. */
@@ -4752,6 +4882,16 @@ export type QueryCheckoutAgentArgs = {
 export type QueryClientsArgs = {
   filters?: InputMaybe<ClientFilter>;
   ordering?: Array<ClientOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -5120,6 +5260,11 @@ export type QueryStructurePackagesArgs = {
 export type QueryStructuresArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QuerySupervisorsArgs = {
+  filters?: InputMaybe<AgentFilter>;
 };
 
 
@@ -5735,6 +5880,27 @@ export type SessionOrder =
   /** When the session started. */
   { startedAt: Ordering; };
 
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
 export type ShelveInMemoryDrawerInput = {
   /** The description of the drawer. This is used to identify the drawer in the system. */
   description?: InputMaybe<Scalars['String']['input']>;
@@ -5950,6 +6116,19 @@ export enum SignalKind {
 export type SignalOrder =
   { occurredAt: Ordering; receivedAt?: never; }
   |  { occurredAt?: never; receivedAt: Ordering; };
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
+};
 
 export type SliderAssignWidget = AssignWidget & {
   __typename?: 'SliderAssignWidget';
@@ -6511,6 +6690,17 @@ export type SubscriptionWatchStateArgs = {
   stateId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+/** An app that provisioned agents of the organization (a plugin engine, a launcher), as lok signed it into their tokens. Its agents are `agents(filters: {supervisor: identifier})`. */
+export type Supervisor = {
+  __typename?: 'Supervisor';
+  /** How many of the organization's agents it provisioned (of those the filters keep). */
+  agentCount: Scalars['Int']['output'];
+  /** How many of those have a live connection now. */
+  connectedCount: Scalars['Int']['output'];
+  /** The app's identifier, as the agents carry it in `supervisor` (e.g. 'plugin_engine'). */
+  identifier: Scalars['String']['output'];
+};
+
 /** Tracks the assignment of an implementation to a specific task. */
 export type Task = {
   __typename?: 'Task';
@@ -6835,10 +7025,16 @@ export type TaskFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Only tasks created before this timestamp */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only workflows someone started (true): root tasks no schedule ran and no trigger or signal fired: what a person would share (`shareWorkflow` takes any root task). False keeps every other task */
+  humanInduced?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by IDs of the tasks */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by the implementation the task is currently mapped to */
   implementation?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the task has finished */
   isDone?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by the direct parent task */
@@ -7550,6 +7746,23 @@ export type WiregramInput = {
   schedules?: InputMaybe<Array<WireScheduleInput>>;
   /** The triggers it wants. */
   triggers?: InputMaybe<Array<WireTriggerInput>>;
+};
+
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
 };
 
 export type _Entity = MediaStore | Session | User;
@@ -9402,6 +9615,13 @@ export type AutoResolveMutation = { __typename?: 'Mutation', autoResolve: (
     & ResolutionFragment
   ) };
 
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
+
 export type CreateShortcutMutationVariables = Exact<{
   input: CreateShortcutInput;
 }>;
@@ -10355,6 +10575,13 @@ export type ListResolutionsQuery = { __typename?: 'Query', resolutions: Array<(
     { __typename?: 'Resolution' }
     & ResolutionFragment
   )> };
+
+export type ShareWorkflowTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ShareWorkflowTaskQuery = { __typename?: 'Query', task: { __typename?: 'Task', id: string, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, root?: { __typename?: 'Task', id: string, createdAt: any, action: { __typename?: 'Action', id: string, name: string } } | null } };
 
 export type ShortcutsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -16374,6 +16601,52 @@ export function useAutoResolveMutation(baseOptions?: ApolloReactHooks.MutationHo
 export type AutoResolveMutationHookResult = ReturnType<typeof useAutoResolveMutation>;
 export type AutoResolveMutationResult = Apollo.MutationResult<AutoResolveMutation>;
 export type AutoResolveMutationOptions = Apollo.BaseMutationOptions<AutoResolveMutation, AutoResolveMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const CreateShortcutDocument = gql`
     mutation CreateShortcut($input: CreateShortcutInput!) {
   createShortcut(input: $input) {
@@ -19955,6 +20228,54 @@ export function useListResolutionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type ListResolutionsQueryHookResult = ReturnType<typeof useListResolutionsQuery>;
 export type ListResolutionsLazyQueryHookResult = ReturnType<typeof useListResolutionsLazyQuery>;
 export type ListResolutionsQueryResult = Apollo.QueryResult<ListResolutionsQuery, ListResolutionsQueryVariables>;
+export const ShareWorkflowTaskDocument = gql`
+    query ShareWorkflowTask($id: ID!) {
+  task(id: $id) {
+    id
+    createdAt
+    action {
+      id
+      name
+    }
+    root {
+      id
+      createdAt
+      action {
+        id
+        name
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useShareWorkflowTaskQuery__
+ *
+ * To run a query within a React component, call `useShareWorkflowTaskQuery` and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowTaskQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useShareWorkflowTaskQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useShareWorkflowTaskQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ShareWorkflowTaskQuery, ShareWorkflowTaskQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ShareWorkflowTaskQuery, ShareWorkflowTaskQueryVariables>(ShareWorkflowTaskDocument, options);
+      }
+export function useShareWorkflowTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ShareWorkflowTaskQuery, ShareWorkflowTaskQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ShareWorkflowTaskQuery, ShareWorkflowTaskQueryVariables>(ShareWorkflowTaskDocument, options);
+        }
+export type ShareWorkflowTaskQueryHookResult = ReturnType<typeof useShareWorkflowTaskQuery>;
+export type ShareWorkflowTaskLazyQueryHookResult = ReturnType<typeof useShareWorkflowTaskLazyQuery>;
+export type ShareWorkflowTaskQueryResult = Apollo.QueryResult<ShareWorkflowTaskQuery, ShareWorkflowTaskQueryVariables>;
 export const ShortcutsDocument = gql`
     query Shortcuts($pagination: OffsetPaginationInput, $filters: ShortcutFilter, $ordering: [ShortcutOrder!]) {
   shortcuts(ordering: $ordering, pagination: $pagination, filters: $filters) {

@@ -1,4 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { LOVEKIT_ACTIONS } from "./actions";
 import { CallAnnouncementIsland } from "./call/CallAnnouncementIsland";
 import { CallAnnouncementsWatcher } from "./call/CallAnnouncementsWatcher";
@@ -21,6 +23,8 @@ export const LOVEKIT_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "lovekit.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./LovekitModule"),
     navLinks: LOVEKIT_NAV_LINKS,
     displays: {

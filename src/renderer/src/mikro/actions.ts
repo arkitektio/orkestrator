@@ -268,13 +268,15 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     execute: async ({ state, dialog }) => {
       const [collaboration] = state.left
       if (!collaboration) throw new Error('Which collaboration?')
+      // Its id is the collaboration's key (`id: key`): lok's share dialog takes that.
       dialog.openDialog('sharecollaboration', { collaboration: collaboration.id }, { size: 'medium' })
     },
   },
+  // The collaboration is lok's: this takes out only what mikro holds of it.
   'delete-collaboration': buildDeleteAction<ModuleServices<"mikro">>({
-    title: 'Delete Collaboration',
+    title: 'Take everything out',
     identifier: '@mikro/collaboration',
-    description: 'Delete the collaboration: whoever it was shared with sees nothing of it any more',
+    description: "Take everything Mikro holds out of the collaboration; the collaboration itself, and what other services hold, stay",
     service: 'mikro',
     typename: 'Collaboration',
     mutation: DeleteCollaborationDocument,

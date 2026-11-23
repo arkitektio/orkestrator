@@ -14,6 +14,7 @@ import { PinRevisionDialog } from "./dialogs/PinRevisionDialog";
 import { RematerializeBlokDialog } from "./dialogs/RematerializeBlokDialog";
 import { ReplyerAssignForm } from "./dialogs/ReplyerAssignForm";
 import { ReportBugDialog } from "./dialogs/ReportBugDialog";
+import { ShareWorkflowDialog } from "./dialogs/ShareWorkflowDialog";
 import { RerunLostDialog } from "./dialogs/RerunLostDialog";
 import {
   CreateAutomationDialog,
@@ -61,6 +62,8 @@ export const REKUEST_DIALOGS = {
   openblok: prefersSize("medium", OpenBlokDialog),
   // a failed task → lok's report form, prefilled
   reportbug: ReportBugDialog,
+  // a root task → everything it made, on every connected service, in one of lok's collaborations
+  shareworkflow: prefersSize("medium", ShareWorkflowDialog),
   // a LOST task that may already have acted → confirm before running again
   rerunlost: RerunLostDialog,
   // an action that answers an alpaka message, started on a fresh room

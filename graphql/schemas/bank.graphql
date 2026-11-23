@@ -72,6 +72,20 @@ type AccountSyncer {
   syncsRemainingToday: Int
 }
 
+"""Objects to put in a collaboration at once: all of them, or none"""
+input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """
+  The collaboration's name, kept here when these are the first things put in
+  """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
+  objects: [CollaborationObjectRef!]!
+}
+
 """How much of the depot one security type is."""
 type Allocation {
   currency: String!
@@ -340,7 +354,15 @@ input BankAccountFilter {
   NOT: BankAccountFilter
   OR: BankAccountFilter
   connection: ID
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   kind: AccountKind
 
   """
@@ -457,7 +479,15 @@ input BankConnectionFilter {
   DISTINCT: Boolean
   NOT: BankConnectionFilter
   OR: BankConnectionFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   needsReauth: Boolean
   provider: ID
 
@@ -547,8 +577,16 @@ input BankProviderFilter {
   DISTINCT: Boolean
   NOT: BankProviderFilter
   OR: BankProviderFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   enabled: Boolean
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   kind: Provider
 
   """
@@ -672,6 +710,14 @@ input BudgetFilter {
   OR: BudgetFilter
   activeIn: Date
   category: ID
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
@@ -837,8 +883,16 @@ input CategoryFilter {
   NOT: CategoryFilter
   OR: CategoryFilter
   base: Boolean
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   hidden: Boolean
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   kind: CategoryKind
 
   """
@@ -1005,6 +1059,87 @@ type Change {
 
   """delta / previous; null when previous is zero."""
   ratio: Float
+}
+
+"""
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
+  """The object's id"""
+  object: ID!
+}
+
+"""An object, by its structure and id"""
+input CollaborationObjectRef {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+How many collaborations the organization has (a guest: theirs), and how much is in them
+"""
+type CollaborationStats {
+  """How many collaborations"""
+  count: Int!
+
+  """How many objects are in them altogether, brought along ones included"""
+  itemCount: Int!
 }
 
 """What a view compares its window with."""
@@ -1716,7 +1851,15 @@ input MerchantFilter {
   NOT: MerchantFilter
   OR: MerchantFilter
   category: ID
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Only merchants with a located store within `radiusMeters` of a point, nearest first (`distanceMeters` on each).
@@ -2067,8 +2210,18 @@ type MoneyTotals {
 }
 
 type Mutation {
+  """
+  Put several accounts or categories in a collaboration at once, each with what it needs to be read; all or none.
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
   """Teach a merchant another spelling."""
   addMerchantAlias(merchant: ID!, text: String!): MerchantAlias!
+
+  """
+  Put an account in a collaboration (lok's, by its key) for its guests to read, with its transactions, balances, holdings and recurring payments (live), and the categories they are in (as they are now). Never a provider, a connection, an import, a merchant or a budget. The first thing put in makes bank's row of the collaboration.
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
 
   """Write a previewed import into the accounts (idempotent)."""
   applyStatementImport(input: ApplyStatementImportInput!): StatementImport!
@@ -2136,6 +2289,11 @@ type Mutation {
   """Delete a categorization rule."""
   deleteCategoryRule(apply: Boolean! = true, id: ID!): ID!
 
+  """
+  Take everything bank holds in a collaboration (by its key) out of it: its guests read none of it here any more. lok's collaboration and its grants stay.
+  """
+  deleteCollaboration(key: ID!): ID!
+
   """Delete a merchant; its transactions are categorized again."""
   deleteMerchant(id: ID!): ID!
 
@@ -2182,6 +2340,11 @@ type Mutation {
   """Fetch and store daily closes from the enabled sources."""
   refreshSecurityPrices(dateFrom: Date = null, dateTo: Date = null, isins: [String!] = null, sources: [PriceSource!] = null): [PriceRefresh!]!
 
+  """
+  Take an account or a category out of a collaboration, with what it brought that nothing else there needs.
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
+
   """Forget a merchant spelling."""
   removeMerchantAlias(id: ID!): ID!
 
@@ -2223,6 +2386,11 @@ type Mutation {
 
   """Set or clear a transaction's note."""
   setTransactionNote(input: SetTransactionNoteInput!): Transaction!
+
+  """
+  Put what a workflow (its root task) created in bank in a collaboration, as it is now: the categories it made, and the recurring payments of accounts already shared. Accounts and transactions come from a bank or an import and record no workflow: they are reported unknown. `dryRun` only says what would be put in.
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
 
   """Start a login through a provider; returns the auth session."""
   startLink(input: StartLinkInput!): AuthSession!
@@ -2564,6 +2732,19 @@ type Query {
   """The organization's categorization rules."""
   categoryRules(filters: CategoryRuleFilter, pagination: OffsetPaginationInput): [CategoryRule!]!
 
+  """What bank holds in a collaboration, by its key (lok's)."""
+  collaboration(key: ID!): Collaboration!
+
+  """
+  The organization's collaborations bank holds accounts in (a guest: the ones granted to them).
+  """
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
+
+  """
+  Count the collaborations `collaborations` lists, and the objects in them.
+  """
+  collaborationsStats: CollaborationStats!
+
   """An account's expected balance over the coming days."""
   forecast(account: ID!, horizonDays: Int! = 90, includeBudgets: Boolean! = false, includeDetected: Boolean! = false): [ForecastPoint!]!
 
@@ -2790,6 +2971,14 @@ input RecurringPaymentFilter {
   OR: RecurringPaymentFilter
   accounts: [ID!]
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
+
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
   """
@@ -2919,6 +3108,51 @@ type Share {
   share: Float!
 }
 
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
+}
+
 """Start a login through one of the organization's providers."""
 input StartLinkInput {
   """For a kind with institutions: the bank's ISO country code, e.g. AT."""
@@ -3013,7 +3247,15 @@ input StatementImportFilter {
   DISTINCT: Boolean
   NOT: StatementImportFilter
   OR: StatementImportFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
@@ -3209,10 +3451,18 @@ input TransactionFilter {
   amountMin: Decimal
   categories: [ID!]
   categorySource: CategorySource
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   dateFrom: Date
   dateTo: Date
   direction: Direction
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   includeChildCategories: Boolean
   isTransfer: Boolean
   kind: TransactionKind
@@ -3507,6 +3757,33 @@ type WindowInfo {
   previousEnd: Date
   previousStart: Date
   start: Date!
+}
+
+"""
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
 }
 
 scalar _Any

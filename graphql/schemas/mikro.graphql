@@ -27,13 +27,17 @@ input AcquisitionWindowInput {
   start: DateTime!
 }
 
-"""Objects to put in a collaboration together"""
+"""Objects to put in a collaboration at once: all of them, or none"""
 input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
   collaboration: ID!
 
   """
-  What to put in, in order: a whole before its parts. Each brings what it needs to be seen; one that is already in stays as it is
+  The collaboration's name, kept here when these are the first things put in
   """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
   objects: [CollaborationObjectRef!]!
 }
 
@@ -194,10 +198,18 @@ input AnimationFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -530,6 +542,9 @@ input AnnotationCollectionFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter by the dataset the shapes are drawn over, following the derivation edge
   """
@@ -544,6 +559,11 @@ input AnnotationCollectionFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -649,6 +669,9 @@ input AnnotationFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter by the dataset the annotations are drawn over, following the collection's derivation edge
   """
@@ -658,6 +681,11 @@ input AnnotationFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to annotations whose intrinsic bounding box overlaps this box (GiST-backed). Only meaningful within one frame: pass `collection` or `coordinateSystem` alongside, and bound every axis of that frame -- a box of lower rank is refused rather than zero-filled on the missing coordinates
@@ -1231,6 +1259,9 @@ input ArrayDatasetFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the datasets computed from this one -- the deconvolutions, segmentations and projections that named a space of it as their parent. Every child, not just the ones it places: a fusion that named it second is listed, and so is a child whose derivation is UNMAPPABLE, since it still came from here
   """
@@ -1276,6 +1307,11 @@ input ArrayDatasetFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter by whether the dataset carries a resolution pyramid: true for the multiscale ones, false for those with a single level
@@ -2361,10 +2397,18 @@ input ChartFilter {
 
   """Filter for items created before this datetime"""
   createdBefore: DateTime
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """
@@ -2606,6 +2650,11 @@ type Collaboration {
   What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
   """
   items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
   name: String!
 }
 
@@ -2630,18 +2679,24 @@ type CollaborationItem {
 
 """An object to put in, or take out of, a collaboration"""
 input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
   collaboration: ID!
 
   """The structure the object is known by: @mikro/scene"""
   identifier: String!
 
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
   """The object's id"""
   object: ID!
 }
 
-"""One object of a batch, by the structure it is known by and its id"""
+"""An object, by its structure and id"""
 input CollaborationObjectRef {
-  """The structure the object is known by: @mikro/arraydataset"""
+  """The structure the object is known by: @mikro/scene"""
   identifier: String!
 
   """The object's id"""
@@ -3124,11 +3179,19 @@ input CoordinateAnchorFilter {
   DISTINCT: Boolean
   NOT: CoordinateAnchorFilter
   OR: CoordinateAnchorFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   dataset: IDFilterLookup
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
@@ -3291,6 +3354,9 @@ input CoordinateSystemFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the spaces this dataset's data lives in: its own grid, and the grids of its pyramid levels and lenses
   """
@@ -3299,6 +3365,11 @@ input CoordinateSystemFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -3554,12 +3625,6 @@ input CreateChartInput {
   coordinateSystem: ID = null
   description: String = null
   layout: ChartLayout! = SHARED
-  name: String!
-}
-
-"""A new collaboration"""
-input CreateCollaborationInput {
-  description: String = null
   name: String!
 }
 
@@ -5304,6 +5369,9 @@ input FileFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the files written out of this container -- the OME-TIFF a dataset was exported to. The opposite direction from `sourceOf`
   """
@@ -5333,6 +5401,11 @@ input FileFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the files linked to this container in *either* direction: read into it or written out of it. Use `sourceOf` or `exportedFrom` when the direction matters
@@ -5517,6 +5590,9 @@ input FileLinkFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   direction: FileLinkDirection
 
   """Filter by the file side of the link"""
@@ -5525,6 +5601,11 @@ input FileLinkFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by the creator's subject ID"""
   owner: ID
@@ -5821,12 +5902,20 @@ input FixtureFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """Filter by the folder this fixture is filed in"""
   folder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -6136,11 +6225,19 @@ input FolderFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   description: StrFilterLookup
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   isDefault: Boolean
   name: StrFilterLookup
 
@@ -6427,10 +6524,18 @@ input GridFilter {
 
   """Filter for items created before this datetime"""
   createdBefore: DateTime
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """
@@ -7540,10 +7645,18 @@ input LayerFilter {
   NOT: LayerFilter
   OR: LayerFilter
   blending: BlendingChoices
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   kind: LayerKindChoices
 
   """Filter image layers by the lens they render"""
@@ -7892,6 +8005,9 @@ input LensFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """Filter to the array lenses over this dataset"""
   dataset: ID
 
@@ -7906,6 +8022,11 @@ input LensFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by the kind of container the lens selects over"""
   kind: LensKind
@@ -8693,6 +8814,9 @@ input MeshCollectionFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter by the dataset the meshes were extracted from, following the derivation edge
   """
@@ -8707,6 +8831,11 @@ input MeshCollectionFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -9121,10 +9250,18 @@ input MetricFilter {
   DISTINCT: Boolean
   NOT: MetricFilter
   OR: MetricFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter to the metrics correcting nothing, or only to corrections"""
   isCorrection: Boolean
@@ -9267,7 +9404,7 @@ type Mutation {
   addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
 
   """
-  Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw
+  Put an object in a collaboration (lok's, by its key), with what it needs to be seen: a scene brings the data its layers draw. The first thing put in makes mikro's row of the collaboration
   """
   addToCollaboration(input: CollaborationObjectInput!): Collaboration!
 
@@ -9341,9 +9478,6 @@ type Mutation {
   Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges
   """
   createChartFromCoordinateSystem(input: CreateChartFromCoordinateSystemInput!): Chart!
-
-  """Create an empty collaboration, to put objects in and grant a guest"""
-  createCollaboration(input: CreateCollaborationInput!): Collaboration!
 
   """
   Attach metadata spokes to an array, table or sparse dataset after ingest: a microscope state, OME metadata, a value histogram, a channel label or a light path, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced
@@ -9575,9 +9709,9 @@ type Mutation {
   deleteChartLayer(input: DeleteChartLayerInput!): ID!
 
   """
-  Delete a collaboration: whoever was granted it sees nothing of it any more
+  Take everything mikro holds in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration and its grants stay
   """
-  deleteCollaboration(id: ID!): ID!
+  deleteCollaboration(key: ID!): ID!
 
   """
   Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly
@@ -9909,6 +10043,11 @@ type Mutation {
   """
   setPositionLabel(input: SetPositionLabelInput!): Lens!
 
+  """
+  Put what a workflow (its root task) created in mikro in a collaboration, as it is now: a whole goes in, its parts come along, and a part of something made before the workflow and not shared is left out and reported. `dryRun` only says what would be. What the workflow makes later is not in it: share it again
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
+
   """Delete a file link"""
   unlinkFile(input: UnlinkFileInput!): ID!
 
@@ -10133,6 +10272,9 @@ input NetworkCollectionFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter by the dataset the networkes were extracted from, following the derivation edge
   """
@@ -10147,6 +10289,11 @@ input NetworkCollectionFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -11868,8 +12015,8 @@ type Query {
   """
   childrenCounts(filters: FolderChildrenFilter = null, parent: ID!): FolderChildCounts!
 
-  """Get a single collaboration by ID"""
-  collaboration(id: ID!): Collaboration!
+  """Get what mikro holds in a collaboration, by its key (lok's)"""
+  collaboration(key: ID!): Collaboration!
 
   """
   List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
@@ -12447,7 +12594,7 @@ input RootFilter {
   acquiredBefore: DateTime = null
 
   """
-  Only what was put in this collaboration. A file counts when it, or a series converted out of it, was put there
+  Only what is in this collaboration, by its key: put in, or part of what was -- what `inCollaboration` lists. A file counts when it, or a series converted out of it, is in it
   """
   collaboration: ID = null
 
@@ -12867,6 +13014,9 @@ input SceneFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the scene this lens nominates as its default -- a container's whole lens for the container. A choice someone made, not the set of scenes that show the lens; for that, ask the lens' `scenes`
   """
@@ -12875,6 +13025,11 @@ input SceneFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the scenes with a layer drawing through this lens or any selection within it, of any kind: the same set the lens' own `scenes` answers
@@ -12965,10 +13120,18 @@ input SceneSnapshotFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -13266,6 +13429,32 @@ input SettingInput {
   text: String = null
 }
 
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
 """
 A blocker: open or closed. An AOTF or EOM used purely as a gate is one of these
 """
@@ -13306,6 +13495,25 @@ input ShutterElementInput {
   pose: Pose3DInput = null
   serialNumber: String = null
   shutterType: String = null
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
 }
 
 """A slice along a named axis, with optional start, stop and step"""
@@ -13585,6 +13793,9 @@ input SparseDatasetFilter {
 
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   description: StrFilterLookup
 
   """Filter by the folder this sparse dataset is filed in"""
@@ -13593,6 +13804,11 @@ input SparseDatasetFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to datasets holding a layout indexed on this axis -- the ones that can answer about it in one contiguous read rather than by scanning
@@ -14139,6 +14355,9 @@ input TableDatasetFilter {
   """Filter by the rekuest task id the item was created through"""
   createdThroughTask: String
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter by the dataset the table was computed from, following its derivation edge
   """
@@ -14162,6 +14381,11 @@ input TableDatasetFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
@@ -14871,10 +15095,18 @@ input TransformationFilter {
 
   """Filter for items created before this datetime"""
   createdBefore: DateTime
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by the coordinate system this transformation maps from"""
   input: ID
@@ -15940,6 +16172,33 @@ input WindowInput {
   axis: String!
   max: Float = null
   min: Float = null
+}
+
+"""
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
 }
 
 """Temporary S3 credentials for reading a Zarr store."""

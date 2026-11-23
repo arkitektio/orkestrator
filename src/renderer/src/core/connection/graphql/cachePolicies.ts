@@ -1,4 +1,4 @@
-import type { FieldPolicy, TypePolicies } from "@apollo/client";
+import type { FieldPolicy, StoreObject, TypePolicies } from "@apollo/client";
 import {
   buildOffsetPaginationPolicies,
   mergeOffsetPage,
@@ -33,6 +33,17 @@ export const cappedOffsetPaginationPolicy = (keyArgs: readonly string[]): FieldP
   ...offsetPaginationPolicy(keyArgs),
   merge: (existing, incoming, { args }) => mergeOffsetPage(existing, incoming ?? [], cappedArgs(args as PageArgs)),
 });
+
+/**
+ * A collaboration is named by its key everywhere: one across all of the organization's
+ * services, and what every lookup takes. lok and mikro select it as `id: key` (lok keeps its
+ * own id as `lokId`), so the stored `key` names the entry; a bare `{ __typename, id }` (an
+ * evict by a smart object's id, which is the key) lands on the same one.
+ */
+export const collaborationKey = (object: Readonly<StoreObject>): string | false => {
+  const key = object.key ?? object.id;
+  return typeof key === "string" && key.length > 0 ? `Collaboration:${key}` : false;
+};
 
 /** `buildOffsetPaginationPolicies` with `cappedOffsetPaginationPolicy`. */
 export const buildCappedOffsetPaginationPolicies = (fields: PaginatedFieldMap): TypePolicies => ({
@@ -195,6 +206,7 @@ export const LOK_PAGINATED_FIELDS: PaginatedFieldMap = {
   apps: ["filters", "ordering"],
   bugReports: ["filters", "ordering"],
   clients: ["filters", "ordering"],
+  collaborations: ["filters"],
   deviceGroups: ["filters", "ordering"],
   devices: ["filters", "ordering"],
   groups: ["filters", "ordering"],
@@ -316,6 +328,7 @@ const lokPagination = buildCappedOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
  */
 export const LOK_TYPE_POLICIES: TypePolicies = {
   ...lokPagination,
+  Collaboration: { keyFields: collaborationKey },
   // The Team page pages one organization's members by role, a page at a time
   // ("Show more" fetches the next one): the same offset window as a root list.
   Organization: {
@@ -347,6 +360,7 @@ export const MIKRO_TYPE_POLICIES: TypePolicies = {
   // share one into a single `RootNode`, listing it twice. `key` is
   // `<kind>:<id>` and unique.
   RootNode: { keyFields: ["key"] },
+  Collaboration: { keyFields: collaborationKey },
 };
 export const REKUEST_TYPE_POLICIES: TypePolicies = {
   ...buildOffsetPaginationPolicies(REKUEST_PAGINATED_FIELDS),

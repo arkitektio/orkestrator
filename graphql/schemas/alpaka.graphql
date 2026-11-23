@@ -8,6 +8,20 @@ input AddDocumentsToCollectionInput {
   documents: [DocumentInput!]!
 }
 
+"""Objects to put in a collaboration at once: all of them, or none"""
+input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """
+  The collaboration's name, kept here when these are the first things put in
+  """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
+  objects: [CollaborationObjectRef!]!
+}
+
 """A participant in a room"""
 type Agent {
   client: Client!
@@ -238,7 +252,15 @@ input ChromaCollectionFilter {
   DISTINCT: Boolean
   NOT: ChromaCollectionFilter
   OR: ChromaCollectionFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
@@ -286,8 +308,20 @@ type Collaboration {
   description: String
   id: ID!
 
-  """What is in the collaboration; what is part of these is in it too"""
-  items: [CollaborationItem!]!
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
   name: String!
 }
 
@@ -312,8 +346,23 @@ type CollaborationItem {
 
 """An object to put in, or take out of, a collaboration"""
 input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
   collaboration: ID!
 
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
+  """The object's id"""
+  object: ID!
+}
+
+"""An object, by its structure and id"""
+input CollaborationObjectRef {
   """The structure the object is known by: @mikro/scene"""
   identifier: String!
 
@@ -329,12 +378,6 @@ input CreateBudgetInput {
   model: ID = null
   period: BudgetPeriod! = MONTH
   user: ID = null
-}
-
-"""A new collaboration"""
-input CreateCollaborationInput {
-  description: String = null
-  name: String!
 }
 
 """The room to create"""
@@ -579,8 +622,16 @@ input LLMModelFilter {
   DISTINCT: Boolean
   NOT: LLMModelFilter
   OR: LLMModelFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   features: [FeatureType!]
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
   inputModalities: [Modality!]
   outputModalities: [Modality!]
   provider: ID
@@ -708,7 +759,15 @@ input MessageFilter {
   DISTINCT: Boolean
   NOT: MessageFilter
   OR: MessageFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
@@ -735,7 +794,12 @@ type Mutation {
   addDocumentsToCollection(input: AddDocumentsToCollectionInput!): [Document!]!
 
   """
-  Put a room or a message in a collaboration, with what it needs to be seen: a room comes with its agents and messages
+  Put several rooms or messages in a collaboration (by its key) at once, a room before its messages, each with what it needs to be seen: all of them, or none
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
+  """
+  Put a room or a message in a collaboration (lok's, by its key), with what it needs to be seen: a room comes with its agents and messages. The collaboration's row here is made the first time something is put in
   """
   addToCollaboration(input: CollaborationObjectInput!): Collaboration!
 
@@ -751,9 +815,6 @@ type Mutation {
   Cap this organization's LLM consumption, optionally for one user and/or model
   """
   createBudget(input: CreateBudgetInput!): Budget!
-
-  """Create an empty collaboration, to put rooms in and grant a guest"""
-  createCollaboration(input: CreateCollaborationInput!): Collaboration!
 
   """Create a searchable collection of documents"""
   createCollection(input: ChromaCollectionInput!): ChromaCollection!
@@ -773,9 +834,9 @@ type Mutation {
   deleteBudget(input: DeleteBudgetInput!): ID!
 
   """
-  Delete a collaboration: whoever was granted it sees nothing of it any more
+  Take everything alpaka put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay
   """
-  deleteCollaboration(id: ID!): ID!
+  deleteCollaboration(key: ID!): ID!
 
   """Delete a collection and its documents"""
   deleteCollection(input: DeleteCollectionInput!): ID!
@@ -820,6 +881,11 @@ type Mutation {
 
   """Post a complete message into a room"""
   send(input: SendMessageInput!): Message!
+
+  """
+  Put what a workflow (its root task) created in alpaka in a collaboration, as it is now: the rooms it opened, with their messages. A message posted into a room made before the workflow, and not shared, is left out and reported; providers, models and collections never go in. `dryRun` only says what would be put in
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
 
   """
   Open a message to stream text into. Only the starting agent (same user and client) can append to or finish it.
@@ -925,7 +991,15 @@ input ProviderFilter {
   DISTINCT: Boolean
   NOT: ProviderFilter
   OR: ProviderFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
@@ -1006,13 +1080,13 @@ type Query {
   """List this organization's Chroma collections"""
   chromaCollections(filters: ChromaCollectionFilter, ordering: [ChromaCollectionOrder!]! = [], pagination: OffsetPaginationInput): [ChromaCollection!]!
 
-  """Get a single collaboration by ID"""
-  collaboration(id: ID!): Collaboration!
+  """Get a single collaboration by its key (lok's): what was put in it here"""
+  collaboration(key: ID!): Collaboration!
 
   """
   List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
   """
-  collaborations: [Collaboration!]!
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
 
   """The model the caller uses by default for one kind of task, if any"""
   defaultModelFor(kind: DefaultKind!): LLMModel
@@ -1183,7 +1257,15 @@ input RoomFilter {
   DISTINCT: Boolean
   NOT: RoomFilter
   OR: RoomFilter
+
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
@@ -1278,6 +1360,51 @@ input SendMessageInput {
   parent: ID = null
   room: ID!
   text: String!
+}
+
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
 }
 
 """Open a message that text will be streamed into"""
@@ -1526,6 +1653,33 @@ type User {
 
   """The user's IANA time zone, if the issuer sends one."""
   zoneinfo: String
+}
+
+"""
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
 }
 
 scalar _Any

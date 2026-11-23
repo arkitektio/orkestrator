@@ -7,6 +7,13 @@ import {
   type CreateBugReportMutation,
   type CreateBugReportMutationVariables,
   CollaborationLinksDocument,
+  CollaborationsDocument,
+  type CollaborationsQuery,
+  type CollaborationsQueryVariables,
+  type CollaborationFragment,
+  CreateCollaborationDocument,
+  type CreateCollaborationMutation,
+  type CreateCollaborationMutationVariables,
   type CollaborationLinksQuery,
   type CollaborationLinksQueryVariables,
   type CollaborationLinkFragment,
@@ -181,7 +188,7 @@ const stringList = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 
 /** A link as the share dialog reads it: what it grants in one collaboration, and how much of it is used. */
-const asLink = (invite: CollaborationLinkFragment, instance: string, collaboration: string): JSONObject => ({
+const asLink = (invite: CollaborationLinkFragment, collaboration: string): JSONObject => ({
   id: invite.id,
   inviteUrl: invite.inviteUrl,
   expiresAt: invite.expiresAt ?? null,
@@ -190,26 +197,26 @@ const asLink = (invite: CollaborationLinkFragment, instance: string, collaborati
   mesh: invite.mesh,
   valid: invite.valid,
   roles:
-    invite.collaborations?.find((entry) => entry.instance === instance && entry.collaboration === collaboration)?.roles ?? [],
+    invite.collaborations?.find((entry) => entry.collaboration === collaboration)?.roles ?? [],
 });
 
 /**
- * `lok.shareCollaboration`: a link (a collaboration invite) that grants one collaboration of a
- * service instance to whoever opens it and signs in, with `roles` holding only inside it. Args
- * `{ instance, collaboration, roles?, expiresInDays? (null: never), maxUses? (null: anyone),
- * allowMesh? }`; answers the link, as `lok.collaborationLinks` lists it.
+ * `lok.shareCollaboration`: a link (a collaboration invite) that grants one collaboration (by
+ * its key, the same on every service of the organization) to whoever opens it and signs in,
+ * with `roles` holding only inside it. Args `{ collaboration, roles?, expiresInDays? (null:
+ * never), maxUses? (null: anyone), allowMesh? }`; answers the link, as `lok.collaborationLinks`
+ * lists it.
  */
 const shareCollaboration: OperationHandler = {
   service: "lok",
   run: async (client, args: JSONObject) => {
-    const instance = optionalString(args.instance);
     const collaboration = optionalString(args.collaboration);
-    if (!instance || !collaboration) throw new Error("Which collaboration, of which instance?");
+    if (!collaboration) throw new Error("Which collaboration?");
     const result = await client.mutate<ShareCollaborationMutation, ShareCollaborationMutationVariables>({
       mutation: ShareCollaborationDocument,
       variables: {
         input: {
-          collaborations: [{ instance, collaboration, roles: stringList(args.roles) }],
+          collaborations: [{ collaboration, roles: stringList(args.roles) }],
           expiresInDays: args.expiresInDays === null ? null : optionalInt(args.expiresInDays),
           maxUses: optionalInt(args.maxUses) ?? null,
           allowMesh: args.allowMesh !== false,
@@ -218,27 +225,77 @@ const shareCollaboration: OperationHandler = {
     });
     const invite = result.data?.createInvite;
     if (!invite) throw new Error("lok did not make the link");
-    return asLink(invite, instance, collaboration);
+    return asLink(invite, collaboration);
   },
 };
 
 /**
  * `lok.collaborationLinks`: the links the signed-in user may see (their own, or all as an admin)
- * that grant one collaboration of a service instance. Args `{ instance, collaboration }`;
- * answers a list of links.
+ * that grant one collaboration. Args `{ collaboration }` (its key); answers a list of links.
  */
 const collaborationLinks: OperationHandler = {
   service: "lok",
   run: async (client, args: JSONObject) => {
-    const instance = optionalString(args.instance);
     const collaboration = optionalString(args.collaboration);
-    if (!instance || !collaboration) throw new Error("Which collaboration, of which instance?");
+    if (!collaboration) throw new Error("Which collaboration?");
     const result = await client.query<CollaborationLinksQuery, CollaborationLinksQueryVariables>({
       query: CollaborationLinksDocument,
-      variables: { collaboration: { instance, collaboration } },
+      variables: { collaboration },
       fetchPolicy: "network-only",
     });
-    return result.data.invites.map((invite) => asLink(invite, instance, collaboration));
+    return result.data.invites.map((invite) => asLink(invite, collaboration));
+  },
+};
+
+/** A collaboration as other modules read it (`core/collaborations`): its key names it everywhere. */
+const asCollaboration = (collaboration: CollaborationFragment): JSONObject => ({
+  id: collaboration.lokId,
+  key: collaboration.key,
+  name: collaboration.name,
+  description: collaboration.description ?? null,
+  createdAt: collaboration.createdAt,
+});
+
+/**
+ * `lok.collaborations`: the active organization's collaborations (a guest: their own), newest
+ * first as lok answers them. Args `{ search?, keys?, limit? }`; answers a list of
+ * `{ id, key, name, description, createdAt }`.
+ */
+const collaborations: OperationHandler = {
+  service: "lok",
+  run: async (client, args: JSONObject) => {
+    const search = optionalString(args.search);
+    const keys = stringList(args.keys);
+    const result = await client.query<CollaborationsQuery, CollaborationsQueryVariables>({
+      query: CollaborationsDocument,
+      variables: {
+        filters: search || keys.length ? { ...(search ? { search } : {}), ...(keys.length ? { keys } : {}) } : undefined,
+        pagination: { offset: 0, limit: Math.min(optionalInt(args.limit) ?? SERVER_PAGE_CAP, SERVER_PAGE_CAP) },
+      },
+      fetchPolicy: "network-only",
+    });
+    return result.data.collaborations.map(asCollaboration);
+  },
+};
+
+/**
+ * `lok.createCollaboration`: a new, empty collaboration in the active organization. Args
+ * `{ name, description? }`; answers it as `lok.collaborations` lists it. Services make their
+ * row of it the first time something is put in it under its key.
+ */
+const createCollaboration: OperationHandler = {
+  service: "lok",
+  run: async (client, args: JSONObject) => {
+    const name = optionalString(typeof args.name === "string" ? args.name.trim() : undefined);
+    if (!name) throw new Error("A collaboration needs a name");
+    const result = await client.mutate<CreateCollaborationMutation, CreateCollaborationMutationVariables>({
+      mutation: CreateCollaborationDocument,
+      variables: { input: { name, description: optionalString(args.description) ?? null } },
+      refetchQueries: [CollaborationsDocument],
+    });
+    const created = result.data?.createCollaboration;
+    if (!created) throw new Error("lok did not create the collaboration");
+    return asCollaboration(created);
   },
 };
 
@@ -297,6 +354,8 @@ export const LOK_OPERATIONS: Record<string, OperationHandler> = {
   "lok.fileBugReport": fileBugReport,
   "lok.shareCollaboration": shareCollaboration,
   "lok.collaborationLinks": collaborationLinks,
+  "lok.collaborations": collaborations,
+  "lok.createCollaboration": createCollaboration,
   "lok.revokeLink": revokeLink,
   "lok.createMandate": createMandate,
   "lok.revokeMandate": revokeMandate,

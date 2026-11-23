@@ -1,5 +1,8 @@
+# A collaboration is lok's: one key across all of the organization's services. mikro's row
+# of it is made the first time something is put in, and every lookup is by that key, so the
+# client names it by the key (`id: key`): its route, its smart object and its cache entry.
 fragment ListCollaboration on Collaboration {
-  id
+  id: key
   name
   description
   createdAt

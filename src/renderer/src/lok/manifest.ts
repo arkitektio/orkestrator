@@ -26,6 +26,7 @@ export const manifest: ModuleManifest = {
     { identifier: "@lok/mapping", name: "Mapping", datum: false, path: "mappings/:id", description: "Which service instance an app reaches under which key." },
     { identifier: "@lok/composition", name: "Composition", datum: false, path: "composition/:id", description: "A server's composition: its services, their instances and how apps reach them." },
     { identifier: "@lok/mandate", name: "Mandate", datum: false, path: "mandates/:id", description: "Apps allowed to act as you: each lets a deployer start one exact app version signed in as you, and revoking it signs every running instance out." },
+    { identifier: "@lok/collaboration", name: "Collaboration", datum: false, path: "collaborations/:id", description: "What a guest of your organization is let in to: one collaboration across every service, each holding what you put in it there. Share it by link; whoever accepts sees nothing else." },
     { identifier: "@lok/bugreport", name: "Bug Report", datum: false, path: "bugreports/:id", description: "What people reported from inside the app: the error, the steps before it, and what the app recorded." },
   ],
 };

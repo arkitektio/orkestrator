@@ -112,7 +112,7 @@ import { scaffoldAgentsBlok } from './lib/agentBlokScaffold'
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Unplug, Blocks, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Unplug, Blocks, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, Share2, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { REKUEST_ADMIN } from './roles'
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
@@ -1004,6 +1004,16 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       await services.rekuest.client.refetchQueries({ include: [DetailTaskDocument] })
     },
     collections: ['io'],
+  },
+  'rekuest-share-workflow': {
+    title: 'Share workflow',
+    description:
+      'Put everything this workflow made, on every service, in a collaboration: see what it would share first',
+    icon: Share2,
+    conditions: only('@rekuest/task'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('shareworkflow', { task: selected(state, '@rekuest/task') })
+    },
   },
   'rekuest-pause-resume-task': {
     title: 'Pause / Resume',

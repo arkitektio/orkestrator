@@ -1,4 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { BANK_ACTIONS } from "./actions";
 import { BANK_AUTH_FLOW } from "./authFlow";
 import { BANK_DIALOGS } from "./dialogRegistry";
@@ -15,6 +17,8 @@ export const BANK_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "bank.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./BankModule"),
     navLinks: BANK_NAV_LINKS,
     displays: {

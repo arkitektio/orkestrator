@@ -1,4 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { LOKATE_ACTIONS } from "./actions";
 import { LOKATE_DIALOGS } from "./dialogRegistry";
 import { PlaceDisplay } from "./displays/PlaceDisplay";
@@ -13,6 +15,8 @@ export const LOKATE_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "lokate.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./LokateModule"),
     navLinks: LOKATE_NAV_LINKS,
     displays: {

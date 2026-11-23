@@ -33,6 +33,16 @@ export type AddDocumentsToCollectionInput = {
   documents: Array<DocumentInput>;
 };
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** A participant in a room */
 export type Agent = {
   __typename?: 'Agent';
@@ -237,7 +247,11 @@ export type ChromaCollectionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ChromaCollectionFilter>;
   OR?: InputMaybe<ChromaCollectionFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name: a case-insensitive substring, or semantic similarity of the query to the collection's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -277,9 +291,26 @@ export type Collaboration = {
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  /** What is in the collaboration; what is part of these is in it too */
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
   items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 /** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
@@ -297,7 +328,18 @@ export type CollaborationItem = {
 
 /** An object to put in, or take out of, a collaboration */
 export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
   collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
   /** The structure the object is known by: @mikro/scene */
   identifier: Scalars['String']['input'];
   /** The object's id */
@@ -312,12 +354,6 @@ export type CreateBudgetInput = {
   model?: InputMaybe<Scalars['ID']['input']>;
   period?: BudgetPeriod;
   user?: InputMaybe<Scalars['ID']['input']>;
-};
-
-/** A new collaboration */
-export type CreateCollaborationInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
 };
 
 /** The room to create */
@@ -538,8 +574,12 @@ export type LlmModelFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<LlmModelFilter>;
   OR?: InputMaybe<LlmModelFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   features?: InputMaybe<Array<FeatureType>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   inputModalities?: InputMaybe<Array<Modality>>;
   outputModalities?: InputMaybe<Array<Modality>>;
   provider?: InputMaybe<Scalars['ID']['input']>;
@@ -663,7 +703,11 @@ export type MessageFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<MessageFilter>;
   OR?: InputMaybe<MessageFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   search?: InputMaybe<Scalars['String']['input']>;
@@ -685,7 +729,9 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Embed documents and add them to a collection */
   addDocumentsToCollection: Array<Document>;
-  /** Put a room or a message in a collaboration, with what it needs to be seen: a room comes with its agents and messages */
+  /** Put several rooms or messages in a collaboration (by its key) at once, a room before its messages, each with what it needs to be seen: all of them, or none */
+  addManyToCollaboration: Collaboration;
+  /** Put a room or a message in a collaboration (lok's, by its key), with what it needs to be seen: a room comes with its agents and messages. The collaboration's row here is made the first time something is put in */
   addToCollaboration: Collaboration;
   /** Append a delta to a streaming message. Batch deltas (every ~100-250 ms or ~30 characters) and await each call before sending the next, so they arrive in order. */
   appendMessage: Message;
@@ -693,8 +739,6 @@ export type Mutation = {
   chat: ChatResponse;
   /** Cap this organization's LLM consumption, optionally for one user and/or model */
   createBudget: Budget;
-  /** Create an empty collaboration, to put rooms in and grant a guest */
-  createCollaboration: Collaboration;
   /** Create a searchable collection of documents */
   createCollection: ChromaCollection;
   /** Configure a new LLM provider and list the models it offers */
@@ -705,7 +749,7 @@ export type Mutation = {
   decide: Decision;
   /** Remove a budget */
   deleteBudget: Scalars['ID']['output'];
-  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  /** Take everything alpaka put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay */
   deleteCollaboration: Scalars['ID']['output'];
   /** Delete a collection and its documents */
   deleteCollection: Scalars['ID']['output'];
@@ -731,6 +775,8 @@ export type Mutation = {
   removeFromCollaboration: Collaboration;
   /** Post a complete message into a room */
   send: Message;
+  /** Put what a workflow (its root task) created in alpaka in a collaboration, as it is now: the rooms it opened, with their messages. A message posted into a room made before the workflow, and not shared, is left out and reported; providers, models and collections never go in. `dryRun` only says what would be put in */
+  shareWorkflow: WorkflowShare;
   /** Open a message to stream text into. Only the starting agent (same user and client) can append to or finish it. */
   startMessage: Message;
   /** Change a budget's period, limits or hardness */
@@ -745,6 +791,12 @@ export type Mutation = {
 /** The root mutation type */
 export type MutationAddDocumentsToCollectionArgs = {
   input: AddDocumentsToCollectionInput;
+};
+
+
+/** The root mutation type */
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
 };
 
 
@@ -769,12 +821,6 @@ export type MutationChatArgs = {
 /** The root mutation type */
 export type MutationCreateBudgetArgs = {
   input: CreateBudgetInput;
-};
-
-
-/** The root mutation type */
-export type MutationCreateCollaborationArgs = {
-  input: CreateCollaborationInput;
 };
 
 
@@ -810,7 +856,7 @@ export type MutationDeleteBudgetArgs = {
 
 /** The root mutation type */
 export type MutationDeleteCollaborationArgs = {
-  id: Scalars['ID']['input'];
+  key: Scalars['ID']['input'];
 };
 
 
@@ -883,6 +929,12 @@ export type MutationRemoveFromCollaborationArgs = {
 /** The root mutation type */
 export type MutationSendArgs = {
   input: SendMessageInput;
+};
+
+
+/** The root mutation type */
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -998,7 +1050,11 @@ export type ProviderFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ProviderFilter>;
   OR?: InputMaybe<ProviderFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   search?: InputMaybe<Scalars['String']['input']>;
@@ -1067,7 +1123,7 @@ export type Query = {
   chromaCollection: ChromaCollection;
   /** List this organization's Chroma collections */
   chromaCollections: Array<ChromaCollection>;
-  /** Get a single collaboration by ID */
+  /** Get a single collaboration by its key (lok's): what was put in it here */
   collaboration: Collaboration;
   /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
   collaborations: Array<Collaboration>;
@@ -1141,7 +1197,12 @@ export type QueryChromaCollectionsArgs = {
 
 
 export type QueryCollaborationArgs = {
-  id: Scalars['ID']['input'];
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1350,7 +1411,11 @@ export type RoomFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<RoomFilter>;
   OR?: InputMaybe<RoomFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by title: a case-insensitive substring, or semantic similarity of the query to the room's title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -1456,6 +1521,40 @@ export type SendMessageInput = {
   parent?: InputMaybe<Scalars['ID']['input']>;
   room: Scalars['ID']['input'];
   text: Scalars['String']['input'];
+};
+
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
 };
 
 /** Open a message that text will be streamed into */
@@ -1731,6 +1830,23 @@ export type User = {
   zoneinfo?: Maybe<Scalars['String']['output']>;
 };
 
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
+};
+
 export type _Entity = Agent | App | Client | Message | Organization | Release | Room | User;
 
 export type _Service = {
@@ -1892,6 +2008,13 @@ export type DeleteRoomMutationVariables = Exact<{
 
 
 export type DeleteRoomMutation = { __typename?: 'Mutation', deleteRoom: string };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type GetChromaCollectionQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2700,6 +2823,52 @@ export function useDeleteRoomMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type DeleteRoomMutationHookResult = ReturnType<typeof useDeleteRoomMutation>;
 export type DeleteRoomMutationResult = Apollo.MutationResult<DeleteRoomMutation>;
 export type DeleteRoomMutationOptions = Apollo.BaseMutationOptions<DeleteRoomMutation, DeleteRoomMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const GetChromaCollectionDocument = gql`
     query GetChromaCollection($id: ID!) {
   chromaCollection(id: $id) {

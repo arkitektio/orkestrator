@@ -1,4 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { KUVERT_ACTIONS } from "./actions";
 import { KUVERT_AUTH_FLOW } from "./authFlow";
 import { KUVERT_DIALOGS } from "./dialogRegistry";
@@ -16,6 +18,8 @@ export const KUVERT_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "kuvert.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./KuvertModule"),
     navLinks: KUVERT_NAV_LINKS,
     displays: {

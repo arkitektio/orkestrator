@@ -1,9 +1,3 @@
-mutation CreateCollaboration($input: CreateCollaborationInput!) {
-  createCollaboration(input: $input) {
-    ...Collaboration
-  }
-}
-
 mutation AddToCollaboration($input: CollaborationObjectInput!) {
   addToCollaboration(input: $input) {
     ...Collaboration
@@ -16,8 +10,10 @@ mutation RemoveFromCollaboration($input: CollaborationObjectInput!) {
   }
 }
 
+# Takes everything mikro holds out of the collaboration (by its key); lok's
+# collaboration, and what other services hold in it, stay.
 mutation DeleteCollaboration($id: ID!) {
-  deleteCollaboration(id: $id)
+  deleteCollaboration(key: $id)
 }
 
 mutation AddManyToCollaboration($input: AddManyToCollaborationInput!) {

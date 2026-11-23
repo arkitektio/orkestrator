@@ -25,6 +25,16 @@ export type Scalars = {
   _Any: { input: any; output: any; }
 };
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** A mail address with its display name. */
 export type Address = {
   __typename?: 'Address';
@@ -217,6 +227,76 @@ export enum CategorySync {
   Keyword = 'KEYWORD',
   Local = 'LOCAL'
 }
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
+  items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
+};
 
 /** Finish (REDIRECT) or advance (POLL) a started login. */
 export type CompleteAuthInput = {
@@ -747,8 +827,12 @@ export type MailProviderFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<MailProviderFilter>;
   OR?: InputMaybe<MailProviderFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   kind?: InputMaybe<Provider>;
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
@@ -878,6 +962,8 @@ export type MessageFilter = {
   OR?: InputMaybe<MessageFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
   category?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   dateFrom?: InputMaybe<Scalars['DateTime']['input']>;
   dateTo?: InputMaybe<Scalars['DateTime']['input']>;
   flagged?: InputMaybe<Scalars['Boolean']['input']>;
@@ -886,6 +972,8 @@ export type MessageFilter = {
   hasAttachments?: InputMaybe<Scalars['Boolean']['input']>;
   hasFlag?: InputMaybe<Scalars['String']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   recipient?: InputMaybe<Scalars['String']['input']>;
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by text: a case-insensitive substring of the subject, sender or text; or semantic similarity to them ("flight booking" finds the airline's confirmation). Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -916,6 +1004,10 @@ export type MoveMessagesInput = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several conversations, messages or sent mails in a collaboration at once, each with what it needs to be read; all or none. */
+  addManyToCollaboration: Collaboration;
+  /** Put a conversation, a message or sent mail in a collaboration (lok's, by its key) for its guests to read: a conversation brings its messages as they are now, a message its attachments. Never a mailbox or a provider. The first thing put in makes kuvert's row of the collaboration. */
+  addToCollaboration: Collaboration;
   /** Drop a login that will not be finished. Idempotent. */
   cancelAuth: AuthSession;
   /** Put messages into categories and take them out. */
@@ -936,6 +1028,8 @@ export type Mutation = {
   createTaskList: TaskList;
   /** Delete a category. */
   deleteCategory: Scalars['ID']['output'];
+  /** Take everything kuvert holds in a collaboration (by its key) out of it: its guests read none of it here any more. lok's collaboration and its grants stay. */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Unlink a mailbox (owner only). Mail on the server is untouched. */
   deleteMailAccount: Scalars['ID']['output'];
   /** Delete messages (into Trash, or for good). */
@@ -960,6 +1054,8 @@ export type Mutation = {
   pushMailChanges: PushResult;
   /** Reissue upload credentials for a bigfile upload still in flight, to the same key, so a write that outlives its credentials carries on. Only the uploader may, never for a finished store, and never past the upload's time limit */
   refreshBigfileUpload: BigFileUploadGrant;
+  /** Take mail out of a collaboration, with what it brought that nothing else there needs. */
+  removeFromCollaboration: Collaboration;
   /** Request temporary S3 credentials to upload one file (an attachment to send). */
   requestBigfileUpload: BigFileUploadGrant;
   /** The same login again (a fresh openUrl if the old one cannot be reused). */
@@ -976,6 +1072,8 @@ export type Mutation = {
   setTaskStatus: Array<Task>;
   /** Set who sees a mailbox (owner only). */
   shareMailAccount: MailAccount;
+  /** Put the mail a workflow (its root task) sent, through mailboxes the caller sees, in a collaboration, as it is now. Messages and conversations come from the mail server and record no workflow: they are reported unknown. `dryRun` only says what would be put in. */
+  shareWorkflow: WorkflowShare;
   /** Snooze tasks until a time (null wakes them). */
   snoozeTasks: Array<Task>;
   /** Start linking (or re-linking) a mailbox through a Gmail or Microsoft provider. */
@@ -1006,6 +1104,16 @@ export type Mutation = {
   updateTaskList: TaskList;
   /** Create or update the caller's task with this externalKey, and add conversations to it. */
   upsertTask: Task;
+};
+
+
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
+};
+
+
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -1057,6 +1165,11 @@ export type MutationCreateTaskListArgs = {
 export type MutationDeleteCategoryArgs = {
   id: Scalars['ID']['input'];
   removeKeywords?: Scalars['Boolean']['input'];
+};
+
+
+export type MutationDeleteCollaborationArgs = {
+  key: Scalars['ID']['input'];
 };
 
 
@@ -1120,6 +1233,11 @@ export type MutationRefreshBigfileUploadArgs = {
 };
 
 
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationRequestBigfileUploadArgs = {
   input: RequestBigFileUploadInput;
 };
@@ -1158,6 +1276,11 @@ export type MutationSetTaskStatusArgs = {
 
 export type MutationShareMailAccountArgs = {
   input: ShareMailAccountInput;
+};
+
+
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -1322,6 +1445,10 @@ export type OutgoingMessageFilter = {
   NOT?: InputMaybe<OutgoingMessageFilter>;
   OR?: InputMaybe<OutgoingMessageFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   status?: InputMaybe<OutgoingStatus>;
 };
@@ -1394,6 +1521,12 @@ export type Query = {
   categories: Array<Category>;
   /** A category by id. */
   category: Category;
+  /** What kuvert holds in a collaboration, by its key (lok's). */
+  collaboration: Collaboration;
+  /** The organization's collaborations kuvert holds mail in (a guest: the ones granted to them). */
+  collaborations: Array<Collaboration>;
+  /** Count the collaborations `collaborations` lists, and the objects in them. */
+  collaborationsStats: CollaborationStats;
   /** A mailbox by id. */
   mailAccount: MailAccount;
   /** The mailboxes the caller sees: their own, shared with them, and the organization's. */
@@ -1461,6 +1594,16 @@ export type QueryCategoriesArgs = {
 
 export type QueryCategoryArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1667,6 +1810,40 @@ export type ShareMailAccountInput = {
   /** The members a SHARED mailbox is shared with (replaces the list). Must be members of the organization. */
   users?: InputMaybe<Array<Scalars['ID']['input']>>;
   visibility: Visibility;
+};
+
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
 };
 
 /** Hide tasks from the active view until a time; null wakes them now. */
@@ -1930,12 +2107,16 @@ export type ThreadFilter = {
   OR?: InputMaybe<ThreadFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
   category?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   flagged?: InputMaybe<Scalars['Boolean']['input']>;
   folder?: InputMaybe<Scalars['ID']['input']>;
   folderRole?: InputMaybe<FolderRole>;
   hasAttachments?: InputMaybe<Scalars['Boolean']['input']>;
   hasTask?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Only conversations with a message matching the text: the same substring and meaning search as `messages(filters: {search})`. */
   search?: InputMaybe<Scalars['String']['input']>;
@@ -2095,6 +2276,23 @@ export enum Visibility {
   Private = 'PRIVATE',
   Shared = 'SHARED'
 }
+
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
+};
 
 export type _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | MailProvider | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User;
 
@@ -2616,6 +2814,13 @@ export type DeleteProviderMutationVariables = Exact<{
 
 
 export type DeleteProviderMutation = { __typename?: 'Mutation', deleteProvider: string };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type CreateTaskMutationVariables = Exact<{
   input: CreateTaskInput;
@@ -4814,6 +5019,52 @@ export function useDeleteProviderMutation(baseOptions?: ApolloReactHooks.Mutatio
 export type DeleteProviderMutationHookResult = ReturnType<typeof useDeleteProviderMutation>;
 export type DeleteProviderMutationResult = Apollo.MutationResult<DeleteProviderMutation>;
 export type DeleteProviderMutationOptions = Apollo.BaseMutationOptions<DeleteProviderMutation, DeleteProviderMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const CreateTaskDocument = gql`
     mutation CreateTask($input: CreateTaskInput!) {
   createTask(input: $input) {

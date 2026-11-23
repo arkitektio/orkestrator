@@ -1630,15 +1630,55 @@
         "possibleTypes": null
       },
       {
-        "kind": "INPUT_OBJECT",
-        "name": "CollaborationRefInput",
-        "description": "One collaboration of a service instance.",
-        "isOneOf": false,
-        "fields": null,
-        "inputFields": [
+        "kind": "OBJECT",
+        "name": "Collaboration",
+        "description": "What a guest of the organization is let in to: one key across all of its services, each of which holds what was put in it there (`addToCollaboration`, `shareWorkflow` with the key). lok names it and grants it (`createInvite(collaborations:)`); it never sees what is in it.",
+        "isOneOf": null,
+        "fields": [
           {
-            "name": "collaboration",
-            "description": "The collaboration's id in that service.",
+            "name": "createdAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdBy",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "id",
+            "description": null,
+            "args": [],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -1648,13 +1688,13 @@
                 "ofType": null
               }
             },
-            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "instance",
-            "description": "The service instance the collaboration lives in.",
+            "name": "key",
+            "description": "The key every service of the organization names the collaboration by.",
+            "args": [],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -1663,6 +1703,134 @@
                 "kind": "SCALAR",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "CollaborationFilter",
+        "description": "What a guest of an organization is let in to: one key across all of its services.\n\nlok names it and grants it; what is in it, each service of the organization\nholds itself (``arkitekt_service.collaborations``), under a row with the same\n``key``, made the first time something is put in there. lok never learns what\nis in it: a guest's token lists the keys (``collabs``), and each service shows\nwhat it put in them.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "AND",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "CollaborationFilter",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DISTINCT",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "NOT",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "CollaborationFilter",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "OR",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "CollaborationFilter",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ids",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "keys",
+            "description": "Only these collaborations, by their key.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "search",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -2148,6 +2316,46 @@
       },
       {
         "kind": "INPUT_OBJECT",
+        "name": "CreateCollaborationInput",
+        "description": null,
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "description",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
         "name": "CreateGroupProfileInput",
         "description": null,
         "isOneOf": false,
@@ -2215,7 +2423,7 @@
         "inputFields": [
           {
             "name": "allowMesh",
-            "description": "For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the hubs the granted collaborations run on, nothing else of the mesh.",
+            "description": "For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the organization's hubs, nothing else of the mesh.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -2231,7 +2439,7 @@
           },
           {
             "name": "collaborations",
-            "description": "Grant only these collaborations of the organization's service instances, each with the roles that hold inside it, instead of making the holder a member.",
+            "description": "Grant only these collaborations of the organization, each with the roles that hold inside it, instead of making the holder a member.",
             "type": {
               "kind": "LIST",
               "name": null,
@@ -2720,6 +2928,34 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "DeleteBugReportInput",
+        "description": null,
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "id",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "DeleteCollaborationInput",
         "description": null,
         "isOneOf": false,
         "fields": null,
@@ -4713,7 +4949,7 @@
           },
           {
             "name": "mesh",
-            "description": "For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only the hubs the granted collaborations run on.",
+            "description": "For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only its hubs.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -4955,10 +5191,10 @@
           },
           {
             "name": "collaboration",
-            "description": "Only the invites granting this collaboration.",
+            "description": "Only the invites granting this collaboration (its key).",
             "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "CollaborationRefInput",
+              "kind": "SCALAR",
+              "name": "ID",
               "ofType": null
             },
             "defaultValue": null,
@@ -8024,6 +8260,39 @@
             "deprecationReason": null
           },
           {
+            "name": "createCollaboration",
+            "description": null,
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "CreateCollaborationInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Collaboration",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "createGroupProfile",
             "description": null,
             "args": [
@@ -8299,6 +8568,39 @@
                   "name": null,
                   "ofType": {
                     "name": "DeleteBugReportInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deleteCollaboration",
+            "description": "Delete a collaboration, and every grant of it.",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "DeleteCollaborationInput",
                     "kind": "INPUT_OBJECT",
                     "ofType": null
                   }
@@ -8676,6 +8978,39 @@
               "name": null,
               "ofType": {
                 "name": "BugReport",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "updateCollaboration",
+            "description": null,
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "UpdateCollaborationInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Collaboration",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -9467,7 +9802,7 @@
           },
           {
             "name": "users",
-            "description": "The users that are part of the organization",
+            "description": "The users that are part of the organization. Only yourself for a guest who was only granted some collaborations.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -10455,6 +10790,96 @@
                   "kind": "NON_NULL",
                   "ofType": {
                     "name": "ClientByClientId",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "collaboration",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "key",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Collaboration",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "collaborations",
+            "description": "The active organization's collaborations (a guest: theirs).",
+            "args": [
+              {
+                "name": "filters",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "CollaborationFilter",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "Collaboration",
                     "kind": "OBJECT",
                     "ofType": null
                   }
@@ -14622,28 +15047,12 @@
       {
         "kind": "OBJECT",
         "name": "SharedCollaboration",
-        "description": "One collaboration a collaboration invite grants: a collaboration of a service instance, with the roles that hold inside it.",
+        "description": "One collaboration a collaboration invite grants, by its key, with the roles that hold inside it.",
         "isOneOf": null,
         "fields": [
           {
             "name": "collaboration",
-            "description": "The collaboration's id in that service.",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "instance",
-            "description": "The service instance the collaboration lives in.",
+            "description": "The collaboration's key: what every service of the organization names it by.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -14696,23 +15105,7 @@
         "inputFields": [
           {
             "name": "collaboration",
-            "description": "The collaboration's id in that service.",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "instance",
-            "description": "The service instance the collaboration lives in (on a hub of the organization): its id, or, when called from an app, the app's own requirement key for it (e.g. 'mikro'), resolved through the app's service mappings.",
+            "description": "The collaboration's key (`createCollaboration`): one across all of the organization's services.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -15331,6 +15724,58 @@
               }
             },
             "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "UpdateCollaborationInput",
+        "description": null,
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "description",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "id",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
             "isDeprecated": false,
             "deprecationReason": null
           }

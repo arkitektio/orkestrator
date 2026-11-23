@@ -1,3 +1,4 @@
+import { CollaborationFilter } from "@/core/collaborations/CollaborationFilter";
 import { useSelf } from "@/core/connection/useSelf";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import {
@@ -30,7 +31,7 @@ import {
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
 import { useDebounce } from "@uidotdev/usehooks";
-import { Check, Handshake, Shapes, Users, X } from "lucide-react";
+import { Check, Shapes, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ArrayDatasetSpec, RootFilter, useHomeFilterOptionsQuery } from "../../api/graphql";
 import { ADATASET_SPEC_BY_SLUG, ADATASET_SPECS } from "../../specs";
@@ -210,58 +211,6 @@ export const PeopleFilter = ({
   );
 };
 
-/** Which collaboration it was put in. */
-const CollaborationFilter = ({
-  value,
-  onChange,
-  collaborations,
-}: {
-  value: string | null;
-  onChange: (id: string | null) => void;
-  collaborations: { id: string; name: string }[];
-}) => {
-  const [open, setOpen] = useState(false);
-  const picked = collaborations.find((collaboration) => collaboration.id === value);
-  const pick = (id: string | null) => {
-    onChange(id);
-    setOpen(false);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <FilterTrigger active={!!value} icon={Handshake} aria-label="Collaboration">
-          <span className="max-w-40 truncate">{value ? (picked?.name ?? "Collaboration") : "Any collaboration"}</span>
-        </FilterTrigger>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-0">
-        <Command>
-          <CommandInput placeholder="Search collaborations…" />
-          <CommandList>
-            <CommandEmpty>No collaboration matches.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem value="any collaboration" onSelect={() => pick(null)}>
-                Any collaboration
-                {!value && <Check className="ml-auto h-4 w-4" />}
-              </CommandItem>
-              {collaborations.map((collaboration) => (
-                <CommandItem
-                  key={collaboration.id}
-                  value={`${collaboration.name} ${collaboration.id}`}
-                  onSelect={() => pick(collaboration.id)}
-                >
-                  <span className="truncate">{collaboration.name}</span>
-                  {value === collaboration.id && <Check className="ml-auto h-4 w-4" />}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-};
-
 /**
  * What kind of image: the spec catalog the array-dataset list offers. A
  * dataset has one spatial spec, so ticking a second replaces the first
@@ -341,11 +290,8 @@ export const HomeFilterBar = ({ filters }: { filters: HomeFilters }) => {
       <div className="flex flex-wrap items-center gap-2">
         <FilterSearchField value={state.search} onChange={setSearch} placeholder="Search by name…" />
         <PeopleFilter value={state.user} onChange={setUser} members={members} />
-        <CollaborationFilter
-          value={state.collaboration}
-          onChange={setCollaboration}
-          collaborations={data?.collaborations ?? []}
-        />
+        {/* lok's collaborations, by key: `RootFilter.collaboration` takes it. */}
+        <CollaborationFilter value={state.collaboration} onChange={setCollaboration} />
         <SpecFilter value={specSlugs} onChange={setSpecSlugs} />
         <div className="flex items-center gap-1.5">
           <ToggleGroup

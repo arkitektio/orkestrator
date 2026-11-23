@@ -87,6 +87,16 @@ export type AccountSyncer = {
   syncsRemainingToday?: Maybe<Scalars['Int']['output']>;
 };
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** How much of the depot one security type is. */
 export type Allocation = {
   __typename?: 'Allocation';
@@ -299,7 +309,11 @@ export type BankAccountFilter = {
   NOT?: InputMaybe<BankAccountFilter>;
   OR?: InputMaybe<BankAccountFilter>;
   connection?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   kind?: InputMaybe<AccountKind>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
@@ -374,7 +388,11 @@ export type BankConnectionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<BankConnectionFilter>;
   OR?: InputMaybe<BankConnectionFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   needsReauth?: InputMaybe<Scalars['Boolean']['input']>;
   provider?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
@@ -449,8 +467,12 @@ export type BankProviderFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<BankProviderFilter>;
   OR?: InputMaybe<BankProviderFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   kind?: InputMaybe<Provider>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
@@ -548,6 +570,10 @@ export type BudgetFilter = {
   OR?: InputMaybe<BudgetFilter>;
   activeIn?: InputMaybe<Scalars['Date']['input']>;
   category?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
@@ -687,8 +713,12 @@ export type CategoryFilter = {
   NOT?: InputMaybe<CategoryFilter>;
   OR?: InputMaybe<CategoryFilter>;
   base?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   kind?: InputMaybe<CategoryKind>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
@@ -820,6 +850,76 @@ export type Change = {
   previous: Scalars['Decimal']['output'];
   /** delta / previous; null when previous is zero. */
   ratio?: Maybe<Scalars['Float']['output']>;
+};
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
+  items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
 };
 
 /** What a view compares its window with. */
@@ -1382,7 +1482,11 @@ export type MerchantFilter = {
   NOT?: InputMaybe<MerchantFilter>;
   OR?: InputMaybe<MerchantFilter>;
   category?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Only merchants with a located store within `radiusMeters` of a point, nearest first (`distanceMeters` on each). */
   near?: InputMaybe<NearInput>;
   online?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1671,8 +1775,12 @@ export type MoneyTotals = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several accounts or categories in a collaboration at once, each with what it needs to be read; all or none. */
+  addManyToCollaboration: Collaboration;
   /** Teach a merchant another spelling. */
   addMerchantAlias: MerchantAlias;
+  /** Put an account in a collaboration (lok's, by its key) for its guests to read, with its transactions, balances, holdings and recurring payments (live), and the categories they are in (as they are now). Never a provider, a connection, an import, a merchant or a budget. The first thing put in makes bank's row of the collaboration. */
+  addToCollaboration: Collaboration;
   /** Write a previewed import into the accounts (idempotent). */
   applyStatementImport: StatementImport;
   /** Link many transactions to a merchant (by id or key) and place (by id or store number), by hand; null hands them back to matching. */
@@ -1709,6 +1817,8 @@ export type Mutation = {
   deleteCategory: CategoryDeletion;
   /** Delete a categorization rule. */
   deleteCategoryRule: Scalars['ID']['output'];
+  /** Take everything bank holds in a collaboration (by its key) out of it: its guests read none of it here any more. lok's collaboration and its grants stay. */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete a merchant; its transactions are categorized again. */
   deleteMerchant: Scalars['ID']['output'];
   /** Delete a merchant place. */
@@ -1737,6 +1847,8 @@ export type Mutation = {
   refreshBigfileUpload: BigFileUploadGrant;
   /** Fetch and store daily closes from the enabled sources. */
   refreshSecurityPrices: Array<PriceRefresh>;
+  /** Take an account or a category out of a collaboration, with what it brought that nothing else there needs. */
+  removeFromCollaboration: Collaboration;
   /** Forget a merchant spelling. */
   removeMerchantAlias: Scalars['ID']['output'];
   /** Request temporary S3 read credentials for an uploaded file. */
@@ -1761,6 +1873,8 @@ export type Mutation = {
   setRecurringStatuses: Array<RecurringPayment>;
   /** Set or clear a transaction's note. */
   setTransactionNote: Transaction;
+  /** Put what a workflow (its root task) created in bank in a collaboration, as it is now: the categories it made, and the recurring payments of accounts already shared. Accounts and transactions come from a bank or an import and record no workflow: they are reported unknown. `dryRun` only says what would be put in. */
+  shareWorkflow: WorkflowShare;
   /** Start a login through a provider; returns the auth session. */
   startLink: AuthSession;
   /** Pull an account from the bank now. */
@@ -1790,9 +1904,19 @@ export type Mutation = {
 };
 
 
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
+};
+
+
 export type MutationAddMerchantAliasArgs = {
   merchant: Scalars['ID']['input'];
   text: Scalars['String']['input'];
+};
+
+
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -1890,6 +2014,11 @@ export type MutationDeleteCategoryRuleArgs = {
 };
 
 
+export type MutationDeleteCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteMerchantArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1968,6 +2097,11 @@ export type MutationRefreshSecurityPricesArgs = {
 };
 
 
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationRemoveMerchantAliasArgs = {
   id: Scalars['ID']['input'];
 };
@@ -2022,6 +2156,11 @@ export type MutationSetRecurringStatusesArgs = {
 
 export type MutationSetTransactionNoteArgs = {
   input: SetTransactionNoteInput;
+};
+
+
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -2317,6 +2456,12 @@ export type Query = {
   categoryRule: CategoryRule;
   /** The organization's categorization rules. */
   categoryRules: Array<CategoryRule>;
+  /** What bank holds in a collaboration, by its key (lok's). */
+  collaboration: Collaboration;
+  /** The organization's collaborations bank holds accounts in (a guest: the ones granted to them). */
+  collaborations: Array<Collaboration>;
+  /** Count the collaborations `collaborations` lists, and the objects in them. */
+  collaborationsStats: CollaborationStats;
   /** An account's expected balance over the coming days. */
   forecast: Array<ForecastPoint>;
   /** Places matching an address or name (OpenStreetMap). */
@@ -2518,6 +2663,16 @@ export type QueryCategoryRuleArgs = {
 
 export type QueryCategoryRulesArgs = {
   filters?: InputMaybe<CategoryRuleFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -2821,6 +2976,10 @@ export type RecurringPaymentFilter = {
   NOT?: InputMaybe<RecurringPaymentFilter>;
   OR?: InputMaybe<RecurringPaymentFilter>;
   accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   status?: InputMaybe<RecurringStatus>;
@@ -2933,6 +3092,40 @@ export type Share = {
   share: Scalars['Float']['output'];
 };
 
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
+};
+
 /** Start a login through one of the organization's providers. */
 export type StartLinkInput = {
   /** For a kind with institutions: the bank's ISO country code, e.g. AT. */
@@ -2998,7 +3191,11 @@ export type StatementImportFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<StatementImportFilter>;
   OR?: InputMaybe<StatementImportFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
 };
@@ -3166,10 +3363,14 @@ export type TransactionFilter = {
   amountMin?: InputMaybe<Scalars['Decimal']['input']>;
   categories?: InputMaybe<Array<Scalars['ID']['input']>>;
   categorySource?: InputMaybe<CategorySource>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   dateFrom?: InputMaybe<Scalars['Date']['input']>;
   dateTo?: InputMaybe<Scalars['Date']['input']>;
   direction?: InputMaybe<Direction>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   includeChildCategories?: InputMaybe<Scalars['Boolean']['input']>;
   isTransfer?: InputMaybe<Scalars['Boolean']['input']>;
   kind?: InputMaybe<TransactionKind>;
@@ -3421,6 +3622,23 @@ export type WindowInfo = {
   previousEnd?: Maybe<Scalars['Date']['output']>;
   previousStart?: Maybe<Scalars['Date']['output']>;
   start: Scalars['Date']['output'];
+};
+
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
 };
 
 export type _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BankProvider | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | SecurityListing | StatementImport | Transaction | User;
@@ -4146,6 +4364,13 @@ export type SetRecurringStatusMutation = { __typename?: 'Mutation', setRecurring
     { __typename?: 'RecurringPayment' }
     & ListRecurringPaymentFragment
   ) };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type CategorizeTransactionMutationVariables = Exact<{
   input: CategorizeTransactionInput;
@@ -7104,6 +7329,52 @@ export function useSetRecurringStatusMutation(baseOptions?: ApolloReactHooks.Mut
 export type SetRecurringStatusMutationHookResult = ReturnType<typeof useSetRecurringStatusMutation>;
 export type SetRecurringStatusMutationResult = Apollo.MutationResult<SetRecurringStatusMutation>;
 export type SetRecurringStatusMutationOptions = Apollo.BaseMutationOptions<SetRecurringStatusMutation, SetRecurringStatusMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const CategorizeTransactionDocument = gql`
     mutation CategorizeTransaction($input: CategorizeTransactionInput!) {
   categorizeTransaction(input: $input) {

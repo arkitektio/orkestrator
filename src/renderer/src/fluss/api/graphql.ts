@@ -73,6 +73,16 @@ export enum ActionKind {
   Generator = 'GENERATOR'
 }
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
 export type AgentCall = {
   __typename?: 'AgentCall';
@@ -402,9 +412,26 @@ export type Collaboration = {
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  /** What is in the collaboration; what is part of these is in it too */
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
   items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 /** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
@@ -422,7 +449,18 @@ export type CollaborationItem = {
 
 /** An object to put in, or take out of, a collaboration */
 export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
   collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
   /** The structure the object is known by: @mikro/scene */
   identifier: Scalars['String']['input'];
   /** The object's id */
@@ -466,12 +504,6 @@ export type ComponentPropInput = {
   staticValue?: InputMaybe<Scalars['JSONSerializable']['input']>;
   /** A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more). */
   utilCall?: InputMaybe<UtilCallInput>;
-};
-
-/** A new collaboration */
-export type CreateCollaborationInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
 };
 
 /** A new PythonFlow version: its source and the actions it may call. The server validates it and derives its ports and runtime. */
@@ -681,10 +713,14 @@ export type FlowFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work */
   creator?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
@@ -928,7 +964,9 @@ export type MessageEffect = Effect & {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Put an object in a collaboration, with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows */
+  /** Put several objects in a collaboration (by its key) at once, a whole before its parts, each with what it needs to be seen: all of them, or none */
+  addManyToCollaboration: Collaboration;
+  /** Put an object in a collaboration (lok's, by its key), with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows. The collaboration's row here is made the first time something is put in */
   addToCollaboration: Collaboration;
   /** Archive a PUBLISHED Python flow version, so it no longer runs (its runs keep pointing at it). */
   archivePythonFlow: PythonFlow;
@@ -936,8 +974,6 @@ export type Mutation = {
   closePythonRun: PythonRun;
   /** Mark a run as COMPLETED. */
   closeRun: Run;
-  /** Create an empty collaboration, to put objects in and grant a guest */
-  createCollaboration: Collaboration;
   /** Validate a Python flow's source against the actions it may call and store it as a new DRAFT version, with the ports and runtime the validation derives (or return the existing one with the same content in its lineage). A source that does not validate is refused. */
   createPythonFlow: PythonFlow;
   /** Start (or reuse) the run of a published Python flow version for a task. */
@@ -946,7 +982,7 @@ export type Mutation = {
   createRun: Run;
   /** Create a new workspace, seeded with an initial flow. */
   createWorkspace: Workspace;
-  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  /** Take everything fluss put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay */
   deleteCollaboration: Scalars['ID']['output'];
   /** Delete a DRAFT Python flow version. */
   deletePythonFlow: Scalars['ID']['output'];
@@ -958,6 +994,8 @@ export type Mutation = {
   publishPythonFlow: PythonFlow;
   /** Take an object out of a collaboration, with what it brought that nothing else there needs */
   removeFromCollaboration: Collaboration;
+  /** Put what a workflow (its root task) created in fluss in a collaboration, as it is now: its runs, with their events and snapshots and the flows they execute. What it makes later is not; `dryRun` only says what would be put in */
+  shareWorkflow: WorkflowShare;
   /** Capture a state snapshot of a run at a logical time. */
   snapshot: Snapshot;
   /** Record a single run event (a value, error or completion) for a run. */
@@ -966,6 +1004,11 @@ export type Mutation = {
   updatePythonFlow: PythonFlow;
   /** Update a workspace's metadata and upsert the flow for the posted graph. */
   updateWorkspace: Workspace;
+};
+
+
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
 };
 
 
@@ -986,11 +1029,6 @@ export type MutationClosePythonRunArgs = {
 
 export type MutationCloseRunArgs = {
   input: CloseRunInput;
-};
-
-
-export type MutationCreateCollaborationArgs = {
-  input: CreateCollaborationInput;
 };
 
 
@@ -1015,7 +1053,7 @@ export type MutationCreateWorkspaceArgs = {
 
 
 export type MutationDeleteCollaborationArgs = {
-  id: Scalars['ID']['input'];
+  key: Scalars['ID']['input'];
 };
 
 
@@ -1041,6 +1079,11 @@ export type MutationPublishPythonFlowArgs = {
 
 export type MutationRemoveFromCollaborationArgs = {
   input: CollaborationObjectInput;
+};
+
+
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -1246,10 +1289,14 @@ export type PythonFlowFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work */
   creator?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** true: only each flow's newest version (the head of its lineage), so a list shows one row per flow; false: only the versions a newer one replaced. The newest version is decided over all of the lineage's versions, so `status` and `search` next to it apply to that head, not to the newest version that happens to match */
   latest?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the versions of one flow */
@@ -1346,10 +1393,14 @@ export type PythonRunFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the runs of these PythonFlow versions */
   flows?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
@@ -1376,7 +1427,7 @@ export type Query = {
   __typename?: 'Query';
   _entities: Array<Maybe<_Entity>>;
   _service: _Service;
-  /** Get a single collaboration by ID */
+  /** Get a single collaboration by its key (lok's): what was put in it here */
   collaboration: Collaboration;
   /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
   collaborations: Array<Collaboration>;
@@ -1427,7 +1478,12 @@ export type Query_EntitiesArgs = {
 
 
 export type QueryCollaborationArgs = {
-  id: Scalars['ID']['input'];
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1988,8 +2044,12 @@ export type RunFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
@@ -2036,6 +2096,40 @@ export type SearchAssignWidgetInput = {
   query: Scalars['SearchQuery']['input'];
   /** The ward (service) that executes the query. */
   ward: Scalars['String']['input'];
+};
+
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
 };
 
 export type SliderAssignWidget = AssignWidget & {
@@ -2324,6 +2418,23 @@ export type VanillaEdge = GraphEdge & {
   targetHandle: Scalars['String']['output'];
 };
 
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
+};
+
 /** A Workspace is the top-level container that groups the Flows of an organization, mirroring the concept of a project or folder. It is the entry point users edit flows within. */
 export type Workspace = {
   __typename?: 'Workspace';
@@ -2365,10 +2476,14 @@ export type WorkspaceFilter = {
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter for items created before this datetime */
   createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work */
   creator?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
@@ -3340,6 +3455,13 @@ export type DeletePythonFlowMutationVariables = Exact<{
 
 
 export type DeletePythonFlowMutation = { __typename?: 'Mutation', deletePythonFlow: string };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type FlowQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4900,6 +5022,52 @@ export function useDeletePythonFlowMutation(baseOptions?: ApolloReactHooks.Mutat
 export type DeletePythonFlowMutationHookResult = ReturnType<typeof useDeletePythonFlowMutation>;
 export type DeletePythonFlowMutationResult = Apollo.MutationResult<DeletePythonFlowMutation>;
 export type DeletePythonFlowMutationOptions = Apollo.BaseMutationOptions<DeletePythonFlowMutation, DeletePythonFlowMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const FlowDocument = gql`
     query Flow($id: ID!) {
   flow(id: $id) {

@@ -51,6 +51,20 @@ enum ActionKind {
   GENERATOR
 }
 
+"""Objects to put in a collaboration at once: all of them, or none"""
+input AddManyToCollaborationInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """
+  The collaboration's name, kept here when these are the first things put in
+  """
+  name: String = null
+
+  """What to put in; a whole before its parts"""
+  objects: [CollaborationObjectRef!]!
+}
+
 """
 Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest.
 """
@@ -538,8 +552,20 @@ type Collaboration {
   description: String
   id: ID!
 
-  """What is in the collaboration; what is part of these is in it too"""
-  items: [CollaborationItem!]!
+  """
+  How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true)
+  """
+  itemCount(brought: Boolean = null): Int!
+
+  """
+  What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true)
+  """
+  items(brought: Boolean = null, pagination: OffsetPaginationInput = null): [CollaborationItem!]!
+
+  """
+  The collaboration's key across the hub: what lok grants, and what names it in every service
+  """
+  key: ID!
   name: String!
 }
 
@@ -564,8 +590,23 @@ type CollaborationItem {
 
 """An object to put in, or take out of, a collaboration"""
 input CollaborationObjectInput {
+  """The collaboration's key (lok's)"""
   collaboration: ID!
 
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """
+  The collaboration's name, kept here when this is the first thing put in
+  """
+  name: String = null
+
+  """The object's id"""
+  object: ID!
+}
+
+"""An object, by its structure and id"""
+input CollaborationObjectRef {
   """The structure the object is known by: @mikro/scene"""
   identifier: String!
 
@@ -631,12 +672,6 @@ input ComponentPropInput {
   A function the prop's value is, or in a callback the effect it runs (ui.copy, task.answer, query.refetch, query.fetch_more).
   """
   utilCall: UtilCallInput = null
-}
-
-"""A new collaboration"""
-input CreateCollaborationInput {
-  description: String = null
-  name: String!
 }
 
 """
@@ -913,6 +948,9 @@ input FlowFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work
   """
@@ -920,6 +958,11 @@ input FlowFilter {
 
   """Filter by a list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
@@ -1249,7 +1292,12 @@ type MessageEffect implements Effect {
 
 type Mutation {
   """
-  Put an object in a collaboration, with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows
+  Put several objects in a collaboration (by its key) at once, a whole before its parts, each with what it needs to be seen: all of them, or none
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
+  """
+  Put an object in a collaboration (lok's, by its key), with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows. The collaboration's row here is made the first time something is put in
   """
   addToCollaboration(input: CollaborationObjectInput!): Collaboration!
 
@@ -1263,9 +1311,6 @@ type Mutation {
 
   """Mark a run as COMPLETED."""
   closeRun(input: CloseRunInput!): Run!
-
-  """Create an empty collaboration, to put objects in and grant a guest"""
-  createCollaboration(input: CreateCollaborationInput!): Collaboration!
 
   """
   Validate a Python flow's source against the actions it may call and store it as a new DRAFT version, with the ports and runtime the validation derives (or return the existing one with the same content in its lineage). A source that does not validate is refused.
@@ -1284,9 +1329,9 @@ type Mutation {
   createWorkspace(input: CreateWorkspaceInput!): Workspace!
 
   """
-  Delete a collaboration: whoever was granted it sees nothing of it any more
+  Take everything fluss put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay
   """
-  deleteCollaboration(id: ID!): ID!
+  deleteCollaboration(key: ID!): ID!
 
   """Delete a DRAFT Python flow version."""
   deletePythonFlow(input: PythonFlowRefInput!): ID!
@@ -1306,6 +1351,11 @@ type Mutation {
   Take an object out of a collaboration, with what it brought that nothing else there needs
   """
   removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
+  Put what a workflow (its root task) created in fluss in a collaboration, as it is now: its runs, with their events and snapshots and the flows they execute. What it makes later is not; `dryRun` only says what would be put in
+  """
+  shareWorkflow(input: ShareWorkflowInput!): WorkflowShare!
 
   """Capture a state snapshot of a run at a logical time."""
   snapshot(input: SnapshotRunInput!): Snapshot!
@@ -1556,6 +1606,9 @@ input PythonFlowFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work
   """
@@ -1563,6 +1616,11 @@ input PythonFlowFilter {
 
   """Filter by a list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """
   true: only each flow's newest version (the head of its lineage), so a list shows one row per flow; false: only the versions a newer one replaced. The newest version is decided over all of the lineage's versions, so `status` and `search` next to it apply to that head, not to the newest version that happens to match
@@ -1702,11 +1760,19 @@ input PythonRunFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """Filter to the runs of these PythonFlow versions"""
   flows: [ID!]
 
   """Filter by a list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
@@ -1740,13 +1806,13 @@ type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
 
-  """Get a single collaboration by ID"""
-  collaboration(id: ID!): Collaboration!
+  """Get a single collaboration by its key (lok's): what was put in it here"""
+  collaboration(key: ID!): Collaboration!
 
   """
   List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
   """
-  collaborations: [Collaboration!]!
+  collaborations(pagination: OffsetPaginationInput = null): [Collaboration!]!
 
   """
   Fetch the events of a run between two logical times, seeded from the latest snapshot at or before the lower bound.
@@ -2440,8 +2506,16 @@ input RunFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """Filter by a list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
@@ -2514,6 +2588,51 @@ input SearchAssignWidgetInput {
 The `SearchQuery` scalar is a GraphQL query string a search widget executes against its ward to populate its choices
 """
 scalar SearchQuery
+
+"""Put what a workflow created in a collaboration, as it is now"""
+input ShareWorkflowInput {
+  """The collaboration's key (lok's)"""
+  collaboration: ID!
+
+  """Only say what would be put in, and what left out"""
+  dryRun: Boolean! = false
+
+  """The collaboration's name, kept here when this puts the first things in"""
+  name: String = null
+
+  """
+  The workflow: the id of the task a person started, the root of every task it caused
+  """
+  rootTask: ID!
+}
+
+"""An object, by its structure and id"""
+type SharedObject {
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
+Created in the workflow, but part of something made before it that is not shared: left out
+"""
+type SkippedObject {
+  """The structure the object is known by"""
+  identifier: String
+
+  """The object's id"""
+  object: ID!
+
+  """
+  The id of what it is part of: put that in, and share the workflow again, to bring it
+  """
+  whole: ID!
+
+  """The structure of what it is part of"""
+  wholeIdentifier: String
+}
 
 type SliderAssignWidget implements AssignWidget {
   followValue: String
@@ -2848,6 +2967,33 @@ type VanillaEdge implements GraphEdge {
 }
 
 """
+What sharing a workflow put in a collaboration here (or, tried, would put in)
+"""
+type WorkflowShare {
+  """Put in, with what each needs to be seen"""
+  added: [SharedObject!]!
+
+  """The collaboration's key"""
+  collaboration: ID!
+
+  """
+  How many parts came along with their whole, without being put in themselves
+  """
+  covered: Int!
+
+  """Whether nothing was written"""
+  dryRun: Boolean!
+
+  """Left out: parts of something made before the workflow and not shared"""
+  skipped: [SkippedObject!]!
+
+  """
+  Structures here that cannot say what created their objects: not looked at
+  """
+  unknown: [String!]!
+}
+
+"""
 A Workspace is the top-level container that groups the Flows of an organization, mirroring the concept of a project or folder. It is the entry point users edit flows within.
 """
 type Workspace {
@@ -2892,6 +3038,9 @@ input WorkspaceFilter {
   """Filter for items created before this datetime"""
   createdBefore: DateTime
 
+  """Only what the workflow (its root task id) created"""
+  createdUnder: ID
+
   """
   Filter to the items this user made, given by their sub (their id in lok), the way a member's profile asks for their work
   """
@@ -2899,6 +3048,11 @@ input WorkspaceFilter {
 
   """Filter by a list of IDs"""
   ids: [ID!]
+
+  """
+  Only what is in this collaboration (its key): put in, or part of what was
+  """
+  inCollaboration: ID
 
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean

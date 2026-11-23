@@ -1,0 +1,21 @@
+# Put what a workflow (a rekuest root task) made here in a collaboration, by its key: every
+# service the workflow touched is asked the same (`core/collaborations`). `dryRun` reports
+# what it would do and writes nothing.
+mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}

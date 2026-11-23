@@ -1,0 +1,20 @@
+# The task a "Share workflow" starts from, and the workflow (root task) it belongs to:
+# what is shared is everything made under the root.
+query ShareWorkflowTask($id: ID!) {
+  task(id: $id) {
+    id
+    createdAt
+    action {
+      id
+      name
+    }
+    root {
+      id
+      createdAt
+      action {
+        id
+        name
+      }
+    }
+  }
+}

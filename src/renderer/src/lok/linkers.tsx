@@ -18,3 +18,4 @@ export const LokMapping = smartOf(manifest, "@lok/mapping");
 export const LokComposition = smartOf(manifest, "@lok/composition");
 export const LokMandate = smartOf(manifest, "@lok/mandate");
 export const LokBugReport = smartOf(manifest, "@lok/bugreport");
+export const LokCollaboration = smartOf(manifest, "@lok/collaboration");

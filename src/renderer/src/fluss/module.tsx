@@ -1,4 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { FLUSS_ACTIONS } from "./actions";
 import { FLUSS_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
@@ -12,6 +14,8 @@ export const FLUSS_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "fluss.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./ReaktionModule"),
     navLinks: FLUSS_NAV_LINKS,
     dialogs: FLUSS_DIALOGS,

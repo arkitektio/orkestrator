@@ -1,3 +1,4 @@
+import { CollaborationFilter } from "@/core/collaborations/CollaborationFilter";
 import { Button } from "@/core/ui/button";
 import { FilterClear, FilterSearchField, FilterTrigger } from "@/core/ui/filter-bar";
 import { DateTimeRangePicker } from "@/core/ui/date-time-range-picker";
@@ -192,6 +193,8 @@ export const useArrayDatasetFilterBar = ({
     "units",
     parseAsStringLiteral(UNITS_KEYS).withDefault("any"),
   );
+  // A collaboration's key (lok's, one across every service): `inCollaboration`.
+  const [collaboration, setCollaboration] = useQueryState("collab", parseAsString);
 
   // Debounced so a keystroke does not refetch: the list refetches whenever
   // `filters` changes identity.
@@ -223,8 +226,10 @@ export const useArrayDatasetFilterBar = ({
       ...(createdBefore ? { createdBefore: createdBefore.toISOString() } : {}),
       ...(specs.length ? { spec: specs } : {}),
       ...arrayDatasetPropertyFilters(origin, pyramid, units),
+      ...(collaboration ? { inCollaboration: collaboration } : {}),
     };
   }, [
+    collaboration,
     debouncedSearch,
     createdAfter,
     createdBefore,
@@ -312,6 +317,7 @@ export const useArrayDatasetFilterBar = ({
     origin !== DEFAULT_ORIGIN ||
     pyramid !== "any" ||
     units !== "any" ||
+    !!collaboration ||
     isCustomOrder;
 
   const clear = () => {
@@ -322,6 +328,7 @@ export const useArrayDatasetFilterBar = ({
     setOrigin(null);
     setPyramid(null);
     setUnits(null);
+    setCollaboration(null);
     setSortField(null);
     setSortDirection(null);
   };
@@ -429,6 +436,8 @@ export const useArrayDatasetFilterBar = ({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <CollaborationFilter value={collaboration} onChange={setCollaboration} />
 
       <DateTimeRangePicker
         align="start"

@@ -23,6 +23,16 @@ export type Scalars = {
   _Any: { input: any; output: any; }
 };
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** A lat/lon rectangle, e.g. a map viewport. */
 export type BoxInput = {
   east: Scalars['Float']['input'];
@@ -41,6 +51,76 @@ export type ChangeSet = {
   points: Array<Point>;
   trips: Array<Trip>;
   visits: Array<Visit>;
+};
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
+  items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
 };
 
 /** One calendar day of the timeline, across all your devices. */
@@ -117,14 +197,39 @@ export type ModeStat = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several of your visits, trips or places in a collaboration at once; all or none. */
+  addManyToCollaboration: Collaboration;
+  /** Put one of your visits (with the place it was matched to), trips or places in a collaboration (lok's, by its key) for its guests to read. Never a location fix or a device. The first thing put in makes lokate's row of the collaboration. */
+  addToCollaboration: Collaboration;
+  /** Take everything lokate holds in a collaboration (by its key) out of it: its guests read none of it here any more. lok's collaboration and its grants stay. */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete all of your data on this server (confirm = "DELETE"). Returns how many points, visits, trips and places were deleted. */
   deleteServerCopy: Scalars['Int']['output'];
+  /** Take a visit, trip or place out of a collaboration, with what it brought that nothing else there needs. */
+  removeFromCollaboration: Collaboration;
   /** In one transaction, make this device's visits and trips starting at or after `from` exactly the ones sent. */
   replaceSegments: ReplaceResult;
+  /** Put what a workflow (its root task) created in lokate in a collaboration. A timeline is backed up by phones, not made by workflows: every structure is reported unknown and nothing is put in. */
+  shareWorkflow: WorkflowShare;
   /** Merge places and tombstones, last write wins on updatedAt; newer server copies come back in `stale`. */
   syncPlaces: PlaceSyncResult;
   /** Store points (at most 1000 per call). Safe to repeat: a point already stored counts as a duplicate. */
   uploadPoints: UploadResult;
+};
+
+
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
+};
+
+
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
+export type MutationDeleteCollaborationArgs = {
+  key: Scalars['ID']['input'];
 };
 
 
@@ -133,10 +238,20 @@ export type MutationDeleteServerCopyArgs = {
 };
 
 
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationReplaceSegmentsArgs = {
   from: Scalars['DateTime']['input'];
   trips: Array<TripInput>;
   visits: Array<VisitInput>;
+};
+
+
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -203,8 +318,12 @@ export type PlaceFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<PlaceFilter>;
   OR?: InputMaybe<PlaceFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   inBox?: InputMaybe<BoxInput>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   near?: InputMaybe<NearInput>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -298,6 +417,12 @@ export type Query = {
   _service: _Service;
   /** Everything of yours, from all your devices, changed after `cursor`, oldest first (limit at most 1000). Page until hasMore is false; used to restore. */
   changes: ChangeSet;
+  /** What lokate holds in a collaboration, by its key (lok's). */
+  collaboration: Collaboration;
+  /** The organization's collaborations lokate holds visits, trips or places in (a guest: the ones granted to them). */
+  collaborations: Array<Collaboration>;
+  /** Count the collaborations `collaborations` lists, and the objects in them. */
+  collaborationsStats: CollaborationStats;
   /** One calendar day (in `timezone`, IANA name): its visits and trips in order, and totals. */
   day: Day;
   /** A device by id. */
@@ -345,6 +470,16 @@ export type Query_EntitiesArgs = {
 export type QueryChangesArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -460,6 +595,40 @@ export type ReplaceResult = {
   visits: Scalars['Int']['output'];
 };
 
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
+};
+
 /** Totals for one day, week or month. */
 export type StatsBucket = {
   __typename?: 'StatsBucket';
@@ -522,7 +691,11 @@ export type TripFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<TripFilter>;
   OR?: InputMaybe<TripFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   devices?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   minDistance?: InputMaybe<Scalars['Float']['input']>;
   modes?: InputMaybe<Array<TripMode>>;
   since?: InputMaybe<Scalars['DateTime']['input']>;
@@ -586,9 +759,13 @@ export type VisitFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<VisitFilter>;
   OR?: InputMaybe<VisitFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   devices?: InputMaybe<Array<Scalars['ID']['input']>>;
   hasPlace?: InputMaybe<Scalars['Boolean']['input']>;
   inBox?: InputMaybe<BoxInput>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   minDuration?: InputMaybe<Scalars['Float']['input']>;
   near?: InputMaybe<NearInput>;
   places?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -610,6 +787,23 @@ export type VisitInput = {
 export type VisitOrder =
   { end: Ordering; start?: never; }
   |  { end?: never; start: Ordering; };
+
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
+};
 
 export type _Entity = Device | Place | Point | Trip | Visit;
 
@@ -680,6 +874,13 @@ export type DeleteServerCopyMutationVariables = Exact<{
 
 
 export type DeleteServerCopyMutation = { __typename?: 'Mutation', deleteServerCopy: number };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type ListPlacesQueryVariables = Exact<{
   filters?: InputMaybe<PlaceFilter>;
@@ -1017,6 +1218,52 @@ export function useDeleteServerCopyMutation(baseOptions?: ApolloReactHooks.Mutat
 export type DeleteServerCopyMutationHookResult = ReturnType<typeof useDeleteServerCopyMutation>;
 export type DeleteServerCopyMutationResult = Apollo.MutationResult<DeleteServerCopyMutation>;
 export type DeleteServerCopyMutationOptions = Apollo.BaseMutationOptions<DeleteServerCopyMutation, DeleteServerCopyMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const ListPlacesDocument = gql`
     query ListPlaces($filters: PlaceFilter, $ordering: [PlaceOrder!], $pagination: OffsetPaginationInput) {
   places(filters: $filters, ordering: $ordering, pagination: $pagination) {

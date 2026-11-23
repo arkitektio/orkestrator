@@ -165,6 +165,16 @@ export enum ActionScope {
   Local = 'LOCAL'
 }
 
+/** Objects to put in a collaboration at once: all of them, or none */
+export type AddManyToCollaborationInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The collaboration's name, kept here when these are the first things put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** What to put in; a whole before its parts */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
 export type AgentCall = {
   __typename?: 'AgentCall';
@@ -221,7 +231,7 @@ export type App = {
   __typename?: 'App';
   /** The accelerators the app's flavours require, one entry per vendor (cuda, rocm, oneapi), as `@kabinet/gpu` names them. A flavour that requires several vendors at once is a GPU flavour but names none here. */
   accelerators: Array<Scalars['String']['output']>;
-  /** How many deployments the app's flavours have, of any release and in any status: 0 for an app that is not installed. */
+  /** How many deployments the app's flavours have, of any release and in any status: 0 for an app that is not installed (and for a guest of the organization: where it runs is never shared). */
   deploymentCount: Scalars['Int']['output'];
   /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -240,7 +250,7 @@ export type App = {
   releaseCount: Scalars['Int']['output'];
   /** The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first. */
   releases: Array<Release>;
-  /** How many of the app's deployments are RUNNING. */
+  /** How many of the app's deployments are RUNNING (0 for a guest of the organization: where it runs is never shared). */
   runningCount: Scalars['Int']['output'];
   /** The services any of the app's flavours require (e.g. `live.arkitekt.mikro`), sorted. */
   services: Array<Scalars['String']['output']>;
@@ -262,6 +272,8 @@ export type AppFilter = {
   OR?: InputMaybe<AppFilter>;
   /** true: only apps whose newest release brings a panel or a scene (a blok the store offers); false: only apps whose newest release brings none. */
   bloks?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** true: only apps with at least one deployment of any of their flavours (installed); false: only apps with none. */
   deployed?: InputMaybe<Scalars['Boolean']['input']>;
   /** Keep only apps with a flavour for each of these: GPU, a flavour that requires an accelerator; CPU, one that runs on a plain CPU backend. Read from the flavours' required selectors (`@kabinet/gpu`). */
@@ -272,6 +284,8 @@ export type AppFilter = {
   identifiers?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Keep only apps whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only the apps of this publisher: those whose identifier is the publisher plus one last segment (`live.arkitekt` keeps `live.arkitekt.segmentation`, not `live.arkitekt.tools.segmentation`). Segments are separated by `.` or `/`, either way. An exact match, unlike `search`. */
   publisher?: InputMaybe<Scalars['String']['input']>;
   /** Search by identifier, by the names of the actions its newest release brings, and by the keys and descriptions of its panels and scenes (each a case-insensitive substring), or by semantic similarity of the query to the identifier. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -647,6 +661,111 @@ export type CpuSelector = Selector & {
   weight: Scalars['Int']['output'];
 };
 
+/** A curated list of repositories the organization reads, e.g. arkitekt.live's default list: the ones the hub's config names (`ensured`) and the ones the organization added (`createCatalog`). */
+export type Catalog = {
+  __typename?: 'Catalog';
+  /** When the organization got this catalog. */
+  addedAt: Scalars['DateTime']['output'];
+  /** When reading the file was last tried. */
+  checkedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The member who added it; none for a catalog the config names. */
+  creator?: Maybe<User>;
+  /** The description the file gives. */
+  description: Scalars['String']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  /** Whether the hub's config names it. The organization cannot remove such a catalog. */
+  ensured: Scalars['Boolean']['output'];
+  /** The repositories the catalog lists. */
+  entries: Array<CatalogEntry>;
+  /** Why the last read failed. The entries of the last good read are kept. */
+  error?: Maybe<Scalars['String']['output']>;
+  /** When the file was last read without an error. */
+  fetchedAt?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  /** The name the file gives, empty until it was read. */
+  name: Scalars['String']['output'];
+  /** The organization reading this catalog. */
+  organization: Organization;
+  /** Where the catalog file is read from. */
+  url: Scalars['String']['output'];
+};
+
+
+/** A curated list of repositories the organization reads, e.g. arkitekt.live's default list: the ones the hub's config names (`ensured`) and the ones the organization added (`createCatalog`). */
+export type CatalogEntriesArgs = {
+  filters?: InputMaybe<CatalogEntryFilter>;
+  ordering?: Array<CatalogEntryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** A repository a catalog of the organization lists. Importing it (`importCatalogEntry`) imports it as `importRepo` or `createGithubRepo` would; listing it trusts nothing, a release is still approved before it is deployed. */
+export type CatalogEntry = {
+  __typename?: 'CatalogEntry';
+  /** The catalog listing it. */
+  catalog: Catalog;
+  /** The channels an import of an OCI entry follows besides the releases. */
+  channels: Array<Scalars['String']['output']>;
+  /** What the catalog says the repository is. */
+  description: Scalars['String']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  /** The GitHub repository the organization tracks from this entry, if it does. */
+  githubRepo?: Maybe<GithubRepo>;
+  /** Where to read more about it. */
+  homepage?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** The entry's identity in its catalog, the same across reads. */
+  key: Scalars['String']['output'];
+  /** How the repository is read. */
+  kind: CatalogEntryKind;
+  /** A public URL of a logo, as the catalog gives it. */
+  logoUrl?: Maybe<Scalars['String']['output']>;
+  /** Who maintains it. */
+  maintainer?: Maybe<Scalars['String']['output']>;
+  /** The name the catalog gives. */
+  name: Scalars['String']['output'];
+  /** The OCI repository the organization imported from this entry, if it did. */
+  ociRepo?: Maybe<OciRepo>;
+  /** The repository: `registry/repository` for an OCI entry, `owner/repo:branch` for a GitHub one. */
+  reference: Scalars['String']['output'];
+  /** The catalog's tags for it. */
+  tags: Array<Scalars['String']['output']>;
+};
+
+/** Filter for the entries of the hub's catalogs. */
+export type CatalogEntryFilter = {
+  AND?: InputMaybe<CatalogEntryFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<CatalogEntryFilter>;
+  OR?: InputMaybe<CatalogEntryFilter>;
+  /** Keep only entries of this catalog. */
+  catalog?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only entries whose ID is in this list. */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only entries of this kind. */
+  kind?: InputMaybe<CatalogEntryKind>;
+  /** Case-insensitive substring of the name, the description, the key or the reference. */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Keep only entries carrying every one of these tags. */
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+/** How the repository a catalog entry names is read. */
+export enum CatalogEntryKind {
+  Github = 'GITHUB',
+  Oci = 'OCI'
+}
+
+export type CatalogEntryOrder =
+  { id: Ordering; key?: never; name?: never; }
+  |  { id?: never; key: Ordering; name?: never; }
+  |  { id?: never; key?: never; name: Ordering; };
+
 export type Choice = {
   __typename?: 'Choice';
   description?: Maybe<Scalars['String']['output']>;
@@ -742,6 +861,76 @@ export type ClientRelease = {
   version: Scalars['String']['output'];
 };
 
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** How many objects are in the collaboration: all of them, or (`brought`) only those put in by hand (false) or only those that came along with one (true) */
+  itemCount: Scalars['Int']['output'];
+  /** What is in the collaboration, oldest first; what is part of these is in it too. `brought` keeps what was put in by hand (false) or only what came along with it (true) */
+  items: Array<CollaborationItem>;
+  /** The collaboration's key across the hub: what lok grants, and what names it in every service */
+  key: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemCountArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type CollaborationItemsArgs = {
+  brought?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The collaboration's name, kept here when this is the first thing put in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type CollaborationObjectRef = {
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
+/** How many collaborations the organization has (a guest: theirs), and how much is in them */
+export type CollaborationStats = {
+  __typename?: 'CollaborationStats';
+  /** How many collaborations */
+  count: Scalars['Int']['output'];
+  /** How many objects are in them altogether, brought along ones included */
+  itemCount: Scalars['Int']['output'];
+};
+
 /** A named grouping of related action definitions. */
 export type Collection = {
   __typename?: 'Collection';
@@ -829,6 +1018,12 @@ export type CpuSelectorInput = {
   required?: Scalars['Boolean']['input'];
   /** Scoring weight of a preferred (non-required) selector; deployers prefer candidates with the highest sum of satisfied weights. */
   weight?: Scalars['Int']['input'];
+};
+
+/** Input for adding a catalog to the organization, or reading an added one again. */
+export type CreateCatalogInput = {
+  /** Where the catalog file (JSON or YAML) is read from, an http(s) URL. */
+  url: Scalars['String']['input'];
 };
 
 /** Input for creating a deployment of a flavour on a backend. */
@@ -1098,6 +1293,8 @@ export type DefinitionFilter = {
   apps?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only definitions in these collections. */
   collections?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only definitions first defined at or after this moment. */
   definedAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Keep only definitions first defined at or before this moment. */
@@ -1112,6 +1309,8 @@ export type DefinitionFilter = {
   idempotent?: InputMaybe<Scalars['Boolean']['input']>;
   /** Keep only definitions whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only definitions that declare all of these interfaces. */
   interfaces?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Keep only definitions that are tests for these definitions. */
@@ -1190,6 +1389,12 @@ export type DefinitionOrder =
   |  { definedAt?: never; kind: Ordering; name?: never; }
   |  { definedAt?: never; kind?: never; name: Ordering; };
 
+/** Input for removing a catalog the organization added. */
+export type DeleteCatalogInput = {
+  /** The ID of the catalog to remove. */
+  id: Scalars['String']['input'];
+};
+
 /** Input for deleting a pod. */
 export type DeletePodInput = {
   /** The ID of the pod to delete. */
@@ -1227,8 +1432,12 @@ export type DeploymentFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<DeploymentFilter>;
   OR?: InputMaybe<DeploymentFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only deployments whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<RequiresInput>>;
   /** Case-insensitive search on the deployment name. */
@@ -1489,10 +1698,14 @@ export type FlavourFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<FlavourFilter>;
   OR?: InputMaybe<FlavourFilter>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only flavours that provide one of the given definitions. */
   hasDefinitions?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only flavours whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by name: a case-insensitive substring, or semantic similarity of the query to the flavour's name and the app it was built from. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -1568,10 +1781,14 @@ export type GithubRepoFilter = {
   OR?: InputMaybe<GithubRepoFilter>;
   /** Case-insensitive match on the branch name. */
   branch?: InputMaybe<Scalars['String']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only repositories this user added, given by their sub (their id in lok). `user` is the GitHub owner, not a member. */
   creator?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only repositories whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Case-insensitive match on the GitHub repository name. */
   repo?: InputMaybe<Scalars['String']['input']>;
   /** Search by name: a case-insensitive substring, or semantic similarity of the query to the repository's name. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -1705,6 +1922,14 @@ export type ImplementationInput = {
   params?: InputMaybe<Scalars['AnyDefault']['input']>;
   /** The downstream service(s) the provenance token should be scoped to (the token's `aud`). If omitted, Rekuest derives the audience from the structures the assignment acts on. */
   provenanceAudience?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+/** Input for importing the repository a catalog entry names into the organization. */
+export type ImportCatalogEntryInput = {
+  /** For an OCI entry, the channels to follow besides the releases. Omit for the ones the catalog gives. */
+  channels?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** The ID of the catalog entry. */
+  id: Scalars['String']['input'];
 };
 
 /** Input for importing an OCI repository, or reading an imported one again. */
@@ -1847,10 +2072,16 @@ export type MessageEffect = Effect & {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several objects in a collaboration (by its key) at once, a whole before its parts, each with what it needs to be seen: all of them, or none */
+  addManyToCollaboration: Collaboration;
+  /** Put an app, an action definition or a repository in a collaboration (lok's, by its key), with what it needs to be seen: an app brings its releases and flavours, their images and the actions they provide. Deployments, pods, approvals and catalogs are never shared. The collaboration's row here is made the first time something is put in */
+  addToCollaboration: Collaboration;
   /** Record a standing approval of a release (backed by a lok mandate) so deployers may install it. */
   approveRelease: ReleaseApproval;
   /** Register a built app image, creating its release and flavour as needed. */
   createAppImage: Release;
+  /** Add a catalog (a curated list of repositories, JSON or YAML at a URL) to the organization and read it, or read an added one again. A URL that is not a readable catalog is refused. */
+  createCatalog: Catalog;
   /** Schedule a flavour onto a backend, creating a new deployment. */
   createDeployment: Deployment;
   /** Start tracking a new GitHub repository so it can be scanned for apps. */
@@ -1863,22 +2094,44 @@ export type Mutation = {
   declareResource: Resource;
   /** Delete a backend and return its ID. */
   deleteBackend: Scalars['ID']['output'];
+  /** Remove a catalog the organization added, with its entries; what was imported from it stays. A catalog the hub's config names cannot be removed. */
+  deleteCatalog: Scalars['ID']['output'];
+  /** Take everything kabinet put in a collaboration (by its key) out of it: whoever was granted it sees nothing of it here any more. lok's collaboration, and its grants, stay */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete a pod and return its ID. */
   deletePod: Scalars['ID']['output'];
   /** Attach a captured log dump to a pod. */
   dumpLogs: LogDump;
+  /** Import the repository a catalog entry names into the organization: an OCI entry as `importRepo`, a GitHub entry as `createGithubRepo`. */
+  importCatalogEntry: CatalogEntry;
   /** Import an OCI repository that carries an app's releases (e.g. ghcr.io/org/app), or read an imported one again. */
   importRepo: OciRepo;
+  /** Read a catalog again now, however recently it was read. */
+  refreshCatalog: Catalog;
+  /** Take an object out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** Rescan every tracked repository for new or updated releases: the GitHub repositories (their app manifests and bloks) and the imported OCI repositories. */
   rescanRepos: Array<GithubRepo>;
   /** Withdraw a release approval. */
   revokeApproval: ReleaseApproval;
   /** Scan a tracked GitHub repository for app manifests and update its flavours. */
   scanRepo: GithubRepo;
+  /** Put what a workflow (its root task) created in kabinet in a collaboration, as it is now: what it makes later is not. A release, flavour or action made for an app made before the workflow, and not shared, is left out and reported; `dryRun` only says what would be put in */
+  shareWorkflow: WorkflowShare;
   /** Update the status of an existing deployment. */
   updateDeployment: Deployment;
   /** Update the status of an existing pod. */
   updatePod: Pod;
+};
+
+
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
+};
+
+
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -1889,6 +2142,11 @@ export type MutationApproveReleaseArgs = {
 
 export type MutationCreateAppImageArgs = {
   input: AppImageInput;
+};
+
+
+export type MutationCreateCatalogArgs = {
+  input: CreateCatalogInput;
 };
 
 
@@ -1922,6 +2180,16 @@ export type MutationDeleteBackendArgs = {
 };
 
 
+export type MutationDeleteCatalogArgs = {
+  input: DeleteCatalogInput;
+};
+
+
+export type MutationDeleteCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
 export type MutationDeletePodArgs = {
   input: DeletePodInput;
 };
@@ -1932,8 +2200,23 @@ export type MutationDumpLogsArgs = {
 };
 
 
+export type MutationImportCatalogEntryArgs = {
+  input: ImportCatalogEntryInput;
+};
+
+
 export type MutationImportRepoArgs = {
   input: ImportRepoInput;
+};
+
+
+export type MutationRefreshCatalogArgs = {
+  input: RefreshCatalogInput;
+};
+
+
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -1944,6 +2227,11 @@ export type MutationRevokeApprovalArgs = {
 
 export type MutationScanRepoArgs = {
   input: ScanRepoInput;
+};
+
+
+export type MutationShareWorkflowArgs = {
+  input: ShareWorkflowInput;
 };
 
 
@@ -2123,8 +2411,12 @@ export type PodFilter = {
   OR?: InputMaybe<PodFilter>;
   /** Keep only pods running on the given backend. */
   backend?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only pods whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<RequiresInput>>;
   /** Match pods by the name of their backend. */
@@ -2316,6 +2608,20 @@ export type Query = {
   backend: Backend;
   /** List all backends visible to the current organization. */
   backends: Array<Backend>;
+  /** Return a single catalog by its ID, read again first when it was not read for a while. */
+  catalog: Catalog;
+  /** List the repositories the organization's catalogs list, as they were last read. `catalogs` adds the config's catalogs and reads stale ones again. */
+  catalogEntries: Array<CatalogEntry>;
+  /** Return a single catalog entry by its ID. */
+  catalogEntry: CatalogEntry;
+  /** List the organization's catalogs (curated lists of repositories, e.g. arkitekt.live's): the ones the hub's config names and the ones it added, reading again the ones not read for a while. */
+  catalogs: Array<Catalog>;
+  /** Get a single collaboration by its key (lok's): what was put in it here */
+  collaboration: Collaboration;
+  /** List the organization's collaborations that hold something of kabinet (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
+  /** Count the collaborations `collaborations` lists, and the objects in them */
+  collaborationsStats: CollaborationStats;
   /** Return a single action definition by its ID. */
   definition: Definition;
   /** List all action definitions visible to the current organization. */
@@ -2394,6 +2700,33 @@ export type QueryBackendArgs = {
 export type QueryBackendsArgs = {
   filters?: InputMaybe<BackendFilter>;
   ordering?: Array<BackendOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCatalogArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryCatalogEntriesArgs = {
+  filters?: InputMaybe<CatalogEntryFilter>;
+  ordering?: Array<CatalogEntryOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCatalogEntryArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
+export type QueryCollaborationsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -2558,6 +2891,12 @@ export type RamSelectorInput = {
   weight?: Scalars['Int']['input'];
 };
 
+/** Input for reading a catalog again now. */
+export type RefreshCatalogInput = {
+  /** The ID of the catalog to read. */
+  id: Scalars['String']['input'];
+};
+
 /** A specific version of an app, bundling the flavours that can be deployed for it. */
 export type Release = {
   __typename?: 'Release';
@@ -2686,10 +3025,14 @@ export type ReleaseFilter = {
   app?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only the releases of these apps. */
   apps?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what the workflow (its root task id) created */
+  createdUnder?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only releases whose app identifier contains this text, case-insensitively. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** Keep only releases whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only what is in this collaboration (its key): put in, or part of what was */
+  inCollaboration?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
   requires?: InputMaybe<Array<RequiresInput>>;
   /** Case-insensitive search on the release version. */
@@ -3047,6 +3390,40 @@ export type ServiceCount = {
   service: Scalars['String']['output'];
 };
 
+/** Put what a workflow created in a collaboration, as it is now */
+export type ShareWorkflowInput = {
+  /** The collaboration's key (lok's) */
+  collaboration: Scalars['ID']['input'];
+  /** Only say what would be put in, and what left out */
+  dryRun?: Scalars['Boolean']['input'];
+  /** The collaboration's name, kept here when this puts the first things in */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The workflow: the id of the task a person started, the root of every task it caused */
+  rootTask: Scalars['ID']['input'];
+};
+
+/** An object, by its structure and id */
+export type SharedObject = {
+  __typename?: 'SharedObject';
+  /** The structure the object is known by: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+};
+
+/** Created in the workflow, but part of something made before it that is not shared: left out */
+export type SkippedObject = {
+  __typename?: 'SkippedObject';
+  /** The structure the object is known by */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id */
+  object: Scalars['ID']['output'];
+  /** The id of what it is part of: put that in, and share the workflow again, to bring it */
+  whole: Scalars['ID']['output'];
+  /** The structure of what it is part of */
+  wholeIdentifier?: Maybe<Scalars['String']['output']>;
+};
+
 export type SliderAssignWidget = AssignWidget & {
   __typename?: 'SliderAssignWidget';
   followValue?: Maybe<Scalars['String']['output']>;
@@ -3302,6 +3679,23 @@ export type ValidatorInput = {
   label?: InputMaybe<Scalars['String']['input']>;
   /** The authoring expression the call was compiled from (informational; never parsed or validated by the server). */
   source?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** What sharing a workflow put in a collaboration here (or, tried, would put in) */
+export type WorkflowShare = {
+  __typename?: 'WorkflowShare';
+  /** Put in, with what each needs to be seen */
+  added: Array<SharedObject>;
+  /** The collaboration's key */
+  collaboration: Scalars['ID']['output'];
+  /** How many parts came along with their whole, without being put in themselves */
+  covered: Scalars['Int']['output'];
+  /** Whether nothing was written */
+  dryRun: Scalars['Boolean']['output'];
+  /** Left out: parts of something made before the workflow and not shared */
+  skipped: Array<SkippedObject>;
+  /** Structures here that cannot say what created their objects: not looked at */
+  unknown: Array<Scalars['String']['output']>;
 };
 
 export type AppFragment = (
@@ -4096,6 +4490,13 @@ export type ImportRepoMutationVariables = Exact<{
 
 
 export type ImportRepoMutation = { __typename?: 'Mutation', importRepo: { __typename?: 'OciRepo', id: string, name: string, registry: string, repository: string, scannedAt?: any | null, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } }> } };
+
+export type ShareWorkflowMutationVariables = Exact<{
+  input: ShareWorkflowInput;
+}>;
+
+
+export type ShareWorkflowMutation = { __typename?: 'Mutation', shareWorkflow: { __typename?: 'WorkflowShare', collaboration: string, dryRun: boolean, covered: number, unknown: Array<string>, added: Array<{ __typename?: 'SharedObject', identifier?: string | null, object: string }>, skipped: Array<{ __typename?: 'SkippedObject', identifier?: string | null, object: string, wholeIdentifier?: string | null, whole: string }> } };
 
 export type GetAppQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6122,6 +6523,52 @@ export function useImportRepoMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type ImportRepoMutationHookResult = ReturnType<typeof useImportRepoMutation>;
 export type ImportRepoMutationResult = Apollo.MutationResult<ImportRepoMutation>;
 export type ImportRepoMutationOptions = Apollo.BaseMutationOptions<ImportRepoMutation, ImportRepoMutationVariables>;
+export const ShareWorkflowDocument = gql`
+    mutation ShareWorkflow($input: ShareWorkflowInput!) {
+  shareWorkflow(input: $input) {
+    collaboration
+    dryRun
+    added {
+      identifier
+      object
+    }
+    covered
+    skipped {
+      identifier
+      object
+      wholeIdentifier
+      whole
+    }
+    unknown
+  }
+}
+    `;
+export type ShareWorkflowMutationFn = Apollo.MutationFunction<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
+
+/**
+ * __useShareWorkflowMutation__
+ *
+ * To run a mutation, you first call `useShareWorkflowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareWorkflowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareWorkflowMutation, { data, loading, error }] = useShareWorkflowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareWorkflowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareWorkflowMutation, ShareWorkflowMutationVariables>(ShareWorkflowDocument, options);
+      }
+export type ShareWorkflowMutationHookResult = ReturnType<typeof useShareWorkflowMutation>;
+export type ShareWorkflowMutationResult = Apollo.MutationResult<ShareWorkflowMutation>;
+export type ShareWorkflowMutationOptions = Apollo.BaseMutationOptions<ShareWorkflowMutation, ShareWorkflowMutationVariables>;
 export const GetAppDocument = gql`
     query GetApp($id: ID!) {
   app(id: $id) {

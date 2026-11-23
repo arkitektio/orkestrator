@@ -299,6 +299,27 @@ export const LOK_HELP = {
       tips={[<>This page is only available to administrators.</>]}
     />
   ),
+  collaborations: (
+    <PageHelp
+      intro="What guests of your organization are let in to. A collaboration is one key across every service: each service holds what you put in it there, and a guest sees nothing else."
+      steps={[
+        <>Press <b>New</b> to make an empty collaboration.</>,
+        <>Put objects in it with <b>Add to Collaboration</b> on them, or a whole workflow with <b>Share workflow</b> on a task.</>,
+        <>Open a collaboration and press <b>Share</b> to make a link that grants it.</>,
+      ]}
+      tips={[<>Deleting a collaboration takes it from everyone it was shared with; what the services hold under its key is not deleted.</>]}
+    />
+  ),
+  collaboration: (
+    <PageHelp
+      intro="One collaboration: its name, its links, and what each service holds of it."
+      steps={[
+        <>Press <b>Share</b> to make a link: whoever opens it and signs in becomes a guest and sees only what is in it.</>,
+        <>Press <b>Rename</b> to change its name or description, <b>Delete</b> to take it from everyone.</>,
+      ]}
+      tips={[<>Each service lists what it holds below; open one to take things out again.</>]}
+    />
+  ),
   mandates: (
     <PageHelp
       intro="The apps allowed to act as you. A mandate is your approval for one exact app version to be started and signed in under your name, for example by an app installer on a lab computer."

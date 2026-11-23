@@ -2,19 +2,16 @@ import { useDialog } from "@/core/dialogs/registry";
 import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
-import { Button } from "@/core/ui/button";
 import {
   DialogBody,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
-import { Input } from "@/core/ui/input";
-import { Check, Plus, Share2 } from "lucide-react";
+import { CollaborationPicker, useResolveCollaboration, type CollaborationTarget } from "@/core/collaborations/CollaborationPicker";
 import { useState } from "react";
 import {
   useAddManyToCollaborationMutation,
-  useCreateCollaborationMutation,
   useGetCollaborationsWithItemsQuery,
 } from "../api/graphql";
 import { DerivedDataPicker, useDerivedSelection } from "./collaboration/DerivedDataPicker";
@@ -32,39 +29,40 @@ const describeWith = (objects: CollaborationSubject, derived: number) =>
   derived === 0 ? describe(objects) : `${describe(objects)} and ${derived} derived`;
 
 /**
- * Pick the collaboration to put objects in, or name a new one. What each object needs to be
- * seen (a scene's datasets, a dataset's stores) comes along: mikro puts that in too. What was
- * derived from them (masks, measurements, meshes) goes in only as chosen under "Derived data".
+ * Pick the collaboration to put objects in, or name a new one. Collaborations are lok's (one
+ * key across every service): a new one is made there, then mikro puts the objects in under
+ * its key. What each object needs to be seen (a scene's datasets, a dataset's stores) comes
+ * along: mikro puts that in too. What was derived from them (masks, measurements, meshes)
+ * goes in only as chosen under "Derived data".
  */
 export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps) => {
   const { openDialog } = useDialog();
-  const [name, setName] = useState("");
   const [pending, setPending] = useState<string>();
-  const { data, loading } = useGetCollaborationsWithItemsQuery();
+  // mikro's rows of the collaborations (by key, `id: key`): what each already holds.
+  const { data } = useGetCollaborationsWithItemsQuery();
   const [addMany] = useAddManyToCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaborationsWithItems", "GetCollaboration", "GetCollaborationItems"] });
+  const resolve = useResolveCollaboration();
   const derived = useDerivedSelection(objects);
   const refs = collaborationRefs(objects, derived.picked);
   const derivedCount = refs.length - objects.length;
-  const [create] = useCreateCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaborationsWithItems"] });
 
-  const holdsAll = (items: { identifier?: string | null; objectId: string }[]) =>
-    refs.every((object) => items.some((item) => item.identifier === object.identifier && item.objectId === object.id));
+  const held = new Map((data?.collaborations ?? []).map((collaboration) => [collaboration.id, collaboration]));
+  const holdsAll = (key: string) => {
+    const items = held.get(key)?.items;
+    return !!items && refs.every((object) => items.some((item) => item.identifier === object.identifier && item.objectId === object.id));
+  };
 
   // A failure stays in the dialog; the toast on success is for its Share action.
   const { submit } = useDialogSubmit(
-    async (target: { id: string; name: string } | "new") => {
-      setPending(target === "new" ? "__new__" : target.id);
+    async (target: CollaborationTarget) => {
+      setPending("key" in target ? target.key : "__new__");
       try {
-        let collaboration = target;
-        if (collaboration === "new") {
-          const created = (await create({ variables: { input: { name: name.trim() } } })).data?.createCollaboration;
-          if (!created) throw new Error("the collaboration was not created");
-          collaboration = created;
-        }
+        const collaboration = await resolve(target);
         await addMany({
           variables: {
             input: {
-              collaboration: collaboration.id,
+              collaboration: collaboration.key,
+              name: collaboration.name,
               objects: refs.map((ref) => ({ identifier: ref.identifier, object: ref.id })),
             },
           },
@@ -78,14 +76,10 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
       errorTitle: "Couldn't add to the collaboration",
       onSuccess: (collaboration) =>
         toast.success(`Put ${describeWith(objects, derivedCount)} in ${collaboration.name}`, {
-          action: { label: "Share", onClick: () => openDialog("sharecollaboration", { collaboration: collaboration.id }, { size: "medium" }) },
+          action: { label: "Share", onClick: () => openDialog("sharecollaboration", { collaboration: collaboration.key }, { size: "medium" }) },
         }),
     },
   );
-  const putIn = (collaboration: { id: string; name: string }) => submit(collaboration);
-  const createAndPutIn = () => submit("new");
-
-  const collaborations = data?.collaborations ?? [];
 
   return (
     <>
@@ -98,43 +92,23 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
       </DialogHeader>
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <DerivedDataPicker selection={derived} />
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (name.trim()) void createAndPutIn();
-          }}
-        >
-          <Input placeholder="New collaboration…" value={name} onChange={(e) => setName(e.target.value)} />
-          <Button type="submit" variant="outline" disabled={!name.trim() || pending !== undefined || derived.pending} className="shrink-0 gap-2">
-            <Plus className="h-4 w-4" />
-            Create
-          </Button>
-        </form>
         <DialogBody className="gap-1">
-          {loading && collaborations.length === 0 && <div className="text-sm text-muted-foreground">Loading…</div>}
-          {!loading && collaborations.length === 0 && (
-            <div className="text-sm text-muted-foreground">No collaborations yet: name one above.</div>
-          )}
-          {collaborations.map((collaboration) => {
-            const already = holdsAll(collaboration.items);
-            return (
-              <Button
-                key={collaboration.id}
-                type="button"
-                variant="ghost"
-                className="justify-start gap-2"
-                disabled={already || pending !== undefined || derived.pending}
-                onClick={() => void putIn(collaboration)}
-              >
-                {already ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-                <span className="truncate">{collaboration.name}</span>
-                <Badge variant="outline" className="ml-auto text-[0.625rem]">
-                  {collaboration.put}
-                </Badge>
-              </Button>
-            );
-          })}
+          <CollaborationPicker
+            onPick={(target) => void submit(target)}
+            disabled={pending !== undefined || derived.pending}
+            pending={pending}
+            decorate={(collaboration) => {
+              const row = held.get(collaboration.key);
+              return {
+                done: holdsAll(collaboration.key),
+                badge: row ? (
+                  <Badge variant="outline" className="text-[0.625rem]" title="Put in on Mikro">
+                    {row.put}
+                  </Badge>
+                ) : undefined,
+              };
+            }}
+          />
         </DialogBody>
       </div>
     </>

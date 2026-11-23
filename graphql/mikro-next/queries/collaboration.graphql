@@ -19,8 +19,9 @@ query GetCollaborationsWithItems {
   }
 }
 
+# By its key (the route's `:id`, see ListCollaboration).
 query GetCollaboration($id: ID!) {
-  collaboration(id: $id) {
+  collaboration(key: $id) {
     ...Collaboration
   }
 }
@@ -46,8 +47,8 @@ query CollaborationDerived($starts: [LineageRootInput!]!, $down: Int!) {
 # One page of what is in a collaboration: what was put in by hand
 # (`brought: false`), or what came along with it (`brought: true`).
 query GetCollaborationItems($id: ID!, $brought: Boolean!, $offset: Int!, $limit: Int!) {
-  collaboration(id: $id) {
-    id
+  collaboration(key: $id) {
+    id: key
     items(brought: $brought, pagination: { offset: $offset, limit: $limit }) {
       ...CollaborationItem
     }

@@ -1,4 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
+import { shareWorkflowOperation } from "@/core/collaborations/shareWorkflow";
+import { ShareWorkflowDocument } from "./api/graphql";
 import { ELEKTRO_ACTIONS } from "./actions";
 import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
 import { ExperimentDisplay } from "./displays/ExperimentDisplay";
@@ -17,6 +19,8 @@ export const ELEKTRO_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
   builtins: {
+    // A workflow shared from rekuest asks every service for what it made (core/collaborations).
+    operations: { "elektro.shareWorkflow": shareWorkflowOperation(service.key, ShareWorkflowDocument) },
     page: () => import("./ElektroModule"),
     navLinks: ELEKTRO_NAV_LINKS,
     displays: {

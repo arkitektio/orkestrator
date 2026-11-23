@@ -5,8 +5,6 @@ import { CommitMeshDesignDialog } from "./components/scene/features/meshDesign/u
 import { AddChartLayerForm } from "./forms/AddChartLayerForm";
 import { AddLayerForm } from "./forms/AddLayerForm";
 import { AddToCollaborationForm } from "./forms/AddToCollaborationForm";
-import { CreateCollaborationForm } from "./forms/CreateCollaborationForm";
-import { ShareCollaborationForm } from "./forms/ShareCollaborationForm";
 import { CalibrateForm } from "./forms/CalibrateForm";
 import { CreateChartForm } from "./forms/CreateChartForm";
 import { PlotTableForm } from "./forms/PlotTableForm";
@@ -31,10 +29,9 @@ export const MIKRO_DIALOGS = {
   lightpath3d: LightPath3DDialog,
   addchartlayer: AddChartLayerForm,
   addlayer: AddLayerForm,
-  // collaborations: what a guest is granted (forms/*Collaboration*)
+  // collaborations: putting objects in one of lok's, by its key (forms/*Collaboration*);
+  // making, sharing and deleting a collaboration are lok's dialogs
   addtocollaboration: AddToCollaborationForm,
-  createcollaboration: CreateCollaborationForm,
-  sharecollaboration: ShareCollaborationForm,
   // The axis-mapping table needs the room.
   register: prefersSize("large", RegisterForm),
   calibrate: CalibrateForm,

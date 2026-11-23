@@ -495,6 +495,11 @@ export const TPage = asDetailQueryRoute(
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
+                  onClick={() => openDialog("shareworkflow", { task: data.task.id })}
+                >
+                  {data.task.parent ? "Share its workflow" : "Share workflow"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={() =>
                     openDialog("reportbug", { taskId: data.task.id })
                   }
