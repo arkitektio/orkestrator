@@ -1,3 +1,4 @@
+import { Unplug } from "lucide-react";
 import {
   RekuestAction,
   RekuestAgent,
@@ -87,6 +88,13 @@ export const TaskFacts = ({ task }: { task: DetailTaskFragment }) => {
             <span className="tabular-nums text-muted-foreground">{task.latestProgress}%</span>
           )}
         </div>
+        {!task.isDone && task.deadmanArmed && task.deadmanSeconds != null && (
+          // The dead man switch: tied to the window that started (or took over) the run.
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Unplug className="h-3.5 w-3.5 shrink-0 text-warning" />
+            Stops {task.deadmanSeconds} s after its window goes away
+          </div>
+        )}
       </Section>
 
       <Section title="Timing">

@@ -1,4 +1,5 @@
 import { Button } from "@/core/ui/button";
+import { useCancelCall } from "../../session/calls";
 import { Progress } from "@/core/ui/progress";
 import { RekuestTask } from "@/core/linkers";
 import { reportErrorAs } from "@/core/notify";
@@ -6,7 +7,6 @@ import { useMemo } from "react";
 import {
   TaskEventKind,
   LiveTaskFragment,
-  useCancelMutation,
 } from "../../api/graphql";
 import { deriveLiveState } from "../../hooks/useTasks";
 import { TaskStatusIcon, formatEventKind } from "../../lib/taskStatus";
@@ -26,9 +26,7 @@ export const TaskStatusLine = (props: {
   const { task, compact, showCancel, showLink } = props;
   const live = useMemo(() => deriveLiveState(task), [task]);
 
-  const [cancel, { loading: cancelling }] = useCancelMutation({
-    variables: { input: { task: task.id } },
-  });
+  const [cancel, { loading: cancelling }] = useCancelCall(task.id);
 
   const running = isTaskLive(task);
   const canceling =

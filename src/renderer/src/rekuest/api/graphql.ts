@@ -6460,6 +6460,7 @@ export type SubscriptionStateUpdateEventsArgs = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionTaskEventsArgs = {
   after?: InputMaybe<Scalars['ID']['input']>;
+  afterSeq?: InputMaybe<Scalars['Int']['input']>;
   task: Scalars['ID']['input'];
 };
 
@@ -6506,6 +6507,10 @@ export type Task = {
   children: Array<Task>;
   /** Creation timestamp. */
   createdAt: Scalars['DateTime']['output'];
+  /** Whether a window's session holds the task's dead man switch (it is armed). */
+  deadmanArmed: Scalars['Boolean']['output'];
+  /** The dead man switch: the task is cancelled when the window holding it has been gone this many seconds. Null: it never depends on a window. */
+  deadmanSeconds?: Maybe<Scalars['Int']['output']>;
   /** The used dependencies for this assignemnet */
   dependencies: Scalars['AnyDefault']['output'];
   /** The dependency thats linked to the parents execution if applicable. */
@@ -6701,6 +6706,8 @@ export type TaskEvent = {
   step?: Maybe<Scalars['Int']['output']>;
   /** Associated task. */
   task: Task;
+  /** The event's number within its task (1, 2, 3 …) in commit order; the cursor to resume a task's events from. */
+  taskSeq?: Maybe<Scalars['Int']['output']>;
   /** EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. FAILED: {code} when the failure has one the protocol names (STATE_PRECONDITION: the agent's state did not match the task's stateRequires, and nothing of it ran). LOST: what is known about the lost run. */
   value?: Maybe<Scalars['AnyDefault']['output']>;
 };
@@ -6715,6 +6722,8 @@ export type TaskEventChange = {
   progress?: Maybe<Scalars['Int']['output']>;
   returns?: Maybe<Scalars['AnyDefault']['output']>;
   task: Scalars['ID']['output'];
+  /** The event's number within its task (1, 2, 3 …) in commit order: resume from it with `afterSeq`, never from the id. */
+  taskSeq?: Maybe<Scalars['Int']['output']>;
   /** EFFECT: the value taken. LOST: what is known (started, last_progress, effects, reason). */
   value?: Maybe<Scalars['AnyDefault']['output']>;
 };
@@ -8623,7 +8632,7 @@ export type SpaceFragment = { __typename?: 'Space', id: string, name: string, re
 
 export type ListSpaceFragment = { __typename?: 'Space', id: string, name: string, reference?: string | null };
 
-export type StateFragment = { __typename?: 'State', id: string, interface: string, updatedAt: any, definition: { __typename?: 'StateDefinition', hash: string, name: string, ports: Array<(
+export type StateFragment = { __typename?: 'State', id: string, interface: string, updatedAt: any, agent: { __typename?: 'Agent', id: string }, definition: { __typename?: 'StateDefinition', hash: string, name: string, ports: Array<(
       { __typename?: 'ReturnPort' }
       & ReturnPortFragment
     )> } };
@@ -8721,7 +8730,7 @@ export type NoChildrenDetailTaskFragment = (
 );
 
 export type DetailTaskFragment = (
-  { __typename?: 'Task', capture: boolean, notBefore?: any | null, finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
+  { __typename?: 'Task', deadmanSeconds?: number | null, deadmanArmed: boolean, capture: boolean, notBefore?: any | null, finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
     { __typename?: 'Task' }
     & ChildTaskFragment
   )>, parent?: { __typename?: 'Task', id: string } | null, root?: { __typename?: 'Task', id: string } | null, caller?: { __typename?: 'Caller', id: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } | null, space?: { __typename?: 'Space', id: string, name: string } | null, resolution?: { __typename?: 'Resolution', id: string, name: string } | null, heldLocks: Array<{ __typename?: 'Lock', id: string, key: string }>, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
@@ -8743,11 +8752,11 @@ export type DetailTaskFragment = (
   & PostmanTaskFragment
 );
 
-export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference?: string | null, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
+export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, taskSeq?: number | null, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference?: string | null, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
 
 export type TaskChangeFragment = { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null };
 
-export type TaskEventChangeFragment = { __typename?: 'TaskEventChange', id: string, task: string, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any };
+export type TaskEventChangeFragment = { __typename?: 'TaskEventChange', id: string, task: string, taskSeq?: number | null, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any };
 
 export type TaskChangeEventFragment = { __typename?: 'TaskChangeEvent', create?: (
     { __typename?: 'TaskChange' }
@@ -10731,6 +10740,7 @@ export type WatchAgentTasksSubscription = { __typename?: 'Subscription', agentTa
 export type WatchTaskEventsSubscriptionVariables = Exact<{
   task: Scalars['ID']['input'];
   after?: InputMaybe<Scalars['ID']['input']>;
+  afterSeq?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -10977,6 +10987,7 @@ export const HoverActionFragmentDoc = gql`
 export const TaskEventFragmentDoc = gql`
     fragment TaskEvent on TaskEvent {
   id
+  taskSeq
   kind
   level
   returns
@@ -11497,6 +11508,9 @@ ${ReturnChildPortFragmentDoc}`;
 export const StateFragmentDoc = gql`
     fragment State on State {
   id
+  agent {
+    id
+  }
   definition {
     hash
     name
@@ -14154,6 +14168,8 @@ export const FrozenBindingFragmentDoc = gql`
     ${AgentPlacementFragmentDoc}`;
 export const DetailTaskFragmentDoc = gql`
     fragment DetailTask on Task {
+  deadmanSeconds
+  deadmanArmed
   ...PostmanTask
   schedule {
     id
@@ -14293,6 +14309,7 @@ export const TaskEventChangeFragmentDoc = gql`
     fragment TaskEventChange on TaskEventChange {
   id
   task
+  taskSeq
   kind
   message
   progress
@@ -21371,8 +21388,8 @@ export function useWatchAgentTasksSubscription(baseOptions: ApolloReactHooks.Sub
 export type WatchAgentTasksSubscriptionHookResult = ReturnType<typeof useWatchAgentTasksSubscription>;
 export type WatchAgentTasksSubscriptionResult = Apollo.SubscriptionResult<WatchAgentTasksSubscription>;
 export const WatchTaskEventsDocument = gql`
-    subscription WatchTaskEvents($task: ID!, $after: ID) {
-  taskEvents(task: $task, after: $after) {
+    subscription WatchTaskEvents($task: ID!, $after: ID, $afterSeq: Int) {
+  taskEvents(task: $task, after: $after, afterSeq: $afterSeq) {
     ...TaskEventChange
   }
 }
@@ -21392,6 +21409,7 @@ export const WatchTaskEventsDocument = gql`
  *   variables: {
  *      task: // value for 'task'
  *      after: // value for 'after'
+ *      afterSeq: // value for 'afterSeq'
  *   },
  * });
  */

@@ -1,15 +1,11 @@
 import * as React from 'react';
 import {reportError} from '@/core/notify';
 import {useLatestRef} from '@/core/util/hooks/useLatestRef';
-import {
-  CancelDocument,
-  InterruptDocument,
-  PauseDocument,
-  ResumeDocument,
-  type TaskEventKind,
-} from '../api/graphql';
+import {type TaskEventKind} from '../api/graphql';
 import {useRekuest} from '../api/hooks';
 import {isCancelable, isInterruptable, isPausable, isResumable} from '../lib/taskStatus';
+import {controlTask} from '../session/calls';
+import {useRekuestSession} from '../session/hooks';
 
 /**
  * What a blok does to the task it is about: `task.cancel()`, `task.pause()`,
@@ -60,6 +56,7 @@ export const useTaskControl = (
   past: boolean,
 ): {can: TaskCan; control: ((operation: TaskControl) => unknown) | undefined} => {
   const client = useLatestRef(useRekuest());
+  const session = useLatestRef(useRekuestSession());
   const id = task?.id;
   const done = task?.isDone ?? false;
   const kind = task?.latestEventKind;
@@ -74,19 +71,18 @@ export const useTaskControl = (
       if (!canRef.current[operation]) return undefined;
       const run = async () => {
         if (!client.current) throw new Error('Rekuest is not connected.');
-        const input = operation === 'resume' || operation === 'step' ? {task: id, step: operation === 'step'} : {task: id};
-        const mutation =
+        const kind =
           operation === 'cancel'
-            ? CancelDocument
+            ? 'CANCEL'
             : operation === 'pause'
-              ? PauseDocument
+              ? 'PAUSE'
               : operation === 'interrupt'
-                ? InterruptDocument
-                : ResumeDocument;
-        return client.current.mutate({mutation, variables: {input}});
+                ? 'INTERRUPT'
+                : 'RESUME';
+        await controlTask(client.current, session.current, kind, id, operation === 'step');
       };
       return run().catch((error: unknown) => reportError(error, FAILED[operation]));
     };
-  }, [canRef, client, id]);
+  }, [canRef, client, id, session]);
   return {can, control};
 };

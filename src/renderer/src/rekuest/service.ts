@@ -1,6 +1,47 @@
 import { REKUEST_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import { createGraphQLServiceBuilder } from "@/core/connection/arkitekt/builders/graphQlServiceBuidler";
+import { aliasToHttpPath, aliasToWsPath } from "@/core/connection/arkitekt/alias/helpers";
+import type { Service, ServiceBuilder } from "@/core/connection/arkitekt/types";
+import { sessionsEnabled } from "@/core/connection/realtime";
+import type { ApolloClient } from "@apollo/client";
 import rekuestResult from "./api/fragments";
+import { RekuestSession } from "./session/client";
+
+/** rekuest's service: its Apollo client, and beside it the window's caller session on takt. */
+export type RekuestService = Service<ApolloClient<any>> & { session: RekuestSession };
+
+const graphql = createGraphQLServiceBuilder(rekuestResult.possibleTypes, {
+  describe: true,
+  typePolicies: REKUEST_TYPE_POLICIES,
+});
+
+/**
+ * The GraphQL client as every module has one, and the caller session
+ * (`rekuest/session`): one socket per window to takt, over which tasks and
+ * states are followed and calls made. A server without sessions leaves it
+ * `unsupported` and the feeds on their GraphQL subscriptions.
+ */
+const builder: ServiceBuilder<RekuestService> = (options) => {
+  const service = graphql(options);
+  const session = new RekuestSession({
+    url: aliasToWsPath(options.alias, "session"),
+    httpUrl: aliasToHttpPath(options.alias, "session"),
+    getToken: async () => (await options.getToken()).access_token,
+    clientInfo: {
+      app: "orkestrator",
+      window: typeof window !== "undefined" ? window.name || "main" : "main",
+    },
+    enabled: sessionsEnabled,
+  });
+  return {
+    ...service,
+    session,
+    dispose: () => {
+      session.dispose();
+      service.dispose?.();
+    },
+  };
+};
 
 /**
  * How the host reaches this module's service: the fakts requirement key it is
@@ -13,5 +54,5 @@ export const service = {
   optional: true,
   wardKey: "rekuest",
   describe: true,
-  builder: createGraphQLServiceBuilder(rekuestResult.possibleTypes, { describe: true, typePolicies: REKUEST_TYPE_POLICIES }),
+  builder,
 } as const;

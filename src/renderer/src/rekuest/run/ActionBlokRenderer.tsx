@@ -1,8 +1,9 @@
 import * as React from 'react';
+import {useTaskCalls} from '../session/calls';
 import {dependencyKeysRead} from '@arkitektio/bsx/bsx/infer';
 import {normalizeBlokComponentTree, type BlokComponentNode, type BlokTaskRecord} from '@arkitektio/bsx/renderer/runtime/index';
 import {BlokRunHostProvider, type BlokRunHost} from '@arkitektio/bsx/renderer/bloks/run/index';
-import {ActionBlokPhase, TaskEventKind, useDecideMutation, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
+import {ActionBlokPhase, TaskEventKind, type ActionBlokFragment, type RunTaskFragment} from '../api/graphql';
 import type {BlokArgs} from '../components/blokArgs';
 import {MaterializedBlokRenderer, type BlokAssignRecord} from '../components/MaterializedBlokRenderer';
 import {HoldCard} from '../components/task/HoldCard';
@@ -225,11 +226,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 /** `task.answer(values)`: the ask `task.ask` shows, approved with what the blok answered. */
 const useAnswerShownAsk = (task: RunTaskFragment | null): ((values: Record<string, unknown>) => Promise<unknown>) | undefined => {
-  const [decide] = useDecideMutation();
+  const {decide} = useTaskCalls();
   // A run being stopped takes no answer.
   const held = React.useMemo(() => (task && !askClosed(task) ? shownAsk(task)?.task : undefined), [task]);
   return React.useMemo(
-    () => (held ? (values: Record<string, unknown>) => decide({variables: {input: {task: held, approved: true, values}}}) : undefined),
+    () => (held ? (values: Record<string, unknown>) => decide({task: held, approved: true, values}) : undefined),
     [decide, held],
   );
 };

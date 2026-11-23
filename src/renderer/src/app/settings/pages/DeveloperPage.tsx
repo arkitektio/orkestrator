@@ -12,6 +12,7 @@ import { Bug } from "lucide-react";
 import { SettingsPage } from "../components/SettingsPage";
 import { ViewAsRolesCard } from "../components/ViewAsRolesCard";
 import { ClassicPerfCard } from "../components/ClassicPerfCard";
+import { RealtimeSessionsCard } from "../components/RealtimeSessionsCard";
 
 export const DeveloperPage = () => {
   const { debug, setDebug } = useDebug();
@@ -27,6 +28,8 @@ export const DeveloperPage = () => {
           <UpdateChecker />
         </CardContent>
       </Card>
+
+      <RealtimeSessionsCard />
 
       <Card>
         <CardHeader>

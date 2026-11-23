@@ -1,4 +1,7 @@
 import {
+  DetailTaskDocument,
+  DetailTaskQuery,
+  DetailTaskQueryVariables,
   ActionHashDocument,
   ActionHashQuery,
   ActionHashQueryVariables,
@@ -49,12 +52,6 @@ import {
   PinAgentDocument,
   PinAgentMutation,
   PinAgentMutationVariables,
-  PauseDocument,
-  PauseMutation,
-  PauseMutationVariables,
-  ResumeDocument,
-  ResumeMutation,
-  ResumeMutationVariables,
   ScheduleDocument,
   ScheduleQuery,
   ScheduleQueryVariables,
@@ -115,10 +112,11 @@ import { scaffoldAgentsBlok } from './lib/agentBlokScaffold'
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Blocks, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Unplug, Blocks, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, History, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { REKUEST_ADMIN } from './roles'
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
+import { controlTask, DEFAULT_DEADMAN_SECONDS, sessionOf, setDeadman } from './session/calls'
 import { initialFromSchedule, initialFromTrigger } from './components/automation/builder/initial'
 import { PIN_REFETCH } from './lib/pins'
 
@@ -975,6 +973,38 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     typename: 'Schedule',
     mutation: DeleteScheduleDocument
   }),
+  'rekuest-deadman-task': {
+    title: 'Stop When I Leave',
+    description:
+      "Tie this run to this window: it is cancelled once the window has been gone a while (the dead man switch). Run again on a tied run to untie it, so it keeps running when you leave",
+    icon: Unplug,
+    conditions: only('@rekuest/task'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/task')
+      const { data } = await services.rekuest.client.query<DetailTaskQuery, DetailTaskQueryVariables>({
+        query: DetailTaskDocument,
+        variables: { id },
+        fetchPolicy: 'network-only',
+      })
+      if (data.task.isDone) {
+        toast.info('This task has ended: there is nothing to keep or stop')
+        return
+      }
+      const session = sessionOf(services.rekuest)
+      if (data.task.deadmanArmed) {
+        await setDeadman(session, id, null)
+        toast.success('It keeps running when you leave')
+      } else {
+        await setDeadman(session, id, DEFAULT_DEADMAN_SECONDS)
+        toast.success(`Tied to this window: it stops ${DEFAULT_DEADMAN_SECONDS} s after the window goes`)
+      }
+      await services.rekuest.client.refetchQueries({ include: [DetailTaskDocument] })
+    },
+    collections: ['io'],
+  },
   'rekuest-pause-resume-task': {
     title: 'Pause / Resume',
     description:
@@ -991,17 +1021,13 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         variables: { id },
         fetchPolicy: 'network-only',
       })
+      // Over the window's session while there is one, else the mutation.
+      const session = sessionOf(services.rekuest)
       if (isResumable(data.task)) {
-        await services.rekuest.client.mutate<ResumeMutation, ResumeMutationVariables>({
-          mutation: ResumeDocument,
-          variables: { input: { task: id, step: false } },
-        })
+        await controlTask(services.rekuest.client, session, 'RESUME', id)
         toast.success('Resuming task')
       } else if (isPausable(data.task)) {
-        await services.rekuest.client.mutate<PauseMutation, PauseMutationVariables>({
-          mutation: PauseDocument,
-          variables: { input: { task: id } },
-        })
+        await controlTask(services.rekuest.client, session, 'PAUSE', id)
         toast.success('Pausing task')
       } else {
         toast.info('This task is not running, so it cannot be paused')

@@ -1,5 +1,9 @@
 fragment State on State {
   id
+  # Whose it is: a state is followed as `state:<agent>/<interface>`.
+  agent {
+    id
+  }
   definition {
     hash
     name

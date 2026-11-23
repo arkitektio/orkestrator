@@ -204,6 +204,9 @@ fragment NoChildrenDetailTask on Task {
 }
 
 fragment DetailTask on Task {
+  # The dead man switch: cancelled when the window holding it has been gone this long.
+  deadmanSeconds
+  deadmanArmed
   ...PostmanTask
   # what started it, when nobody did by hand: a schedule, or a trigger
   schedule {
@@ -328,6 +331,8 @@ fragment DetailTask on Task {
 
 fragment TaskEvent on TaskEvent {
   id
+  # Its number within the task, in commit order: resume from it, never from the id.
+  taskSeq
   kind
   level
   returns
@@ -381,6 +386,7 @@ fragment TaskChange on TaskChange {
 fragment TaskEventChange on TaskEventChange {
   id
   task
+  taskSeq
   kind
   message
   progress

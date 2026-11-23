@@ -10,6 +10,10 @@ vi.mock("@/rekuest/api/graphql", async (importOriginal) => ({
   useDecideMutation: () => [decide, { loading: false }],
   useDetailActionQuery: () => ({ data: detailAction.current }),
 }));
+// The call layer (session or mutation): handed to the mutation mock's shape.
+vi.mock("@/rekuest/session/calls", () => ({
+  useTaskCalls: () => ({ decide: (input: unknown) => decide({ variables: { input } } as never) }),
+}));
 // What displays a structure is a module's business; here it says what it would show.
 vi.mock("@/core/smart/display/StructureDisplay", () => ({
   StructureDisplay: ({ identifier, id }: { identifier: string; id: string }) => <span>{`${identifier}:${id}`}</span>,

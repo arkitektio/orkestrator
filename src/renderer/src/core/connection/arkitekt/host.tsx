@@ -33,6 +33,14 @@ export const serviceGuard = (serviceKey: string): ComponentType<ServiceGuardProp
   return guard;
 };
 
+/**
+ * The ready service of `serviceKey` itself, not only its client: for what a
+ * module's builder hangs beside the client (rekuest's caller session). Throws
+ * (like `useService`) when absent, so it lives under the module's guard.
+ */
+export const useServiceInstance = <S = unknown>(serviceKey: string): S =>
+  Arkitekt.useService(serviceKey) as S;
+
 /** The ready client of `serviceKey`; throws (like `useService`) when absent. */
 export const useServiceClient = <C = ApolloClient<any>>(serviceKey: string): C =>
   Arkitekt.useService(serviceKey).client as C;

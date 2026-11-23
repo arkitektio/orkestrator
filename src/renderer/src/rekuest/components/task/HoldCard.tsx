@@ -1,4 +1,5 @@
 import { reportErrorAs } from "@/core/notify";
+import {useTaskCalls} from "../../session/calls";
 import { Button } from "@/core/ui/button";
 import { Textarea } from "@/core/ui/textarea";
 import { cn } from "@/core/util/utils";
@@ -9,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { ArgPortFragment, HoldRemember, useDecideMutation, useDetailActionQuery } from "@/rekuest/api/graphql";
+import { ArgPortFragment, HoldRemember, useDetailActionQuery } from "@/rekuest/api/graphql";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { ActionMonogram } from "@/rekuest/components/logo/ActionMonogram";
 import { AskClosed, askClosedText, HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
@@ -88,7 +89,7 @@ export const HoldCard = ({
   closed?: AskClosed | null;
   className?: string;
 }) => {
-  const [decide] = useDecideMutation();
+  const {decide} = useTaskCalls();
   const [answer, setAnswer] = useState("");
   const [answering, setAnswering] = useState(false);
   const [sending, setSending] = useState<"approve" | "deny" | null>(null);
@@ -103,9 +104,7 @@ export const HoldCard = ({
     setSending(approved ? "approve" : "deny");
     // Sent, the card stays busy: it goes when the decision comes back as an event.
     // Only a refusal hands the buttons back.
-    return decide({
-      variables: { input: { task: hold.task, approved, answer: answer.trim() || null, values: values ?? null, remember: remember ?? null } },
-    }).catch((error: unknown) => {
+    return decide({ task: hold.task, approved, answer: answer.trim() || null, values: values ?? null, remember: remember ?? null }).catch((error: unknown) => {
       setSending(null);
       reportErrorAs(approved ? (values ? "Couldn't send your answer" : "Couldn't approve it") : "Couldn't deny it")(error);
     });

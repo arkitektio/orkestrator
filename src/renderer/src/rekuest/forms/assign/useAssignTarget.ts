@@ -15,6 +15,8 @@ export type TargetAssignInput = Omit<
 > & {
   /** The implementation that can handle what is picked, for an action target. */
   implementation?: string;
+  /** Tie the run to this window: cancelled once the window has been gone this many seconds. */
+  deadman?: number | null;
 };
 
 /**
@@ -47,9 +49,10 @@ export const useAssignTarget = (target: AssignTarget) => {
 
   const { assign: rawAssign } = useAssign();
   const assign = useCallback(
-    ({ implementation: pinned, ...input }: TargetAssignInput) =>
-      rawAssign(
-        buildAssignInput({
+    ({ implementation: pinned, deadman, ...input }: TargetAssignInput) =>
+      rawAssign({
+        deadman,
+        ...buildAssignInput({
           ...input,
           ...(implementationId
             ? { implementation: implementationId, ...(resolution ? { resolution } : {}) }
@@ -57,7 +60,7 @@ export const useAssignTarget = (target: AssignTarget) => {
               ? { implementation: pinned }
               : { action: actionId }),
         }),
-      ),
+      }),
     [rawAssign, implementationId, actionId, resolution],
   );
 

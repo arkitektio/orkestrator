@@ -8,13 +8,11 @@ import {
   StateFragment,
   useCheckoutQuery,
   useGetStateQuery,
-  useWatchStateSubscription,
 } from "@/rekuest/api/graphql";
 import { useWidgetRegistry } from "@arkitektio/bsx/ports/engine/WidgetsContext";
-import { useRef, useState } from "react";
-import { applyPatch } from "fast-json-patch";
+import { useState } from "react";
 import { REKUEST_HELP } from "../help";
-import { toOperations } from "../hooks/liveStateStore";
+import { useAgentLiveState } from "../hooks/useLiveState";
 
 
 /** Display state value through the port widgets */
@@ -67,40 +65,11 @@ const LiveStateDisplay = ({
   select?: string[] | null | undefined;
 }) => {
 
-  const [liveValue, setLiveValue] = useState<Record<string, unknown> | null>(null);
-  const [revision, setRevision] = useState<number | null>(null);
-  const valueRef = useRef<Record<string, unknown> | null>(null);
-
-
-
-  // Subscribe to live patches
-  useWatchStateSubscription({
-    variables: { stateID: state.id },
-    onData: ({ data: subData }) => {
-      const event = subData.data?.watchState;
-      if (!event) return;
-
-      if (event.__typename === "StateSnapshotEvent") {
-        // Full snapshot replaces the value
-        valueRef.current = event.value;
-        setLiveValue({ ...event.value });
-        setRevision(event.globalRevision);
-      } else if (event.__typename === "StatePatchEvent") {
-        // Apply JSON patch to current value
-        if (valueRef.current) {
-          const result = applyPatch(
-            valueRef.current,
-            toOperations(event.ops),
-            false,
-            false,
-          );
-          valueRef.current = result.newDocument;
-          setLiveValue({ ...result.newDocument });
-          setRevision(event.globalRevision);
-        }
-      }
-    },
-  });
+  // The state through the shared live store: over the window's session (resumed after a
+  // drop), or its GraphQL subscription where there is none.
+  const live = useAgentLiveState({ agentID: state.agent.id, stateInterface: state.interface });
+  const liveValue = live.value as Record<string, unknown> | null;
+  const revision = live.revision;
 
   return (
     <AsyncBoundary>

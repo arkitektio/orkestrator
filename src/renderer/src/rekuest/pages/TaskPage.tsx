@@ -15,9 +15,6 @@ import { RekuestTask } from "@/core/linkers";
 import {
   ComponentContext,
   useDetailTaskQuery,
-  useInterruptMutation,
-  usePauseMutation,
-  useResumeMutation,
 } from "@/rekuest/api/graphql";
 import { ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -41,6 +38,7 @@ import {
   TaskStage,
 } from "../components/task/TaskStage";
 import { useCancelTask } from "../hooks/useAssign";
+import { useTaskCalls } from "../session/calls";
 import { useReassign } from "../hooks/useReassign";
 import {
   isCancelable,
@@ -156,15 +154,13 @@ export const TPage = asDetailQueryRoute(
     const reassign = useReassign({ task: data.task });
 
     const { cancel } = useCancelTask();
-    const [interrupt] = useInterruptMutation();
-    const [pause] = usePauseMutation();
-    const [resume] = useResumeMutation();
+    const calls = useTaskCalls();
 
     const { openDialog } = useDialog();
     const doCancel = () =>
       cancel(data.task.id).catch(reportErrorAs("Couldn't cancel the task"));
     const doResume = (step: boolean) =>
-      resume({ variables: { input: { task: data.task.id, step } } }).catch(
+      calls.control("RESUME", data.task.id, step).catch(
         reportErrorAs(step ? "Couldn't step the task" : "Couldn't resume the task"),
       );
     const primary = isResumable(data.task)
@@ -425,9 +421,9 @@ export const TPage = asDetailQueryRoute(
                 {isPausable(data.task) && (
                   <DropdownMenuItem
                     onClick={() =>
-                      pause({
-                        variables: { input: { task: data.task.id } },
-                      }).catch(reportErrorAs("Couldn't pause the task"))
+                      calls
+                        .control("PAUSE", data.task.id)
+                        .catch(reportErrorAs("Couldn't pause the task"))
                     }
                   >
                     Pause
@@ -453,9 +449,9 @@ export const TPage = asDetailQueryRoute(
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() =>
-                      interrupt({
-                        variables: { input: { task: data.task.id } },
-                      }).catch(reportErrorAs("Couldn't interrupt the task"))
+                      calls
+                        .control("INTERRUPT", data.task.id)
+                        .catch(reportErrorAs("Couldn't interrupt the task"))
                     }
                   >
                     Interrupt

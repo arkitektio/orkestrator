@@ -1,11 +1,11 @@
 import { Button } from "@/core/ui/button";
+import { useCancelCall } from "../../session/calls";
 import { Progress } from "@/core/ui/progress";
 import { RekuestTask } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import {
   LiveTaskFragment,
   TaskEventKind,
-  useCancelMutation,
 } from "@/rekuest/api/graphql";
 import { deriveLiveState } from "@/rekuest/hooks/useTasks";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -52,9 +52,7 @@ const RowControls = ({
   live: boolean;
   onDismiss: () => void;
 }) => {
-  const [cancel, { loading: cancelRequested }] = useCancelMutation({
-    variables: { input: { task: task.id } },
-  });
+  const [cancel, { loading: cancelRequested }] = useCancelCall(task.id);
   const cancelling =
     cancelRequested ||
     task.latestEventKind === TaskEventKind.Cancelling ||

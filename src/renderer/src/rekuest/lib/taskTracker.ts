@@ -206,6 +206,7 @@ export const taskEventChangeToEvent = (
 ): TaskEventFragment => ({
   __typename: "TaskEvent",
   id: change.id,
+  taskSeq: change.taskSeq ?? null,
   kind: change.kind,
   level: LogLevel.Info,
   returns: change.returns,

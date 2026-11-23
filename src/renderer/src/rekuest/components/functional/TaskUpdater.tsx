@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import {
   MyTasksDocument,
   MyTasksQuery,
+  TaskChangeFragment,
+  TaskEventChangeFragment,
   useMyTasksQuery,
   WatchMyTasksDocument,
   WatchMyTasksSubscription,
@@ -22,12 +24,21 @@ import {
   taskEventChangeToEvent,
 } from "../../lib/taskTracker";
 import {
+  applyTaskChangeScalars,
   catchUpTrackedTasks,
   createTaskEventQueue,
   flushBufferedEvents,
   hydrateAndInsertMyTask,
 } from "../../lib/taskCache";
 import { onSocketReconnect } from "@/core/connection/graphql/reconnects";
+import {
+  toTaskChange,
+  toTaskEventChange,
+  type ListSnapshot,
+  type WireTaskChange,
+  type WireTaskEvent,
+} from "../../session/frames";
+import { useFeedSource, useRekuestSession } from "../../session/hooks";
 import {
   notify as notifyTask,
   notifyMany as notifyTasks,
@@ -37,6 +48,8 @@ export { registeredCallbacks } from "../../lib/taskTracker";
 
 export const TaskUpdater = () => {
   const client = useRekuest();
+  const session = useRekuestSession();
+  const source = useFeedSource(session);
 
   // The single network query for the global "my tasks" list: TaskUpdater is
   // mounted exactly once at the app root, so this fires once on startup (and on
@@ -68,89 +81,129 @@ export const TaskUpdater = () => {
   }, [data, loading]);
 
   useEffect(() => {
-    if (!client) return undefined;
+    if (!client || source === "pending") return undefined;
 
     // The cache writes are collected (one broadcast per flush); an event
     // whose task is not cached yet is buffered for its hydration to replay.
     const events = createTaskEventQueue(client, (event) => bufferEvent(event.task, event));
+
+    const onChange = ({
+      event,
+      create,
+    }: {
+      event?: TaskEventChangeFragment | null;
+      create?: TaskChangeFragment | null;
+    }) => {
+      if (event) {
+        const reference = referenceForId(event.task);
+        const synth = taskEventChangeToEvent(event, reference);
+
+        // Deliver to locally tracking components at once, outside the
+        // (collected) cache update.
+        if (reference) {
+          deliverToCallback(reference, synth);
+        } else {
+          // Not routable until the task's reference is known.
+          holdForCallback(event.task, event);
+        }
+
+        events.push(event, synth);
+      }
+
+      if (create) {
+        mapReference(create.id, create.reference);
+        // Events that arrived before this payload had no reference to be
+        // routed by; the local tracker gets them now.
+        deliverHeldEvents(create.id);
+
+        const existing = client.readQuery<MyTasksQuery>({
+          query: MyTasksDocument,
+        });
+        if (existing?.myTasks.some((t) => t.id === create.id)) {
+          flushBufferedEvents(client, create.id);
+          return;
+        }
+
+        void hydrateAndInsertMyTask(client, create).then((task) => {
+          if (!task) {
+            return;
+          }
+          if (create.reference && consumeSilenced(create.reference)) {
+            return;
+          }
+          if (
+            create.reference &&
+            registeredCallbacks.has(create.reference) &&
+            !isGloballyNotified(create.reference)
+          ) {
+            // Already tracked locally by a component that is showing the
+            // progress itself, so skip the global notification — unless it
+            // asked for both, which is what a tracker inside a surface that
+            // closes (the command palette) does.
+            return;
+          }
+          notifyTask(create.id);
+        });
+      }
+    };
+
+    // What a feed that dropped and came back did not send: the list is read
+    // again, and the tasks a component tracks locally are told what they
+    // missed.
+    const catchUp = () => {
+      void catchUpTrackedTasks(client).catch((e) =>
+        console.warn("[rekuest] catching up tracked tasks failed:", e),
+      );
+    };
+
+    if (source === "session") {
+      // The window's caller session: a resume replays nothing of a list, it
+      // resends it (`RESYNC resumed`), which is when the list is read again.
+      const stop = session.watch("tasks:mine", {
+        onData: (item) => {
+          const change = item as { event?: WireTaskEvent | null; create?: WireTaskChange | null };
+          onChange({
+            event: change.event ? toTaskEventChange(change.event) : null,
+            create: change.create ? toTaskChange(change.create) : null,
+          });
+        },
+        onResync: (snapshot, reason) => {
+          if (reason === "new") return;
+          for (const row of (snapshot as ListSnapshot<WireTaskChange>).rows ?? []) {
+            applyTaskChangeScalars(client, toTaskChange(row));
+          }
+          void client
+            .refetchQueries({ include: [MyTasksDocument] })
+            .catch((e) => console.warn("[rekuest] reading my tasks again failed:", e));
+          catchUp();
+        },
+      });
+      return () => {
+        stop();
+        events.flush();
+      };
+    }
 
     const subscription = client
       .subscribe<WatchMyTasksSubscription, WatchMyTasksSubscriptionVariables>({
         query: WatchMyTasksDocument,
         variables: {},
       })
-      .subscribe((res) => {
-        const event = res.data?.mytasks.event;
-        const create = res.data?.mytasks.create;
-
-        if (event) {
-          const reference = referenceForId(event.task);
-          const synth = taskEventChangeToEvent(event, reference);
-
-          // Deliver to locally tracking components at once, outside the
-          // (collected) cache update.
-          if (reference) {
-            deliverToCallback(reference, synth);
-          } else {
-            // Not routable until the task's reference is known.
-            holdForCallback(event.task, event);
-          }
-
-          events.push(event, synth);
-        }
-
-        if (create) {
-          mapReference(create.id, create.reference);
-          // Events that arrived before this payload had no reference to be
-          // routed by; the local tracker gets them now.
-          deliverHeldEvents(create.id);
-
-          const existing = client.readQuery<MyTasksQuery>({
-            query: MyTasksDocument,
-          });
-          if (existing?.myTasks.some((t) => t.id === create.id)) {
-            flushBufferedEvents(client, create.id);
-            return;
-          }
-
-          void hydrateAndInsertMyTask(client, create).then((task) => {
-            if (!task) {
-              return;
-            }
-            if (create.reference && consumeSilenced(create.reference)) {
-              return;
-            }
-            if (
-              create.reference &&
-              registeredCallbacks.has(create.reference) &&
-              !isGloballyNotified(create.reference)
-            ) {
-              // Already tracked locally by a component that is showing the
-              // progress itself, so skip the global notification — unless it
-              // asked for both, which is what a tracker inside a surface that
-              // closes (the command palette) does.
-              return;
-            }
-            notifyTask(create.id);
-          });
-        }
-      });
+      .subscribe((res) =>
+        onChange({ event: res.data?.mytasks.event, create: res.data?.mytasks.create }),
+      );
 
     // A socket that dropped and came back sends nothing of what happened in
     // between. The lists are refetched by the connection; the tasks a
     // component tracks locally are told here what they missed.
-    const stopCatchingUp = onSocketReconnect(client, () => {
-      void catchUpTrackedTasks(client).catch((e) =>
-        console.warn("[rekuest] catching up tracked tasks failed:", e),
-      );
-    });
+    const stopCatchingUp = onSocketReconnect(client, catchUp);
 
     return () => {
       stopCatchingUp();
       subscription.unsubscribe();
       events.flush();
     };
-  }, [client]);
+  }, [client, session, source]);
 
   return <></>;
 };

@@ -5,10 +5,10 @@ import { PageAction } from "@/core/ui/page-action";
 import { RekuestTask } from "@/core/linkers";
 import {
   useDetailTaskQuery,
-  useInterruptMutation,
 } from "@/rekuest/api/graphql";
 import Timestamp from "@/core/ui/timestamp";
 import { useCancelTask } from "../../hooks/useAssign";
+import { useTaskCalls } from "../../session/calls";
 import { useReassign } from "../../hooks/useReassign";
 import { isCancelable, isInterruptable } from "../../lib/taskStatus";
 import { REKUEST_HELP } from "../../help";
@@ -20,7 +20,7 @@ export const TPage = asDetailQueryRoute(
     const reassign = useReassign({ task: data.task });
 
     const { cancel } = useCancelTask();
-    const [interrupt] = useInterruptMutation();
+    const calls = useTaskCalls();
 
     return (
       <RekuestTask.ModelPage
@@ -51,9 +51,9 @@ export const TPage = asDetailQueryRoute(
             {isInterruptable(data.task) && (
               <PageAction
                 onClick={() =>
-                  interrupt({
-                    variables: { input: { task: data.task.id } },
-                  }).catch(reportErrorAs("Couldn't interrupt the task"))
+                  calls
+                    .control("INTERRUPT", data.task.id)
+                    .catch(reportErrorAs("Couldn't interrupt the task"))
                 }
                 // Stopping a running task outranks starting another one.
                 priority={20}

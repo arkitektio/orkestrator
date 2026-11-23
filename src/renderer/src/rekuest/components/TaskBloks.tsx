@@ -1,8 +1,9 @@
 import * as React from "react";
+import {useTaskCalls} from "../session/calls";
 import { reportErrorAs } from "@/core/notify";
 import type { Structure } from "@/core/types";
 import { cn } from "@/core/util/utils";
-import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, TaskEventKind, useDecideMutation, useTaskBloksQuery } from "../api/graphql";
+import { TaskBlokFragment, TaskBlokRole, TaskBlokStatus, TaskEventKind, useTaskBloksQuery } from "../api/graphql";
 import { useTask } from "../hooks/useTasks";
 import { BlokRunHostProvider, type BlokRunAgent, type BlokRunHost } from "@arkitektio/bsx/renderer/bloks/run/index";
 import { openAsks, shownAsk, type TaskRootSource } from "../run/taskRoot";
@@ -68,7 +69,7 @@ export const TaskBlokView = ({
   /** A settled ask as its answer line only. */
   compact?: boolean;
 }) => {
-  const [decide] = useDecideMutation();
+  const {decide} = useTaskCalls();
   const live = useTask({ task });
   const host = useTaskBlokHost(live, blok.materializedBlok);
   const asks = blok.role === TaskBlokRole.Ask;
@@ -85,7 +86,7 @@ export const TaskBlokView = ({
   const closed = asks && status === TaskBlokStatus.Waiting && live ? askClosed(live) : null;
   const onReturn = React.useCallback(
     (values: Record<string, unknown>) =>
-      decide({ variables: { input: { task, approved: true, values } } }).catch(
+      decide({ task, approved: true, values }).catch(
         reportErrorAs("Couldn't send your answer"),
       ),
     [decide, task],

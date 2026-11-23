@@ -8,6 +8,12 @@ import {
   WatchAgentsSubscription,
   WatchAgentsSubscriptionVariables,
 } from "../../api/graphql";
+import {
+  toAgentChange,
+  type ListSnapshot,
+  type WireAgentChange,
+} from "../../session/frames";
+import { useFeedSource, useRekuestSession } from "../../session/hooks";
 
 type RekuestClient = ApolloClient<unknown>;
 
@@ -88,9 +94,11 @@ const REFETCH_DEBOUNCE_MS = 750;
 
 export const AgentUpdater = () => {
   const client = useRekuest();
+  const session = useRekuestSession();
+  const source = useFeedSource(session);
 
   useEffect(() => {
-    if (!client) return undefined;
+    if (!client || source === "pending") return undefined;
 
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const pending = new Set<string>();
@@ -106,23 +114,52 @@ export const AgentUpdater = () => {
       }, REFETCH_DEBOUNCE_MS);
     };
 
-    const subscription = client
-      .subscribe<WatchAgentsSubscription, WatchAgentsSubscriptionVariables>({
-        query: WatchAgentsDocument,
-        variables: {},
-      })
-      .subscribe((res) => {
-        const event = res.data?.agents;
-        const reconnected = event?.update ? applyAgentScalars(client, event.update) : false;
-        if (event?.delete) removeAgentFromLists(client, event.delete);
-        scheduleRefetch(agentListsToRefetch(event, reconnected));
+    const onEvent = (event: AgentChangeEventFragment | undefined) => {
+      const reconnected = event?.update ? applyAgentScalars(client, event.update) : false;
+      if (event?.delete) removeAgentFromLists(client, event.delete);
+      scheduleRefetch(agentListsToRefetch(event, reconnected));
+    };
+
+    let stop: () => void;
+    if (source === "session") {
+      stop = session.watch("agents:org", {
+        onData: (item) => {
+          const change = item as {
+            create?: WireAgentChange;
+            update?: WireAgentChange;
+            delete?: string;
+          };
+          onEvent({
+            __typename: "AgentChangeEvent",
+            create: change.create ? toAgentChange(change.create) : null,
+            update: change.update ? toAgentChange(change.update) : null,
+            delete: change.delete ?? null,
+          });
+        },
+        onResync: (snapshot, reason) => {
+          if (reason === "new") return;
+          // Back after a drop: each agent as it is now, and the lists again.
+          for (const row of (snapshot as ListSnapshot<WireAgentChange>).rows ?? []) {
+            applyAgentScalars(client, toAgentChange(row));
+          }
+          scheduleRefetch(AGENT_LIST_QUERIES);
+        },
       });
+    } else {
+      const subscription = client
+        .subscribe<WatchAgentsSubscription, WatchAgentsSubscriptionVariables>({
+          query: WatchAgentsDocument,
+          variables: {},
+        })
+        .subscribe((res) => onEvent(res.data?.agents));
+      stop = () => subscription.unsubscribe();
+    }
 
     return () => {
-      subscription.unsubscribe();
+      stop();
       if (timeout) clearTimeout(timeout);
     };
-  }, [client]);
+  }, [client, session, source]);
 
   return <></>;
 };

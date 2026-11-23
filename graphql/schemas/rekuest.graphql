@@ -7705,7 +7705,7 @@ type Subscription {
   """
   One task's events, whoever started it: those already recorded (all, or those newer than `after`), oldest first, then each new one as it is recorded, logs included. Replaces polling a task's event history.
   """
-  taskEvents(after: ID = null, task: ID!): TaskEventChange!
+  taskEvents(after: ID = null, afterSeq: Int = null, task: ID!): TaskEventChange!
 
   """Subscribe to root task changes across the whole organization."""
   tasks: TaskChangeEvent!
@@ -7768,6 +7768,16 @@ type Task {
 
   """Creation timestamp."""
   createdAt: DateTime!
+
+  """
+  Whether a window's session holds the task's dead man switch (it is armed).
+  """
+  deadmanArmed: Boolean!
+
+  """
+  The dead man switch: the task is cancelled when the window holding it has been gone this many seconds. Null: it never depends on a window.
+  """
+  deadmanSeconds: Int
 
   """The used dependencies for this assignemnet"""
   dependencies: AnyDefault!
@@ -8029,6 +8039,11 @@ type TaskEvent {
   task: Task!
 
   """
+  The event's number within its task (1, 2, 3 …) in commit order; the cursor to resume a task's events from.
+  """
+  taskSeq: Int
+
+  """
   EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. FAILED: {code} when the failure has one the protocol names (STATE_PRECONDITION: the agent's state did not match the task's stateRequires, and nothing of it ran). LOST: what is known about the lost run.
   """
   value: AnyDefault
@@ -8043,6 +8058,11 @@ type TaskEventChange {
   progress: Int
   returns: AnyDefault
   task: ID!
+
+  """
+  The event's number within its task (1, 2, 3 …) in commit order: resume from it with `afterSeq`, never from the id.
+  """
+  taskSeq: Int
 
   """
   EFFECT: the value taken. LOST: what is known (started, last_progress, effects, reason).

@@ -18,6 +18,7 @@ const event = (
 ): TaskEventFragment => ({
   __typename: "TaskEvent",
   id: `e-${kind}`,
+  taskSeq: null,
   kind,
   level: LogLevel.Info,
   returns: null,

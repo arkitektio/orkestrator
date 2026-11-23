@@ -25,7 +25,10 @@ import {
   WatchAgentTasksDocument,
   WatchAgentTasksSubscription,
   WatchAgentTasksSubscriptionVariables,
+  TaskChangeFragment,
 } from "@/rekuest/api/graphql";
+import { toTaskChange, type ListSnapshot, type WireTaskChange } from "@/rekuest/session/frames";
+import { useFeedSource, useRekuestSession } from "@/rekuest/session/hooks";
 import { LayoutPanelTop, Pin, PinOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageAction } from "@/core/ui/page-action";
@@ -195,8 +198,47 @@ export const AgentPage = asDetailQueryRoute(
     const client = useRekuest();
     const agentId = data.agent.id;
 
+    const session = useRekuestSession();
+    const source = useFeedSource(session);
+
     useEffect(() => {
-      if (!client) return undefined;
+      if (!client || source === "pending") return undefined;
+
+      const onChange = (change: {
+        create?: TaskChangeFragment | null;
+        update?: TaskChangeFragment | null;
+      }) => {
+        // An update merges onto the normalized `Task:<id>` entity, which is
+        // what the list rows read — so they refresh in place.
+        if (change.update) {
+          applyTaskChangeScalars(client, change.update);
+        }
+        if (change.create) {
+          void hydrateAndInsertAgentTask(client, change.create, agentId);
+        }
+      };
+
+      if (source === "session") {
+        return session.watch(`agent:${agentId}/tasks`, {
+          onData: (item) => {
+            const change = item as { create?: WireTaskChange | null; update?: WireTaskChange | null };
+            onChange({
+              create: change.create ? toTaskChange(change.create) : null,
+              update: change.update ? toTaskChange(change.update) : null,
+            });
+          },
+          onResync: (snapshot, reason) => {
+            if (reason === "new") return;
+            // Back after a drop: its tasks as they are now (newest first); one it
+            // started meanwhile joins the list.
+            for (const row of (snapshot as ListSnapshot<WireTaskChange>).rows ?? []) {
+              const change = toTaskChange(row);
+              applyTaskChangeScalars(client, change);
+              void hydrateAndInsertAgentTask(client, change, agentId);
+            }
+          },
+        });
+      }
 
       const subscription = client
         .subscribe<
@@ -208,21 +250,11 @@ export const AgentPage = asDetailQueryRoute(
         })
         .subscribe((res) => {
           const change = res.data?.agentTasks;
-          if (!change) return;
-
-          // An update merges onto the normalized `Task:<id>` entity, which is
-          // what the list rows read — so they refresh in place.
-          if (change.update) {
-            applyTaskChangeScalars(client, change.update);
-          }
-
-          if (change.create) {
-            void hydrateAndInsertAgentTask(client, change.create, agentId);
-          }
+          if (change) onChange(change);
         });
 
       return () => subscription.unsubscribe();
-    }, [client, agentId]);
+    }, [client, agentId, session, source]);
 
     const recentTasks = data.agent.tasks.slice(0, 5);
     const bloks = useAgentBloks(agentId);

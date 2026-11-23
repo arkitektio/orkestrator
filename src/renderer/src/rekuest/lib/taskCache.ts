@@ -235,7 +235,23 @@ export const catchUpTrackedTasks = async (client: RekuestClient) => {
  * A thin `create` carries only ids, so fetch the full task once and insert it
  * into the global list cache. Returns the hydrated task (for the toast decision).
  */
-export const hydrateAndInsertMyTask = async (
+export const hydrateAndInsertMyTask = (
+  client: RekuestClient,
+  create: TaskChangeFragment,
+): Promise<LiveTaskFragment | undefined> => {
+  // One read per task however many ask: the window that assigned it (it has
+  // the answer first) and the `tasks:mine` feed (its create) both hydrate it.
+  const key = `${create.id}`;
+  const running = hydrating.get(key);
+  if (running) return running;
+  const started = hydrateAndInsert(client, create).finally(() => hydrating.delete(key));
+  hydrating.set(key, started);
+  return started;
+};
+
+const hydrating = new Map<string, Promise<LiveTaskFragment | undefined>>();
+
+const hydrateAndInsert = async (
   client: RekuestClient,
   create: TaskChangeFragment,
 ): Promise<LiveTaskFragment | undefined> => {

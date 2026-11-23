@@ -1,5 +1,6 @@
 import { useRekuest } from "@/rekuest/api/hooks";
 import {
+  TaskEventChangeFragment,
   WatchOrgTasksDocument,
   WatchOrgTasksSubscription,
   WatchOrgTasksSubscriptionVariables,
@@ -9,6 +10,8 @@ import {
   referenceForId,
   taskEventChangeToEvent,
 } from "@/rekuest/lib/taskTracker";
+import { toTaskEventChange, type WireTaskEvent } from "@/rekuest/session/frames";
+import { useFeedSource, useRekuestSession } from "@/rekuest/session/hooks";
 import { useEffect } from "react";
 
 const REFETCH_DEBOUNCE_MS = 750;
@@ -29,9 +32,11 @@ const REFETCH_DEBOUNCE_MS = 750;
  */
 export const OrgTasksUpdater = () => {
   const client = useRekuest();
+  const session = useRekuestSession();
+  const source = useFeedSource(session);
 
   useEffect(() => {
-    if (!client) return undefined;
+    if (!client || source === "pending") return undefined;
 
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const scheduleListRefetch = () => {
@@ -42,36 +47,57 @@ export const OrgTasksUpdater = () => {
       }, REFETCH_DEBOUNCE_MS);
     };
 
-    const subscription = client
-      .subscribe<
-        WatchOrgTasksSubscription,
-        WatchOrgTasksSubscriptionVariables
-      >({
-        query: WatchOrgTasksDocument,
-        variables: {},
-      })
-      .subscribe((res) => {
-        const event = res.data?.tasks.event;
-        const create = res.data?.tasks.create;
+    const onChange = ({
+      event,
+      create,
+    }: {
+      event?: TaskEventChangeFragment | null;
+      create?: unknown;
+    }) => {
+      if (event) {
+        writeTaskEventToCache(
+          client,
+          event,
+          taskEventChangeToEvent(event, referenceForId(event.task)),
+        );
+      }
+      if (create) {
+        scheduleListRefetch();
+      }
+    };
 
-        if (event) {
-          writeTaskEventToCache(
-            client,
-            event,
-            taskEventChangeToEvent(event, referenceForId(event.task)),
-          );
-        }
-
-        if (create) {
-          scheduleListRefetch();
-        }
+    let stop: () => void;
+    if (source === "session") {
+      stop = session.watch("tasks:org", {
+        onData: (item) => {
+          const change = item as { event?: WireTaskEvent | null; create?: unknown };
+          onChange({
+            event: change.event ? toTaskEventChange(change.event) : null,
+            create: change.create,
+          });
+        },
+        // Back after a drop: the lists as they are now.
+        onResync: (_, reason) => {
+          if (reason !== "new") scheduleListRefetch();
+        },
       });
+    } else {
+      const subscription = client
+        .subscribe<WatchOrgTasksSubscription, WatchOrgTasksSubscriptionVariables>({
+          query: WatchOrgTasksDocument,
+          variables: {},
+        })
+        .subscribe((res) =>
+          onChange({ event: res.data?.tasks.event, create: res.data?.tasks.create }),
+        );
+      stop = () => subscription.unsubscribe();
+    }
 
     return () => {
-      subscription.unsubscribe();
+      stop();
       if (timeout) clearTimeout(timeout);
     };
-  }, [client]);
+  }, [client, session, source]);
 
   return null;
 };

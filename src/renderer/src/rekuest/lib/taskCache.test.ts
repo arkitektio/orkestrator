@@ -23,6 +23,7 @@ const runningTask = (id: string) => ({
     {
       __typename: "TaskEvent",
       id: `started-${id}`,
+      taskSeq: 1,
       kind: TaskEventKind.Started,
       level: "INFO",
       returns: null,

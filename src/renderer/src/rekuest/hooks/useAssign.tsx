@@ -5,10 +5,18 @@ import { v4 as uuidv4 } from "uuid";
 import {
   TaskEventFragment,
   AssignInput,
+  FullTaskDocument,
+  type FullTaskQuery,
+  type FullTaskQueryVariables,
   PostmanTaskFragment,
   useAssignMutation,
   useCancelMutation,
 } from "../api/graphql";
+import { useRekuest } from "../api/hooks";
+import { hydrateAndInsertMyTask } from "../lib/taskCache";
+import { overSession } from "../session/calls";
+import { toTaskChange, toWireAssignInput, type AssignedAnswer } from "../session/frames";
+import { useRekuestSession } from "../session/hooks";
 import {
   deliverHeldEvents,
   mapReference,
@@ -31,7 +39,9 @@ export type ActionAssignVariables = AssignInput;
 
 export type useActionReturn = {
   assign: (
-    variables: ActionAssignVariables,
+    /** `deadman`: tie the run to this window (cancelled once it has been gone that many
+     *  seconds). Only over the window's session; ignored without one. */
+    variables: ActionAssignVariables & { deadman?: number | null },
   ) => Promise<PostmanTaskFragment>;
 };
 
@@ -41,21 +51,48 @@ export type useActionOptions = {
 
 export const useAssign = (): useActionReturn => {
   const [postAssign] = useAssignMutation({ onError: reportedByCaller });
+  const apollo = useRekuest();
+  const session = useRekuestSession();
 
   const assign = useCallback(
-    async (vars: ActionAssignVariables) => {
+    async (vars: ActionAssignVariables & { deadman?: number | null }) => {
       // A reference is what makes two sends the same assign. Sent only when the
       // caller has one: an empty string is not "none" to every server.
-      const { reference, ...rest } = vars;
+      const { reference, deadman, ...rest } = vars;
+      const input: AssignInput = {
+        ...rest,
+        args: vars.args,
+        hooks: [],
+        ...(reference ? { reference } : {}),
+      };
+
+      if (overSession(session)) {
+        // Over the window's session: the answer names the task, and an assign re-sent
+        // after a drop finds the same one.
+        const answer = await session
+          .call<AssignedAnswer>({
+            type: "ASSIGN",
+            input: toWireAssignInput(input),
+            deadman: deadman ?? null,
+          })
+          .catch((error: unknown) => {
+            throw toAssignError(error);
+          });
+        mapReference(answer.task, answer.reference);
+        deliverHeldEvents(answer.task);
+        // Into my tasks (one read, shared with the tasks feed's create of it).
+        if (answer.record) void hydrateAndInsertMyTask(apollo, toTaskChange(answer.record));
+        // The task as callers read it.
+        const read = await apollo.query<FullTaskQuery, FullTaskQueryVariables>({
+          query: FullTaskDocument,
+          variables: { id: answer.task },
+          fetchPolicy: "network-only",
+        });
+        return read.data.task;
+      }
+
       const mutation = await postAssign({
-        variables: {
-          input: {
-            ...rest,
-            args: vars.args,
-            hooks: [],
-            ...(reference ? { reference } : {}),
-          },
-        },
+        variables: { input },
       });
 
       const task = mutation.data?.assign;
@@ -73,7 +110,7 @@ export const useAssign = (): useActionReturn => {
 
       return task;
     },
-    [postAssign],
+    [apollo, postAssign, session],
   );
 
   return {
@@ -118,9 +155,16 @@ export const useAssignWithCallback = ({ onDone }: {
 /** Cancel a task by id. Shared by every hook/page that offers a cancel action. */
 export const useCancelTask = () => {
   const [cancelMutation] = useCancelMutation({});
+  const session = useRekuestSession();
 
   const cancel = useCallback(
-    async (taskId: string) => {
+    async (taskId: string): Promise<{ id: string }> => {
+      if (overSession(session)) {
+        await session.call({ type: "CANCEL", task: taskId }).catch((error: unknown) => {
+          throw toAssignError(error);
+        });
+        return { id: taskId };
+      }
       // A refusal rejects (no `onError` here): thrown as an `AssignError`,
       // like an assign's, so every caller reads one shape.
       const mutation = await cancelMutation({
@@ -138,9 +182,9 @@ export const useCancelTask = () => {
         throw toAssignError(mutation.errors);
       }
 
-      return task;
+      return { id: task.id };
     },
-    [cancelMutation],
+    [cancelMutation, session],
   );
 
   return { cancel };

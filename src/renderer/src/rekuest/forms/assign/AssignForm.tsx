@@ -33,6 +33,7 @@ import type { BlokAssignRecord } from "../../components/MaterializedBlokRenderer
 import { v4 as uuidv4 } from "uuid";
 import { AssignErrorNote } from "../../components/AssignErrorNote";
 import { assignAutoKey, AutoModeToggle, useAutoMode } from "../../components/AutoModeToggle";
+import { DeadmanToggle } from "../../components/DeadmanToggle";
 import { DependencyTreeNotice } from "@arkitektio/bsx/ports/dependencies/DependencyTreeNotice";
 import { ActionLogo } from "../../components/logo/ActionLogo";
 import { useDependencyTree } from "@arkitektio/bsx/ports/dependencies/useDependencyTree";
@@ -110,6 +111,8 @@ export const AssignForm = ({
   const { action, implementation, latestTask, assign, error } = useAssignTarget(target);
   // Off, what this task's agents ask other actions to do waits for approval.
   const autoMode = useAutoMode(assignAutoKey(target));
+  // The dead man switch of the run about to start (seconds, or null: off).
+  const [deadman, setDeadman] = useState<number | null>(null);
   const formPorts = ports ?? action?.args;
   // A resolution has bound the dependencies already: nothing to pin here.
   const pinning = target.resolution ? undefined : implementation;
@@ -211,6 +214,7 @@ export const AssignForm = ({
         reference,
         hooks: [],
         policy: autoMode.policy,
+        deadman,
         // A resolution has bound its agents already.
         ...(named
           ? { implementation: named.id }
@@ -480,6 +484,7 @@ export const AssignForm = ({
           {workflow && (
             <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" tooltip={false} />
           )}
+          <DeadmanToggle seconds={deadman} onChange={setDeadman} className="shrink-0" />
           {/* An assign blok that starts the run itself (`assign.start()`) is the start button. */}
           {!(assignBloks && (setup.starts || setup.bare)) && (
             <Tooltip>

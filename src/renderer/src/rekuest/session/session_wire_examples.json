@@ -1,0 +1,32 @@
+{
+  "client": [
+    {"type": "HELLO", "token": "eyJ…", "session": "2c0d6f5e-5b8a-4f7e-9d0e-2a1f4c3b5d6e", "last_pos": 41, "client_info": {"app": "orkestrator", "version": "8.24.0", "window": "main"}},
+    {"type": "REAUTH", "token": "eyJ…"},
+    {"type": "WATCH", "topic": "task:1234"},
+    {"type": "UNWATCH", "topic": "task:1234"},
+    {"type": "ASSIGN", "request": "r-1", "input": {"action": "12", "args": {"image": "7", "sigma": 1.5}, "reference": "8f1c…", "policy": "ASK", "dependencies": [{"key": "camera", "mapped_agents": [{"key": "camera", "agent": "3"}], "auto_resolve": false}]}, "deadman": 60},
+    {"type": "CANCEL", "request": "r-2", "task": "1234"},
+    {"type": "INTERRUPT", "request": "r-3", "task": "1234"},
+    {"type": "PAUSE", "request": "r-4", "task": "1234"},
+    {"type": "RESUME", "request": "r-5", "task": "1234", "step": true},
+    {"type": "DECIDE", "request": "r-6", "task": "1234", "approved": true, "answer": "Go ahead", "values": {"count": 3}, "remember": "RUN"},
+    {"type": "INQUIRE", "request": "r-7", "task": "1234"},
+    {"type": "DEADMAN", "request": "r-8", "task": "1234", "seconds": null},
+    {"type": "PROBE", "request": "r-9", "input": {"action": "12", "args": {}, "reference": "p-ref"}},
+    {"type": "PROBE_CANCEL", "request": "r-10", "probe": "p-abc"},
+    {"type": "PROBE_PAUSE", "request": "r-11", "probe": "p-abc"},
+    {"type": "PROBE_RESUME", "request": "r-12", "probe": "p-abc"},
+    {"type": "PING", "pos": 42}
+  ],
+  "server": [
+    {"type": "WELCOME", "session": "2c0d6f5e-5b8a-4f7e-9d0e-2a1f4c3b5d6e", "resumed": true, "limits": {"session_grace": 60, "ping_interval": 15, "replay_max": 500, "deadman_min": 15}},
+    {"type": "DATA", "pos": 43, "topic": "task:1234", "item": {"id": "9001", "task": "1234", "kind": "PROGRESS", "message": "Slice 12 of 30", "progress": 40, "returns": null, "level": null, "value": null, "created_at": "2026-11-23T09:44:08.960420Z", "task_seq": 7}},
+    {"type": "RESYNC", "pos": 44, "topic": "tasks:mine", "reason": "resumed", "snapshot": {"rows": []}},
+    {"type": "ASSIGNED", "pos": 45, "request": "r-1", "reference": "8f1c…", "task": "1235", "created": true, "record": {"id": "1235", "reference": "8f1c…", "is_done": false, "latest_event_kind": "QUEUED", "latest_instruct_kind": "ASSIGN", "action": "12", "implementation": "40", "agent": "3", "root": null, "parent": null, "created_at": "2026-11-23T09:44:08Z", "updated_at": "2026-11-23T09:44:08Z", "finished_at": null, "revision": 1}},
+    {"type": "ACCEPTED", "pos": 46, "request": "r-2", "result": {"task": "1234"}},
+    {"type": "REFUSED", "pos": 47, "request": "r-3", "error": "Not a task you assigned."},
+    {"type": "REFUSED", "pos": 48, "topic": "task:99", "error": "No Task 99 in this organization."},
+    {"type": "PONG"},
+    {"type": "CLOSING", "reason": "token_expired"}
+  ]
+}

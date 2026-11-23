@@ -10,6 +10,14 @@ vi.mock('@/rekuest/components/useBlokPersistence', () => ({useBlokPersistence: (
 vi.mock('@/core/modules/hooks/useServiceReads', () => ({useServiceReads: () => ({query: () => Promise.resolve({}), subscribe: () => () => undefined})}));
 vi.mock('@/rekuest/api/hooks', () => ({useRekuest: () => ({subscribe: () => ({subscribe: () => ({unsubscribe: () => {}})})})}));
 vi.mock('@/rekuest/hooks/useAssign', () => ({useAssign: () => ({assign: vi.fn()})}));
+vi.mock('@/rekuest/session/calls', () => ({
+  useTaskCalls: () => ({decide: (input: unknown) => decide({variables: {input}} as never)}),
+  controlTask: vi.fn(),
+}));
+vi.mock('@/rekuest/session/hooks', () => ({
+  useRekuestSession: () => null,
+  useFeedSource: () => 'graphql',
+}));
 vi.mock('@/rekuest/scene/RekuestSceneHost', () => ({RekuestSceneHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));
 vi.mock('@/rekuest/scene/RekuestAssetHost', () => ({RekuestAssetHost: ({children}: {children: React.ReactNode}) => <>{children}</>}));
 vi.mock('@/rekuest/components/logo/ActionLogo', () => ({ActionLogo: () => <span />}));

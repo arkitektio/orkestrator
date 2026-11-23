@@ -77,6 +77,9 @@ vi.mock("@/rekuest/api/graphql", () => ({
 }));
 // `deriveLiveState` stays real — it is what turns events into what a row
 // shows; only the Apollo-backed list is replaced.
+vi.mock("@/rekuest/session/calls", () => ({
+  useCancelCall: () => [() => cancel(), { loading: false }],
+}));
 vi.mock("@/rekuest/hooks/useTasks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/rekuest/hooks/useTasks")>()),
   useTasks: () => ({ data: { myTasks: myTasks() } }),
