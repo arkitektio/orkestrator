@@ -607,6 +607,8 @@ export type Stream = {
   /** Whether the agent publishes this stream right now: LiveKit's answer, asked when read. */
   live: Scalars['Boolean']['output'];
   title: Scalars['String']['output'];
+  /** Where a frame's pixels are; only a video stream that declared it has one. */
+  videoFormat?: Maybe<VideoFormat>;
 };
 
 /** One stream an agent offers */
@@ -621,6 +623,8 @@ export type StreamDeclarationInput = {
   kind?: StreamKind;
   /** What the stream is called; the key when not given */
   title?: InputMaybe<Scalars['String']['input']>;
+  /** Where a frame's pixels are: optional for a video stream, refused for any other */
+  videoFormat?: InputMaybe<VideoFormatInput>;
 };
 
 /** A stream an agent of your organization declared, changed, no longer offers, or started or stopped publishing */
@@ -728,6 +732,30 @@ export type User = {
   zoneinfo?: Maybe<Scalars['String']['output']>;
 };
 
+/** Where a video stream's pixels are: its axes, their calibration and the space they are in */
+export type VideoFormat = {
+  __typename?: 'VideoFormat';
+  /** The axes of a frame in its order */
+  axes: Array<Axis>;
+  calibration: Array<Calibration>;
+  /** The space the axes are in, named as mikro names a coordinate system's reference */
+  reference?: Maybe<Scalars['String']['output']>;
+  /** The size of a frame; none when known only from the first frame */
+  shape?: Maybe<Array<Scalars['Int']['output']>>;
+};
+
+/** Where a video stream's pixels are: its axes, their calibration and the space they are in */
+export type VideoFormatInput = {
+  /** The axes of a frame in its order, e.g. y, x, c */
+  axes: Array<AxisInput>;
+  /** The axes that measure something, and what */
+  calibration?: Array<CalibrationInput>;
+  /** The space the axes are in, named as mikro names a coordinate system's reference */
+  reference?: InputMaybe<Scalars['String']['input']>;
+  /** The size of a frame, one value per axis; none when it is known only from the first frame */
+  shape?: InputMaybe<Array<Scalars['Int']['input']>>;
+};
+
 /** The agent whose streams to watch */
 export type WatchAgentInput = {
   agent: Scalars['ID']['input'];
@@ -798,9 +826,14 @@ export type ConnectionFragment = { __typename?: 'Connection', transport: Transpo
 
 export type DataFormatFragment = { __typename?: 'DataFormat', dtype: string, shape: Array<number>, unit?: string | null, reference?: string | null, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType }>, calibration: Array<{ __typename?: 'Calibration', axis: string, unit: string, scale: number, offset: number }> };
 
+export type VideoFormatFragment = { __typename?: 'VideoFormat', shape?: Array<number> | null, reference?: string | null, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType }>, calibration: Array<{ __typename?: 'Calibration', axis: string, unit: string, scale: number, offset: number }> };
+
 export type StreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, description?: string | null, createdAt: any, live: boolean, format?: (
     { __typename?: 'DataFormat' }
     & DataFormatFragment
+  ) | null, videoFormat?: (
+    { __typename?: 'VideoFormat' }
+    & VideoFormatFragment
   ) | null, agent: (
     { __typename?: 'Agent' }
     & AgentOwnerFragment
@@ -1153,6 +1186,22 @@ export const ConnectionFragmentDoc = gql`
   credential
 }
     `;
+export const VideoFormatFragmentDoc = gql`
+    fragment VideoFormat on VideoFormat {
+  shape
+  reference
+  axes {
+    name
+    type
+  }
+  calibration {
+    axis
+    unit
+    scale
+    offset
+  }
+}
+    `;
 export const StreamFragmentDoc = gql`
     fragment Stream on Stream {
   id
@@ -1165,11 +1214,15 @@ export const StreamFragmentDoc = gql`
   format {
     ...DataFormat
   }
+  videoFormat {
+    ...VideoFormat
+  }
   agent {
     ...AgentOwner
   }
 }
     ${DataFormatFragmentDoc}
+${VideoFormatFragmentDoc}
 ${AgentOwnerFragmentDoc}`;
 export const EnsureCallDocument = gql`
     mutation EnsureCall($input: EnsureCallInput!) {

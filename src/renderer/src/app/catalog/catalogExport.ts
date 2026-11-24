@@ -1,4 +1,6 @@
 import { addBlokComponents } from "@/core/blok/catalog";
+import { CORE_BLOKS } from "@/core/blok/plot";
+import { LOVEKIT_MODULE } from "@/lovekit/module";
 import { MIKRO_MODULE } from "@/mikro/module";
 import { buildCatalogExport as buildCoreCatalogExport } from "@/rekuest/catalog/catalogExport";
 
@@ -13,7 +15,11 @@ import { buildCatalogExport as buildCoreCatalogExport } from "@/rekuest/catalog/
  * renders are lazy, the scene's three.js and WebGPU behind them), and the
  * export test holds them to it.
  */
-const MODULE_BLOKS = [...(MIKRO_MODULE.builtins.bloks ?? [])];
+const MODULE_BLOKS = [
+  ...CORE_BLOKS,
+  ...(MIKRO_MODULE.builtins.bloks ?? []),
+  ...(LOVEKIT_MODULE.builtins.bloks ?? []),
+];
 
 let added = false;
 

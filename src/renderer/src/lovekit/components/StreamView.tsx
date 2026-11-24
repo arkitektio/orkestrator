@@ -25,7 +25,7 @@ export type ShownStream = {
 };
 
 /** How this window joins agent rooms: the deployment's LiveKit, and a `watchAgent` connection. */
-const useConnector = (): Connector => {
+export const useConnector = (): Connector => {
   const { url } = useLivekit();
   const [watchAgent] = useWatchAgentMutation();
   return useMemo(

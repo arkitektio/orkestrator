@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as THREE from 'three';
 import {Canvas, useFrame, useThree} from '@react-three/fiber';
-import {Grid, OrbitControls} from '@react-three/drei';
+import {OrbitControls} from '@react-three/drei';
 import {Anchor, GripVertical, Grid3x3, Pin, RotateCw, Scan, Settings2, X} from 'lucide-react';
 import {NAVIGATE_BUTTONS_3D} from '@/core/data/scene/camera/navigateButtons';
 import {Button} from '@/core/ui/button';
@@ -40,6 +40,8 @@ import { useKeepTabLive } from '@arkitektio/bsx/platform';
 import {useTabVisible} from '@/core/tabs/TabVisibilityContext';
 import {usePersistedComponentState} from '@arkitektio/bsx/renderer/persist';
 import {useBlokReady, useBlokSnapshotMode} from '@arkitektio/bsx/preview/snapshotMode';
+import {createWebGPURendererFactory} from '@/core/data/scene/gpu/createWebGPURenderer';
+import {MountReferencesProvider} from '@/core/blok/mount/MountGroup';
 
 /**
  * The app's own 3D surface for scene bloks: canvas, camera, ground, the cards
@@ -127,7 +129,8 @@ const CameraRig = ({pose}: {pose?: ScenePose | null}) => {
     controls.target.set(...pose.target);
     camera.position.set(...pose.position);
     const distance = camera.position.distanceTo(controls.target);
-    camera.near = Math.max(distance / 200, 0.001);
+    // A mount of a microscope is micrometres across: no floor at a millimetre.
+    camera.near = Math.max(distance / 200, 1e-9);
     camera.far = distance * 200;
     camera.updateProjectionMatrix();
     controls.update();
@@ -699,11 +702,53 @@ const PoseKeeper = ({onPoseChange}: {onPoseChange: (pose: ScenePose) => void}) =
   return null;
 };
 
-/** The ground grid, drawn or not as the viewer chose. */
-const SceneGrid = () =>
-  useSceneState(state => state.settings.grid) ? (
-    <Grid infiniteGrid cellSize={0.05} sectionSize={0.5} fadeDistance={8} cellColor="#8b8b8b" sectionColor="#6b6b6b" />
+/**
+ * The ground grid, drawn or not as the viewer chose: 5 cm cells in 50 cm
+ * sections over 8 m. Plain lines, which draw on WebGPU and WebGL alike (drei's
+ * `Grid` is a GLSL shader and draws on neither under the WebGPU renderer).
+ */
+const SceneGrid = () => {
+  const shown = useSceneState(state => state.settings.grid);
+  const grids = React.useMemo(() => {
+    const cells = new THREE.GridHelper(8, 160, '#8b8b8b', '#8b8b8b');
+    const sections = new THREE.GridHelper(8, 16, '#6b6b6b', '#6b6b6b');
+    for (const [grid, opacity] of [[cells, 0.35], [sections, 0.8]] as const) {
+      const material = grid.material as THREE.LineBasicMaterial;
+      material.transparent = true;
+      material.opacity = opacity;
+      material.depthWrite = false;
+    }
+    return [cells, sections];
+  }, []);
+  React.useEffect(() => () => grids.forEach(grid => grid.dispose()), [grids]);
+  return shown ? (
+    <>
+      {grids.map(grid => (
+        <primitive key={grid.uuid} object={grid} />
+      ))}
+    </>
   ) : null;
+};
+
+/**
+ * The stage's renderer: three's WebGPU renderer, so what needs WebGPU (a mikro
+ * scene mounted in it) draws beside the models; WebGL2 where the browser has no
+ * WebGPU, where the models still draw.
+ */
+const stageRenderer = createWebGPURendererFactory({label: 'stage', allowWebGLFallback: true, antialias: true});
+
+/**
+ * No tone mapping on the stage: a camera frame or a mikro layer is shown as
+ * measured, not graded. Set on the renderer because a material's `toneMapped`
+ * is read only by WebGL; under WebGPU the output pass applies the renderer's.
+ */
+const StageToneMapping = () => {
+  const gl = useThree(state => state.gl);
+  React.useEffect(() => {
+    gl.toneMapping = THREE.NoToneMapping;
+  }, [gl]);
+  return null;
+};
 
 type SceneSurfaceProps = {
   /** Where the camera starts looking from. */
@@ -825,7 +870,8 @@ export const SceneSurface = ({
         <Canvas
           frameloop={visible ? 'always' : 'never'}
           className="absolute! inset-0"
-          gl={snapshot ? {preserveDrawingBuffer: true} : undefined}
+          // A preview reads the canvas after it painted, which needs WebGL's kept buffer.
+          gl={snapshot ? {preserveDrawingBuffer: true} : stageRenderer}
           camera={{position: VIEW_DIRECTIONS[view], fov: 40, near: 0.005, far: 200}}
           onPointerMissed={() => {
             store.getState().dismiss();
@@ -835,6 +881,8 @@ export const SceneSurface = ({
           <SceneStoreProvider value={store}>
             <BlokNodeErrorSurface.Provider value={SceneErrorSurface}>
               <BlokSceneEmbedProvider value>
+                <MountReferencesProvider>
+                <StageToneMapping />
                 <ambientLight intensity={0.7} />
                 <directionalLight position={[2, 4, 3]} intensity={1.6} />
                 <directionalLight position={[-3, 2, -2]} intensity={0.5} />
@@ -845,6 +893,7 @@ export const SceneSurface = ({
                 {children}
                 <OverlayTracker cards={cards} />
                 {snapshot && <FirstFrames />}
+                </MountReferencesProvider>
               </BlokSceneEmbedProvider>
             </BlokNodeErrorSurface.Provider>
           </SceneStoreProvider>

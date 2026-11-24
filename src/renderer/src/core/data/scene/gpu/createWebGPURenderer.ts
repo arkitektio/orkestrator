@@ -26,6 +26,14 @@ export type WebGPURendererFactoryOptions = {
    * the Canvas.
    */
   onDeviceLost?: (info: DeviceLostInfo) => void;
+  /**
+   * Let three fall back to its WebGL2 backend where WebGPU is missing. Off for
+   * mikro and the plot (their materials need WebGPU); on for the blok stage,
+   * whose models draw on either. What needs WebGPU checks `isWebGPUBackend`.
+   */
+  allowWebGLFallback?: boolean;
+  /** MSAA. Off by default (see below); the blok stage, all geometric edges, turns it on. */
+  antialias?: boolean;
 };
 
 export type DeviceLostInfo = { message: string; reason: string | null };
@@ -74,7 +82,7 @@ const mib = (bytes: number | undefined) =>
   bytes === undefined ? "?" : `${Math.round(bytes / (1024 * 1024))} MiB`;
 
 export const createWebGPURendererFactory =
-  ({ label, onInitialized, onDeviceLost }: WebGPURendererFactoryOptions) =>
+  ({ label, onInitialized, onDeviceLost, allowWebGLFallback = false, antialias = false }: WebGPURendererFactoryOptions) =>
   async (props: unknown): Promise<WebGPURenderer> => {
     const rendererProps = props as Record<string, unknown>;
     // Same powerPreference three passes to its own requestAdapter, so both
@@ -87,7 +95,7 @@ export const createWebGPURendererFactory =
       // no geometric edges, where MSAA is pure bandwidth; in elektro the geometry
       // is Line2 fat lines, which are screen-space quads with their own edge AA.
       // Either way it would buy nothing and cost 4× on every DPR switch.
-      antialias: false,
+      antialias,
       // GPU frame timing. Constructing with the flag on is required so init()
       // can validate feature support; it is switched OFF again right after.
       trackTimestamp: true,
@@ -98,7 +106,7 @@ export const createWebGPURendererFactory =
     // caller-supplied one is discarded. Nulling the private field the base
     // Renderer read it into is the only lever: init() then rejects instead of
     // silently swapping in a WebGL2 backend. Re-verify on any three upgrade.
-    (renderer as unknown as { _getFallback: unknown })._getFallback = null;
+    if (!allowWebGLFallback) (renderer as unknown as { _getFallback: unknown })._getFallback = null;
 
     await renderer.init();
 
@@ -170,7 +178,7 @@ export const createWebGPURendererFactory =
     // Tripwire: if a three upgrade reintroduces a fallback route, fail loudly
     // rather than render something that lies about its backend. r3f
     // fire-and-forgets this promise, so this surfaces as an unhandled rejection.
-    if (anyRenderer.backend?.isWebGPUBackend !== true) {
+    if (anyRenderer.backend?.isWebGPUBackend !== true && !allowWebGLFallback) {
       throw new Error(
         `[${label}] WebGPURenderer initialized on a non-WebGPU backend — ` +
           "three's WebGL2 fallback should be unreachable.",
@@ -179,7 +187,7 @@ export const createWebGPURendererFactory =
 
     const granted = device?.limits;
     console.info(
-      `[${label}] renderer initialized — backend: WebGPU, ` +
+      `[${label}] renderer initialized — backend: ${anyRenderer.backend?.isWebGPUBackend ? "WebGPU" : "WebGL2"}, ` +
         `storage binding ${mib(granted?.maxStorageBufferBindingSize)}, ` +
         `buffer ${mib(granted?.maxBufferSize)}, 3D extent ${granted?.maxTextureDimension3D ?? "?"}`,
     );

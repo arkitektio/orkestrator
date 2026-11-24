@@ -16,6 +16,7 @@ import { LOVEKIT_DIALOGS } from "./dialogRegistry";
 import { AgentDisplay } from "./displays/AgentDisplay";
 import { CallDisplay } from "./displays/CallDisplay";
 import { StreamDisplay } from "./displays/StreamDisplay";
+import { LOVEKIT_BLOKS } from "./bloks";
 import { manifest } from "./manifest";
 import { service } from "./service";
 import { LOVEKIT_NAV_LINKS } from "./navLinks";
@@ -34,6 +35,8 @@ export const LOVEKIT_MODULE = defineModule({
       "@lovekit/stream": StreamDisplay,
     },
     actions: LOVEKIT_ACTIONS,
+    // Live streams as mounts of a Scene or a Plot (`lovekit/bloks`).
+    bloks: LOVEKIT_BLOKS,
     dialogs: LOVEKIT_DIALOGS,
     pageSections: [
       {

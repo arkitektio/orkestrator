@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as THREE from 'three';
-import {Line, TransformControls} from '@react-three/drei';
+import {TransformControls} from '@react-three/drei';
 import {Move3d} from 'lucide-react';
 import {placedSchema, routeSchema, spaceSchema, type runContracts} from '@arkitektio/bsx/catalogs/parts/run';
 import {fromMatrix4, toMatrix4} from '@/core/model/affine';
@@ -258,9 +258,34 @@ const PlacedRender: BlokRender<Contracts['Placed']> = ({component, buildChild}) 
 
 const ROUTE_COLOR = 'chart-1';
 
-/** Corners as plain triples: `Line` reads a Vector3 by `instanceof`, which a second copy of three fails. */
-const triples = (points: readonly THREE.Vector3[]): Array<[number, number, number]> =>
-  points.map(point => [point.x, point.y, point.z]);
+/**
+ * A polyline as a tube of `radius` meters: a mesh, which draws on WebGPU, WebGL2
+ * and the preview's WebGL alike (drei's `Line` is a GLSL shader).
+ */
+const RouteTube = ({points, radius, color, opacity = 1}: {points: readonly THREE.Vector3[]; radius: number; color: string; opacity?: number}) => {
+  const key = points.map(point => `${point.x},${point.y},${point.z}`).join(';');
+  const geometry = React.useMemo(() => {
+    const path = new THREE.CurvePath<THREE.Vector3>();
+    for (let index = 1; index < points.length; index += 1) {
+      // Fresh vectors: a second copy of three fails `instanceof` on the caller's.
+      const from = points[index - 1];
+      const to = points[index];
+      // A zero-length piece has no direction, and the tube's frames would be NaN.
+      if (from.x === to.x && from.y === to.y && from.z === to.z) continue;
+      path.add(new THREE.LineCurve3(new THREE.Vector3(from.x, from.y, from.z), new THREE.Vector3(to.x, to.y, to.z)));
+    }
+    if (path.curves.length === 0) return null;
+    return new THREE.TubeGeometry(path, path.curves.length * 8, radius, 8, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, radius]);
+  React.useEffect(() => () => geometry?.dispose(), [geometry]);
+  if (!geometry) return null;
+  return (
+    <mesh geometry={geometry} raycast={() => null}>
+      <meshBasicMaterial color={color} transparent={opacity < 1} opacity={opacity} toneMapped={false} />
+    </mesh>
+  );
+};
 
 const RouteRender: BlokRender<Contracts['Route']> = ({component}) => {
   const blok = useBlok(component, routeSchema);
@@ -283,9 +308,9 @@ const RouteRender: BlokRender<Contracts['Route']> = ({component}) => {
   if (!split.head) return null;
   return (
     <group name="route">
-      {split.travelled.length >= 2 ? <Line points={triples(split.travelled)} color={color} lineWidth={3} /> : null}
+      {split.travelled.length >= 2 ? <RouteTube points={split.travelled} radius={0.006} color={color} /> : null}
       {split.ahead.length >= 2 && progress !== undefined ? (
-        <Line points={triples(split.ahead)} color={color} lineWidth={2} dashed dashSize={0.04} gapSize={0.03} transparent opacity={0.5} />
+        <RouteTube points={split.ahead} radius={0.004} color={color} opacity={0.45} />
       ) : null}
       {progress !== undefined ? (
         <mesh position={split.head} raycast={() => null}>
