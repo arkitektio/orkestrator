@@ -1,6 +1,7 @@
 import { analyzeBsx, type BlokCheckScope } from "@arkitektio/bsx/bsx/index";
 import type { SpecCatalogJson, SpecComponentJson } from "@arkitektio/bsx/renderer/runtime/describe";
 import type { DependencyDraft } from "./blokDependencies";
+import { parsePort, portSummary } from "@arkitektio/bsx/spec/ports";
 
 /**
  * What an assistant needs to write a blok, as text it can read: how BSX is
@@ -46,9 +47,7 @@ export const componentIndex = (catalog: SpecCatalogJson, context: "PANEL" | "SCE
 
 const propLine = (prop: SpecComponentJson["props"][number]) =>
   [
-    `  ${prop.key}${prop.required ? " (required)" : ""}: ${prop.kind.toLowerCase()}`,
-    prop.values?.length ? ` one of ${prop.values.map((value) => `"${value}"`).join(", ")}` : "",
-    prop.event?.length ? ` callback; event has ${prop.event.map((field) => `event.${field.key}`).join(", ")}` : "",
+    `  ${prop.key}${prop.required ? " (required)" : ""}: ${portSummary(parsePort(prop.port, prop.key))}`,
     oneLine(prop.description) ? ` — ${oneLine(prop.description)}` : "",
   ].join("");
 

@@ -4,8 +4,7 @@ import * as z from 'zod';
 import {defaultBlokCatalog} from './catalog';
 import {defaultBlokView} from '@arkitektio/bsx/spec/catalogs';
 import {isActionSchema} from '@arkitektio/bsx/renderer/runtime/index';
-import {zodEnumValues, zodToCatalogKind} from '@/rekuest/catalog/uiCatalogInput';
-import {CatalogValueKind} from '@/rekuest/api/graphql';
+import {zodToPort} from '@arkitektio/bsx/catalogs';
 
 /**
  * Invariants of the published catalog. These are what make the registered
@@ -64,7 +63,7 @@ describe('the blok catalog', () => {
       z.ZodTypeAny
     >;
 
-    expect(zodToCatalogKind(buttonSchema.onClick)).toBe(CatalogValueKind.Callback);
+    expect(isActionSchema(buttonSchema.onClick)).toBe(true);
   });
 
   it('implements every component the spec catalogs hold, with every prop', () => {
@@ -84,7 +83,7 @@ describe('the blok catalog', () => {
       const shape = definition.schema.shape as Record<string, z.ZodTypeAny>;
       for (const prop of spec.props) {
         if (!(prop.key in shape)) props.push(`${name}.${prop.key}`);
-        else if (prop.kind === 'CALLBACK' && !isActionSchema(shape[prop.key])) callbacks.push(`${name}.${prop.key}`);
+        else if (prop.port.kind === 'CALLBACK' && !isActionSchema(shape[prop.key])) callbacks.push(`${name}.${prop.key}`);
       }
     }
     expect(missing).toEqual([]);
@@ -93,20 +92,24 @@ describe('the blok catalog', () => {
   });
 
   /**
-   * The spec's `values` are what an author (or a model) is told a prop takes, and what the spec
-   * warns about (`catalog.value`): they must be exactly the options the zod enum draws.
+   * The spec's choices are what an author (or a model) is told a prop takes, and what the spec
+   * warns about (`catalog.value`): they must be exactly the options the zod schema draws.
    */
-  it('holds the values every enum prop draws, and no others', () => {
+  it('holds the choices every prop draws, and no others', () => {
     const view = defaultBlokView();
     const drift: string[] = [];
     for (const [name, spec] of view.components) {
       const definition = defaultBlokCatalog.components.get(name);
-      if (!definition) continue;
+      // The language's and the host's own are typed by the spec, not drawn from a schema.
+      if (!definition || spec.group === 'language' || spec.group === 'run') continue;
       const shape = definition.schema.shape as Record<string, z.ZodTypeAny>;
       for (const prop of spec.props) {
         if (!(prop.key in shape)) continue;
-        const drawn = zodEnumValues(shape[prop.key]);
-        const held = prop.values ? [...prop.values] : null;
+        if (prop.port.kind === null || prop.port.kind === 'CALLBACK' || prop.port.kind === 'BINDING') continue;
+        const choices = (port: {choices?: readonly {value: unknown}[] | null}) =>
+          port.choices ? port.choices.map(choice => choice.value) : null;
+        const drawn = choices(zodToPort(shape[prop.key], `${name}.${prop.key}`));
+        const held = choices(prop.port);
         if (JSON.stringify(drawn) !== JSON.stringify(held)) {
           drift.push(`${name}.${prop.key}: draws ${JSON.stringify(drawn)}, the spec holds ${JSON.stringify(held)}`);
         }

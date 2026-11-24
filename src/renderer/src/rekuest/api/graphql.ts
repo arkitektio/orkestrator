@@ -1674,7 +1674,7 @@ export type CatalogArgument = {
   __typename?: 'CatalogArgument';
   description?: Maybe<Scalars['String']['output']>;
   key: Scalars['String']['output'];
-  kind: CatalogValueKind;
+  port?: Maybe<CatalogPort>;
   required: Scalars['Boolean']['output'];
 };
 
@@ -1684,10 +1684,72 @@ export type CatalogArgumentInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** The argument key a UtilCall argument must use. */
   key: Scalars['String']['input'];
-  /** The value kind of the argument. */
-  kind: CatalogValueKind;
+  /** What it takes; none: open (any value). */
+  port?: InputMaybe<CatalogPortInput>;
   /** Whether every call must pass this argument. */
   required?: Scalars['Boolean']['input'];
+};
+
+/** A catalog port below another: an item ('...'), a field, a variant, a payload field. */
+export type CatalogChildPort = {
+  __typename?: 'CatalogChildPort';
+  children?: Maybe<Array<CatalogChildPort>>;
+  choices?: Maybe<Array<CatalogChoice>>;
+  default?: Maybe<Scalars['AnyDefault']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  dimension?: Maybe<Scalars['String']['output']>;
+  identifier?: Maybe<Scalars['String']['output']>;
+  key: Scalars['String']['output'];
+  kind?: Maybe<PortKind>;
+  nullable: Scalars['Boolean']['output'];
+  proposedUnits?: Maybe<Array<Scalars['String']['output']>>;
+  referenceUnit?: Maybe<Scalars['String']['output']>;
+  /** The whole port, children at every depth, as a catalog writes it (camelCase, empty fields left out): what a client compares a catalog by. */
+  tree: Scalars['JSONSerializable']['output'];
+};
+
+/** A catalog port below another: an item ('...'), a field, a variant, a payload field. */
+export type CatalogChildPortInput = {
+  /** LIST/BINDING: its one item, keyed '...'; DICT/MODEL: its fields; UNION: its variants; CALLBACK: its payload. */
+  children?: InputMaybe<Array<CatalogChildPortInput>>;
+  /** The values it takes (required for ENUM). */
+  choices?: InputMaybe<Array<CatalogChoiceInput>>;
+  /** Its default value. */
+  default?: InputMaybe<Scalars['AnyDefault']['input']>;
+  /** What it is. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** For a QUANTITY: its dimensionality. */
+  dimension?: InputMaybe<Scalars['String']['input']>;
+  /** STRUCTURE, MEMORY_STRUCTURE, INTERFACE: what it references (`*`: any). */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Its key (may be `value`). */
+  key: Scalars['String']['input'];
+  /** Its kind; none: open (any value). */
+  kind?: InputMaybe<PortKind>;
+  /** Whether it takes null. */
+  nullable?: Scalars['Boolean']['input'];
+  /** For a QUANTITY: the units offered. */
+  proposedUnits?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** For a QUANTITY: its reference unit. */
+  referenceUnit?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A value a catalog port takes. */
+export type CatalogChoice = {
+  __typename?: 'CatalogChoice';
+  description?: Maybe<Scalars['String']['output']>;
+  label?: Maybe<Scalars['String']['output']>;
+  value: Scalars['AnyDefault']['output'];
+};
+
+/** A value a catalog port takes. */
+export type CatalogChoiceInput = {
+  /** What it means. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** How it is shown. */
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** The value (any JSON value fitting the port's kind). */
+  value: Scalars['AnyDefault']['input'];
 };
 
 /** A component a UI catalog can render. */
@@ -1732,31 +1794,13 @@ export type CatalogComponentInput = {
   textProp?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A field of the event a CALLBACK prop hands its callback. */
-export type CatalogEventField = {
-  __typename?: 'CatalogEventField';
-  description?: Maybe<Scalars['String']['output']>;
-  key: Scalars['String']['output'];
-  kind: CatalogValueKind;
-};
-
-/** A field of the event a CALLBACK prop hands its callback (`event.<key>`). */
-export type CatalogEventFieldInput = {
-  /** Human-readable description of the field. */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** The field a callback reads as `event.<key>`. */
-  key: Scalars['String']['input'];
-  /** The value kind of the field. */
-  kind: CatalogValueKind;
-};
-
 /** A pure operation a UI catalog can evaluate for UtilCalls. */
 export type CatalogOperation = {
   __typename?: 'CatalogOperation';
   arguments: Array<CatalogArgument>;
   description?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
-  returns: CatalogValueKind;
+  returns?: Maybe<CatalogPort>;
 };
 
 /** A pure operation a UI catalog can evaluate for UtilCalls. */
@@ -1767,46 +1811,71 @@ export type CatalogOperationInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** The operation name a UtilCall.operation must match. */
   name: Scalars['String']['input'];
-  /** The kind of value the operation returns (BOOL for effect and validator calls). */
-  returns: CatalogValueKind;
+  /** What it returns (BOOL for effect and validator calls); none: open. */
+  returns?: InputMaybe<CatalogPortInput>;
+};
+
+/** The port a catalog types a prop, an operation argument or a result by: an action's port, plus CALLBACK, ASSET and BINDING and the open identifier `*`. No kind: open (any value). */
+export type CatalogPort = {
+  __typename?: 'CatalogPort';
+  children?: Maybe<Array<CatalogChildPort>>;
+  choices?: Maybe<Array<CatalogChoice>>;
+  default?: Maybe<Scalars['AnyDefault']['output']>;
+  dimension?: Maybe<Scalars['String']['output']>;
+  identifier?: Maybe<Scalars['String']['output']>;
+  kind?: Maybe<PortKind>;
+  nullable: Scalars['Boolean']['output'];
+  proposedUnits?: Maybe<Array<Scalars['String']['output']>>;
+  referenceUnit?: Maybe<Scalars['String']['output']>;
+  /** The whole port, children at every depth, as a catalog writes it (camelCase, empty fields left out): what a client compares a catalog by. */
+  tree: Scalars['JSONSerializable']['output'];
+};
+
+/** The port a catalog types a prop, an operation argument or a result by: an action's port, plus CALLBACK, ASSET and BINDING and the open identifier `*`. No kind: open (any value). */
+export type CatalogPortInput = {
+  /** LIST/BINDING: its one item, keyed '...'; DICT/MODEL: its fields; UNION: its variants; CALLBACK: its payload. */
+  children?: InputMaybe<Array<CatalogChildPortInput>>;
+  /** The values it takes (required for ENUM). */
+  choices?: InputMaybe<Array<CatalogChoiceInput>>;
+  /** Its default value. */
+  default?: InputMaybe<Scalars['AnyDefault']['input']>;
+  /** For a QUANTITY: its dimensionality. */
+  dimension?: InputMaybe<Scalars['String']['input']>;
+  /** STRUCTURE, MEMORY_STRUCTURE, INTERFACE: what it references (`*`: any). */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Its kind; none: open (any value). */
+  kind?: InputMaybe<PortKind>;
+  /** Whether it takes null. */
+  nullable?: Scalars['Boolean']['input'];
+  /** For a QUANTITY: the units offered. */
+  proposedUnits?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** For a QUANTITY: its reference unit. */
+  referenceUnit?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** A prop a catalog component accepts. */
 export type CatalogProp = {
   __typename?: 'CatalogProp';
   description?: Maybe<Scalars['String']['output']>;
-  event?: Maybe<Array<CatalogEventField>>;
   key: Scalars['String']['output'];
-  kind: CatalogValueKind;
+  port?: Maybe<CatalogPort>;
   required: Scalars['Boolean']['output'];
+  since: Scalars['Int']['output'];
 };
 
 /** A prop a catalog component accepts. */
 export type CatalogPropInput = {
   /** Human-readable description of the prop. */
   description?: InputMaybe<Scalars['String']['input']>;
-  /** For a CALLBACK prop: the fields of the event it hands its callback (`event.<key>`); none when it hands none. */
-  event?: InputMaybe<Array<CatalogEventFieldInput>>;
   /** The prop key a ComponentProp.key must match. */
   key: Scalars['String']['input'];
-  /** The value kind this prop accepts. CALLBACK props hold one task call or one effect. On `bind`, the kind the control writes (`locals.bind_kinds`). */
-  kind: CatalogValueKind;
+  /** What it takes; none: open (the language's own props). CALLBACK props hold one task call or one effect; `bind` is a BINDING. */
+  port?: InputMaybe<CatalogPortInput>;
   /** Whether every component instance must set this prop. */
   required?: Scalars['Boolean']['input'];
+  /** The catalog minor that added it; 0: from the start. */
+  since?: Scalars['Int']['input'];
 };
-
-/** The kind of value a catalog component prop accepts or a catalog operation argument/return carries. */
-export enum CatalogValueKind {
-  Any = 'ANY',
-  Asset = 'ASSET',
-  Bool = 'BOOL',
-  Callback = 'CALLBACK',
-  Dict = 'DICT',
-  Float = 'FLOAT',
-  Int = 'INT',
-  List = 'LIST',
-  String = 'STRING'
-}
 
 export type ChildTaskEvent = {
   __typename?: 'ChildTaskEvent';
@@ -3251,7 +3320,7 @@ export type LatestTaskSnapshot = {
 
 export type LatestTaskSnapshotTaskChangeTaskEventChange = LatestTaskSnapshot | TaskChange | TaskEventChange;
 
-/** The kind of a blok local: a port kind, or ANY (an untyped value, which skips the bind and argument kind checks). No action port is ever ANY. */
+/** The kind of a blok local: a port kind (never CALLBACK, ASSET or BINDING, which only a catalog types by), or ANY (an untyped value, which skips the bind and argument kind checks). No action port is ever ANY. */
 export enum LocalKind {
   /** An untyped value: nothing gave the local a kind. A path below it is taken as written. */
   Any = 'ANY',
@@ -9052,16 +9121,16 @@ export type ToolboxFragment = { __typename?: 'Toolbox', id: string, name: string
 
 export type ListToolboxFragment = { __typename?: 'Toolbox', id: string, name: string, description: string };
 
-export type CatalogPropFragment = { __typename?: 'CatalogProp', key: string, kind: CatalogValueKind, required: boolean, description?: string | null };
+export type CatalogPropFragment = { __typename?: 'CatalogProp', key: string, required: boolean, description?: string | null, since: number, port?: { __typename?: 'CatalogPort', kind?: PortKind | null, tree: any } | null };
 
-export type CatalogArgumentFragment = { __typename?: 'CatalogArgument', key: string, kind: CatalogValueKind, required: boolean, description?: string | null };
+export type CatalogArgumentFragment = { __typename?: 'CatalogArgument', key: string, required: boolean, description?: string | null, port?: { __typename?: 'CatalogPort', kind?: PortKind | null, tree: any } | null };
 
 export type CatalogComponentFragment = { __typename?: 'CatalogComponent', name: string, description?: string | null, acceptsChildren: boolean, context: ComponentContext, childrenContext?: ComponentContext | null, downstreamOf: Array<string>, notDownstreamOf: Array<string>, props: Array<(
     { __typename?: 'CatalogProp' }
     & CatalogPropFragment
   )> };
 
-export type CatalogOperationFragment = { __typename?: 'CatalogOperation', name: string, description?: string | null, returns: CatalogValueKind, arguments: Array<(
+export type CatalogOperationFragment = { __typename?: 'CatalogOperation', name: string, description?: string | null, returns?: { __typename?: 'CatalogPort', kind?: PortKind | null, tree: any } | null, arguments: Array<(
     { __typename?: 'CatalogArgument' }
     & CatalogArgumentFragment
   )> };
@@ -14637,9 +14706,13 @@ export const ListToolboxFragmentDoc = gql`
 export const CatalogPropFragmentDoc = gql`
     fragment CatalogProp on CatalogProp {
   key
-  kind
+  port {
+    kind
+    tree
+  }
   required
   description
+  since
 }
     `;
 export const CatalogComponentFragmentDoc = gql`
@@ -14659,7 +14732,10 @@ export const CatalogComponentFragmentDoc = gql`
 export const CatalogArgumentFragmentDoc = gql`
     fragment CatalogArgument on CatalogArgument {
   key
-  kind
+  port {
+    kind
+    tree
+  }
   required
   description
 }
@@ -14668,7 +14744,10 @@ export const CatalogOperationFragmentDoc = gql`
     fragment CatalogOperation on CatalogOperation {
   name
   description
-  returns
+  returns {
+    kind
+    tree
+  }
   arguments {
     ...CatalogArgument
   }

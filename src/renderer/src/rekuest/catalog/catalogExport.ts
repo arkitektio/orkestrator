@@ -6,7 +6,7 @@ import {orkestratorCatalogSpec, orkestratorUi} from '@/core/blok/catalog';
  *
  * - `catalog` — the full `registerModule` payload, i.e. exactly what the app
  *   would send a rekuest server (every component and prop with its description
- *   and `CatalogValueKind`, and the catalogs it speaks).
+ *   and port, and the catalogs it speaks).
  * - `published` — the Orkestrator's catalog as the spec writes one: what is
  *   served at `https://arkitekt.live/catalogs/orkestrator/v1`, and what
  *   arkitekt-spec ships a snapshot of (`catalogs/orkestrator@1.json`), so

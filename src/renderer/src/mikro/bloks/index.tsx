@@ -8,6 +8,7 @@ import {
   classNameSchema,
   sizeSchema,
   structureValueSchema,
+  type SpecPort,
 } from "@arkitektio/bsx/catalogs";
 import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
@@ -52,6 +53,17 @@ const Parts = {
 
 const INSIDE = { downstreamOf: ["MikroScene"] } as const;
 
+/** The ports of what the scene hands its callbacks and binds. */
+const ANNOTATION: SpecPort = { kind: "STRUCTURE", identifier: "@mikro/annotation" };
+const LENS: SpecPort = { kind: "STRUCTURE", identifier: "*" };
+const listOf = (item: SpecPort): SpecPort => ({ kind: "LIST", children: [{ key: "...", ...item }] });
+const LAYERS = listOf({ kind: "STRUCTURE", identifier: "*" });
+const DESCRIPTORS: SpecPort = {
+  kind: "DICT",
+  nullable: true,
+  children: [{ key: "...", kind: "UNION", children: ["STRING", "FLOAT", "BOOL"].map((kind, index) => ({ key: String(index), kind })) }],
+};
+
 export const mikroSceneSchema = z
   .object({
     value: structureValueSchema.describe("The scene, a structure reference: typically `{args.scene}`."),
@@ -91,28 +103,38 @@ export const MikroSceneBlok = createBlokComponent(
     // What each callback hands its action (`event.<field>`), as the spec publishes it.
     events: {
       onAnnotation: [
-        { key: "annotation", kind: "DICT", description: "The drawn shape, as a structure reference." },
-        { key: "kind", kind: "STRING", description: "The kind of shape." },
-        { key: "lens", kind: "DICT", description: "The lens under the probe, or null." },
-        { key: "descriptors", kind: "ANY", description: "The shape's descriptors, or null." },
+        { key: "annotation", port: ANNOTATION, description: "The drawn shape, as a structure reference." },
+        { key: "kind", port: { kind: "STRING" }, description: "The kind of shape." },
+        { key: "lens", port: { ...LENS, nullable: true }, description: "The lens under the probe, or null." },
+        { key: "descriptors", port: DESCRIPTORS, description: "The shape's descriptors, or null." },
       ],
       onLayersChange: [
-        { key: "layers", kind: "LIST", description: "The layers now drawn." },
-        { key: "added", kind: "LIST", description: "The layers that are new." },
+        { key: "layers", port: LAYERS, description: "The layers now drawn." },
+        { key: "added", port: LAYERS, description: "The layers that are new." },
       ],
       onPick: [
-        { key: "layer", kind: "STRING", description: "The layer read." },
-        { key: "world", kind: "LIST", description: "The world point, or null." },
-        { key: "voxel", kind: "LIST", description: "The voxel read." },
-        { key: "lens", kind: "DICT", description: "The lens, or null." },
+        { key: "layer", port: { kind: "STRING" }, description: "The layer read." },
+        { key: "world", port: { ...listOf({ kind: "FLOAT" }), nullable: true }, description: "The world point, or null." },
+        { key: "voxel", port: listOf({ kind: "INT" }), description: "The voxel read." },
+        { key: "lens", port: { ...LENS, nullable: true }, description: "The lens, or null." },
       ],
       onSelect: [
-        { key: "annotation", kind: "DICT", description: "The selected annotation." },
-        { key: "annotations", kind: "LIST", description: "Every selected annotation." },
-        { key: "lens", kind: "DICT", description: "The lens under the probe, or null." },
+        { key: "annotation", port: ANNOTATION, description: "The selected annotation." },
+        { key: "annotations", port: listOf(ANNOTATION), description: "Every selected annotation." },
+        { key: "lens", port: { ...LENS, nullable: true }, description: "The lens under the probe, or null." },
       ],
     },
-    bindKinds: { bind: "ANY", bindWorld: "STRING" },
+    bindKinds: {
+      bind: {
+        kind: "MODEL",
+        nullable: true,
+        children: [
+          { key: "annotation", ...ANNOTATION, nullable: true },
+          { key: "lens", ...LENS, nullable: true },
+        ],
+      },
+      bindWorld: { kind: "STRUCTURE", identifier: "@mikro/coordinatesystem" },
+    },
     schema: mikroSceneSchema,
   },
   lazily(Parts.MikroScene),

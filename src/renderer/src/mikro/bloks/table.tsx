@@ -7,6 +7,7 @@ import {
   classNameSchema,
   sizeSchema,
   structureValueSchema,
+  type SpecPort,
 } from "@arkitektio/bsx/catalogs";
 import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
@@ -58,6 +59,30 @@ const recordBind = (data: string) =>
     `Where the record is written: {"status", "loading", "ready", "failed", "empty", "stale", "error", "data"}. ${data} Seed it in demo_state for the preview, which reads nothing.`,
   ));
 
+/** What a reader writes to its bind: the record of its read, and what it read as `data`. */
+const field = (key: string, port: SpecPort) => ({ key, ...port });
+const scalar = (kind: string, nullable = false): SpecPort => ({ kind, nullable });
+const listOf = (item: SpecPort, nullable = false): SpecPort => ({ kind: "LIST", nullable, children: [field("...", item)] });
+const record = (data: SpecPort): SpecPort => ({
+  kind: "MODEL",
+  children: [
+    field("status", scalar("STRING")),
+    ...["loading", "ready", "failed", "empty", "stale"].map((key) => field(key, scalar("BOOL"))),
+    field("error", scalar("STRING", true)),
+    field("data", data),
+  ],
+});
+const model = (fields: Record<string, SpecPort>, nullable = false): SpecPort => ({
+  kind: "MODEL",
+  nullable,
+  children: Object.entries(fields).map(([key, port]) => field(key, port)),
+});
+const CELL: SpecPort = {
+  kind: "UNION",
+  nullable: true,
+  children: ["STRING", "FLOAT", "BOOL"].map((kind, index) => field(String(index), { kind })),
+};
+
 export const COLUMN_ROLES = ["ATTRIBUTE", "COLOR", "COORDINATE", "GROUP_ID", "ID", "LABEL", "TRACK_ID"] as const;
 
 export const tableColumnsSchema = z
@@ -101,7 +126,7 @@ export const columnHistogramSchema = z
 const conditionSchema = z.object({
   column: z.string(),
   op: z.enum(ROW_OPS).optional(),
-  value: z.unknown().optional(),
+  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]).optional(),
 });
 
 export const tableRowsSchema = z
@@ -129,13 +154,53 @@ export const tableRowsSchema = z
 const reader = (
   name: string,
   schema: z.ZodObject<Record<string, z.ZodTypeAny>>,
+  data: SpecPort,
   Part: React.ComponentType<BlokRenderArgs>,
-): BlokComponentDefinition => createBlokComponent({ name, schema, service: MIKRO_SERVICE, writesRecordTo: "bind" }, lazily(Part));
+): BlokComponentDefinition =>
+  createBlokComponent(
+    { name, schema, service: MIKRO_SERVICE, writesRecordTo: "bind", bindKinds: { bind: record(data) } },
+    lazily(Part),
+  );
 
-export const TableColumnsBlok = reader("TableColumns", tableColumnsSchema, Parts.TableColumns);
-export const ColumnStatBlok = reader("ColumnStat", columnStatSchema, Parts.ColumnStat);
-export const ColumnHistogramBlok = reader("ColumnHistogram", columnHistogramSchema, Parts.ColumnHistogram);
-export const TableRowsBlok = reader("TableRows", tableRowsSchema, Parts.TableRows);
+const COLUMN = model({
+  name: scalar("STRING"),
+  longName: scalar("STRING", true),
+  description: scalar("STRING", true),
+  dtype: scalar("STRING"),
+  role: scalar("STRING", true),
+  unit: scalar("STRING", true),
+  axisType: scalar("STRING", true),
+});
+
+export const TableColumnsBlok = reader("TableColumns", tableColumnsSchema, listOf(COLUMN, true), Parts.TableColumns);
+export const ColumnStatBlok = reader(
+  "ColumnStat",
+  columnStatSchema,
+  model(
+    {
+      rows: scalar("INT"),
+      nonNull: scalar("INT"),
+      min: scalar("FLOAT", true),
+      max: scalar("FLOAT", true),
+      mean: scalar("FLOAT", true),
+      distinct: scalar("INT", true),
+    },
+    true,
+  ),
+  Parts.ColumnStat,
+);
+export const ColumnHistogramBlok = reader(
+  "ColumnHistogram",
+  columnHistogramSchema,
+  model({ domain: model({ min: scalar("FLOAT"), max: scalar("FLOAT") }), bins: listOf(scalar("INT")) }, true),
+  Parts.ColumnHistogram,
+);
+export const TableRowsBlok = reader(
+  "TableRows",
+  tableRowsSchema,
+  model({ rows: listOf({ kind: "DICT", children: [field("...", CELL)] }), total: scalar("INT") }, true),
+  Parts.TableRows,
+);
 
 export const MIKRO_TABLE_BLOKS: readonly BlokComponentDefinition[] = [
   TableColumnsBlok,
