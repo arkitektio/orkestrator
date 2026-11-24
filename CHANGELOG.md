@@ -1,3 +1,10 @@
+## [8.33.1](https://github.com/arkitektio/orkestrator/compare/v8.33.0...v8.33.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* dep updates ([ec0244b](https://github.com/arkitektio/orkestrator/commit/ec0244b4db78906278676f7bdb2bb18884f2478a))
+
 # [8.33.0](https://github.com/arkitektio/orkestrator/compare/v8.32.0...v8.33.0) (2026-11-24)
 
 
