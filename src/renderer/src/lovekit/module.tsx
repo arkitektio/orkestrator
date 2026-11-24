@@ -9,6 +9,7 @@ import { CallInviteNotifications } from "./call/CallInviteNotifications";
 import { CallIsland } from "./call/CallIsland";
 import { CallInvitesWatcher } from "./call/invites";
 import { StreamLivenessWatcher } from "./components/StreamLivenessWatcher";
+import { LiveMediaCard } from "./components/LiveMediaCard";
 import { JoinCallsSection } from "./call/JoinCallsSection";
 import { StructureCallsSection } from "./call/StructureCallsSection";
 import { LOVEKIT_DIALOGS } from "./dialogRegistry";
@@ -71,5 +72,7 @@ export const LOVEKIT_MODULE = defineModule({
     // organization starts is announced in the rail.
     background: [CallConnection, CallInvitesWatcher, CallAnnouncementsWatcher, StreamLivenessWatcher],
     railIslands: [CallIsland, CallAnnouncementIsland],
+    // Settings → Connection: the live media this window receives, and how it travels.
+    statusCards: [LiveMediaCard],
   },
 });

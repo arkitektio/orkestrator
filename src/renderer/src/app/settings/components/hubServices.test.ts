@@ -35,7 +35,7 @@ describe("the hub's services", () => {
     ).toBe("Encrypted · mesh, direct tunnel");
     expect(
       connectionProfile({ kind: "mesh", meshLabel: "lab", peer: { name: "hub", online: true, path: { kind: "relay", region: "fra" } } }, false),
-    ).toEqual({ line: "Encrypted · mesh, relayed via fra", tone: "warn" });
+    ).toEqual({ line: "Encrypted · mesh, routed via fra", tone: "warn" });
     expect(connectionProfile({ kind: "direct", network: "mesh-down" }, true).tone).toBe("bad");
   });
 });

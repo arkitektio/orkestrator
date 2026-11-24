@@ -3,10 +3,11 @@ import { RoomEvent, type Room } from "livekit-client";
 import { watchData } from "./agentRoom";
 
 /** A data track that hands out what is pushed to it, and says when its reader stopped. */
-const fakeTrack = (name: string) => {
+const fakeTrack = (name: string, publisher = "agent-1") => {
   let push: (payload: Uint8Array) => void = () => {};
   const track = {
     info: { name },
+    publisherIdentity: publisher,
     stopped: false,
     subscribe: ({ signal }: { signal: AbortSignal }) =>
       new ReadableStream({
@@ -47,7 +48,7 @@ describe("watchData", () => {
     const other = fakeTrack("temperature");
     const room = fakeRoom([spectrum, other]);
     const seen: number[] = [];
-    const stop = watchData(room as unknown as Room, "spectrum", (payload) => seen.push(payload[0]));
+    const stop = watchData(room as unknown as Room, "spectrum", "agent-1", (payload) => seen.push(payload[0]));
 
     await settled();
     spectrum.push(Uint8Array.of(1));
@@ -67,5 +68,18 @@ describe("watchData", () => {
     await settled();
     expect(spectrum.stopped && again.stopped).toBe(true);
     expect(room.listening()).toBe(0);
+  });
+
+  it("reads only the agent's track, not one of the same name a viewer publishes", async () => {
+    const room = fakeRoom([]);
+    const seen: number[] = [];
+    const stop = watchData(room as unknown as Room, "spectrum", "agent-1", (payload) => seen.push(payload[0]));
+    const spoofed = fakeTrack("spectrum", "user-3-abcdef");
+    room.publish(spoofed);
+    await settled();
+    spoofed.push(Uint8Array.of(66));
+    await settled();
+    expect(seen).toEqual([]);
+    stop();
   });
 });

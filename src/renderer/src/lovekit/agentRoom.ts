@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Room, RoomEvent, type RemoteDataTrack } from "livekit-client";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
+import type { MediaPath } from "@/core/connection/mesh/mediaBridge";
 
 /**
  * The agent rooms this window watches: one LiveKit connection per agent,
@@ -27,6 +28,9 @@ type Entry = {
   room: Room | null;
   /** How many views want each track, by track name (the stream's key). */
   wanted: Record<string, number>;
+  /** How the room's media was set up: straight to the media server, or through a mesh's media
+   *  bridge (`core/connection/mesh/mediaBridge`). Null until joined. */
+  path: { kind: "direct" } | { kind: "media-bridge"; meshLabel: string } | null;
 };
 
 export type AgentRoomsState = { rooms: Record<string, Entry> };
@@ -35,7 +39,13 @@ export type AgentRoomsState = { rooms: Record<string, Entry> };
 const LIVEKIT = "LIVEKIT";
 
 /** What lovekit hands out to watch an agent (`watchAgent`), and where LiveKit is. */
-export type Connector = { connect: (agentId: string) => Promise<{ transport: string; credential: string }>; url: string };
+export type Connector = {
+  connect: (agentId: string) => Promise<{ transport: string; credential: string }>;
+  url: string;
+  /** How media reaches LiveKit from this window (direct, or the mesh's media bridge). Throws
+   *  when LiveKit is on the mesh and no bridge can be had. Absent: direct. */
+  mediaPath?: () => Promise<MediaPath>;
+};
 
 /** How long an unwatched room stays joined, for a view that comes right back. */
 const LINGER_MS = 5_000;
@@ -77,10 +87,16 @@ const join = async (agentId: string, connector: Connector, generation: number, a
   if (!current()) return;
   update(agentId, { status: "connecting", error: null });
   const room = new Room({ adaptiveStream: true });
+  let path: Entry["path"] = { kind: "direct" };
   try {
+    const media = (await connector.mediaPath?.()) ?? { kind: "direct" as const };
+    path = media.kind === "media-bridge" ? { kind: "media-bridge", meshLabel: media.meshLabel } : { kind: "direct" };
     const connection = await connector.connect(agentId);
     if (connection.transport !== LIVEKIT) throw new Error(`this Orkestrator does not speak the ${connection.transport} transport`);
-    await room.connect(connector.url, connection.credential, { autoSubscribe: false });
+    await room.connect(connector.url, connection.credential, {
+      autoSubscribe: false,
+      ...(media.kind === "media-bridge" ? { rtcConfig: media.rtcConfig } : {}),
+    });
   } catch (error) {
     void room.disconnect();
     if (!current()) return;
@@ -102,7 +118,7 @@ const join = async (agentId: string, connector: Connector, generation: number, a
     // Still watched: join again (a server restart, a dropped network).
     void join(agentId, connector, generation);
   });
-  update(agentId, { room, status: "connected", error: null });
+  update(agentId, { room, status: "connected", error: null, path });
   settle(agentId);
 };
 
@@ -119,7 +135,10 @@ const acquire = (agentId: string, connector: Connector) => {
   }
   const generation = ++generations;
   agentRooms.setState((state) => ({
-    rooms: { ...state.rooms, [agentId]: { generation, refs: 1, status: "connecting", error: null, room: null, wanted: {} } },
+    rooms: {
+      ...state.rooms,
+      [agentId]: { generation, refs: 1, status: "connecting", error: null, room: null, wanted: {}, path: null },
+    },
   }));
   void join(agentId, connector, generation);
 };
@@ -176,15 +195,20 @@ export const useWatchedTrack = (agentId: string | undefined, key: string | undef
   }, [agentId, key]);
 };
 
+/** The participant an agent publishes its streams as (lovekit mints its token so). */
+export const agentIdentity = (agentId: string) => `agent-${agentId}`;
+
 /**
- * Read the data track named `key` in a joined room until the returned stop is
- * called: every frame's bytes, newest only (a slow reader skips, it never
- * queues). A track the agent publishes again is read again.
+ * Read the data track named `key` that `publisher` publishes in a joined room,
+ * until the returned stop is called: every frame's bytes, newest only (a slow
+ * reader skips, it never queues). A track the agent publishes again is read
+ * again. Only the agent's: a viewer may send data too (latency pings), and a
+ * track of the same name from anyone else is not the stream.
  */
-export const watchData = (room: Room, key: string, onPayload: (payload: Uint8Array) => void) => {
+export const watchData = (room: Room, key: string, publisher: string, onPayload: (payload: Uint8Array) => void) => {
   const abort = new AbortController();
   const read = async (track: RemoteDataTrack) => {
-    if (track.info.name !== key || abort.signal.aborted) return;
+    if (track.info.name !== key || track.publisherIdentity !== publisher || abort.signal.aborted) return;
     try {
       const reader = track.subscribe({ signal: abort.signal, bufferSize: 1 }).getReader();
       for (;;) {
@@ -196,10 +220,8 @@ export const watchData = (room: Room, key: string, onPayload: (payload: Uint8Arr
       // Stopped, or the track went away: one published again is read again.
     }
   };
-  for (const participant of room.remoteParticipants.values()) {
-    const track = participant.dataTracks.get(key);
-    if (track) void read(track);
-  }
+  const track = room.remoteParticipants.get(publisher)?.dataTracks.get(key);
+  if (track) void read(track);
   room.on(RoomEvent.DataTrackPublished, read);
   return () => {
     abort.abort();

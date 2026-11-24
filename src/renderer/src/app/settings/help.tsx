@@ -123,10 +123,12 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
         <>Read <b>Agent</b> to see whether apps you run can reach you here. Turn the switch on its card to engage or disengage.</>,
         <>Read <b>Live updates</b> to see whether tasks, their events, agents and states arrive in this window. While they do not, <b>Why</b> says what went wrong.</>,
         <>Press the copy button next to <b>Session</b> to copy its id for a bug report.</>,
+        <>Read <b>Live media</b> to see how the camera streams and calls you have open reach this window: over UDP straight to the media server, or through the mesh&apos;s media bridge, and how many frames and bits arrive.</>,
       ]}
       tips={[
         <>Tasks keep running while live updates are down. Back within the <b>Catch-up window</b>, this window gets exactly what it missed.</>,
         <>Click the yellow sign next to the agent in the sidebar to come here.</>,
+        <>In debug mode (Settings → Developer), every stream shows the same line over its picture, and warns when the picture is flat: a camera that sends no image.</>,
       ]}
     />
   ),

@@ -4,7 +4,7 @@ import { Activity } from "lucide-react";
 
 import { cn } from "@/core/util/utils";
 import type { DataFormatFragment } from "../api/graphql";
-import { watchData } from "../agentRoom";
+import { agentIdentity, watchData } from "../agentRoom";
 import { decodeFrame, type DataFrame } from "../streams/frame";
 
 /** A number as an axis shows it: short, whatever its size. */
@@ -95,7 +95,7 @@ export const StreamPlot = ({
   className,
 }: {
   room: Room;
-  stream: { key: string; title: string; live?: boolean | null; format: DataFormatFragment };
+  stream: { key: string; title: string; live?: boolean | null; format: DataFormatFragment; agent: { id: string } };
   className?: string;
 }) => {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -114,7 +114,7 @@ export const StreamPlot = ({
       draw(canvas.current, newest, format, range);
     };
     animation = requestAnimationFrame(tick);
-    const stop = watchData(room, stream.key, (payload) => {
+    const stop = watchData(room, stream.key, agentIdentity(stream.agent.id), (payload) => {
       const frame = decodeFrame(payload, format.dtype);
       if (!frame || (newest && frame.sentAt <= newest.sentAt)) return;
       if (!newest) setReceiving(true);
@@ -131,7 +131,7 @@ export const StreamPlot = ({
       cancelAnimationFrame(animation);
       setReceiving(false);
     };
-  }, [room, stream.key, format]);
+  }, [room, stream.key, stream.agent.id, format]);
 
   return (
     <div className={cn("dark relative h-full w-full bg-background text-foreground", className)}>

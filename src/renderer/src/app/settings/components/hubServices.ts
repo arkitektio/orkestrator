@@ -41,7 +41,8 @@ export const connectionProfile = (
     if (peer && !peer.online) return { line: `Mesh · ${peer.name} is offline`, tone: "bad" };
     if (peer?.path?.kind === "direct") return { line: "Encrypted · mesh, direct tunnel", tone: "good" };
     if (peer?.path?.kind === "relay") {
-      return { line: `Encrypted · mesh, relayed via ${peer.path.region}`, tone: "warn" };
+      // The tunnel goes through a routing server (DERP), over TCP: it works, it is slower.
+      return { line: `Encrypted · mesh, routed via ${peer.path.region}`, tone: "warn" };
     }
     return { line: "Encrypted · through the mesh", tone: "good" };
   }

@@ -1,6 +1,8 @@
 import { Guard, useLivekit } from "@/core/connection/arkitekt/host";
 import { LiveKitRoom, RoomAudioRenderer, useRoomContext } from "@livekit/components-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createStore, useStore } from "zustand";
+import { mediaPathFor, type MediaPath } from "@/core/connection/mesh/mediaBridge";
 
 import { callStore, useCallState } from "./store";
 
@@ -14,11 +16,36 @@ const RoomBridge = () => {
   return null;
 };
 
+/** How the call's media reaches LiveKit, for the Live media status (null while not joined). */
+export const callMediaPath = createStore<{ path: MediaPath | null }>(() => ({ path: null }));
+export const useCallMediaPath = () => useStore(callMediaPath, (state) => state.path);
+
 const Connection = () => {
   const { url } = useLivekit();
   const token = useCallState((state) => state.token);
   const callId = useCallState((state) => state.call?.id);
-  if (!token || !callId) return null;
+  // Through the mesh's media bridge when LiveKit is only on the mesh: asked before joining.
+  const [path, setPath] = useState<MediaPath | null>(null);
+  useEffect(() => {
+    if (!token || !callId) return undefined;
+    let current = true;
+    mediaPathFor(url).then(
+      (found) => {
+        if (!current) return;
+        setPath(found);
+        callMediaPath.setState({ path: found });
+      },
+      (error: unknown) => {
+        if (current) callStore.getState().fail(error instanceof Error ? error.message : String(error));
+      },
+    );
+    return () => {
+      current = false;
+      setPath(null);
+      callMediaPath.setState({ path: null });
+    };
+  }, [url, token, callId]);
+  if (!token || !callId || !path) return null;
 
   return (
     // Keyed by call: joining another call remounts the connection rather
@@ -27,6 +54,7 @@ const Connection = () => {
       key={callId}
       token={token}
       serverUrl={url}
+      connectOptions={path.kind === "media-bridge" ? { rtcConfig: path.rtcConfig } : undefined}
       connect
       audio
       video
