@@ -8,8 +8,10 @@ import {
   classNameSchema,
   sizeSchema,
   structureValueSchema,
+  markStructureSchema,
   type SpecPort,
 } from "@arkitektio/bsx/catalogs";
+import { outputSchema, transformSchema } from "@/core/blok/mount/schema";
 import { createBlokComponent, markBindSchema, type BlokComponentDefinition, type BlokRenderArgs } from "@arkitektio/bsx/renderer/runtime/index";
 
 import { preloadable } from "@/core/util/preloadable";
@@ -48,6 +50,12 @@ const Parts = {
   ),
   MikroSceneProbe: preloadable<BlokRenderArgs>(() =>
     import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneProbeRender })),
+  ),
+  MikroSceneMount: preloadable<BlokRenderArgs>(() =>
+    import("./MikroSceneMount").then((module) => ({ default: module.MikroSceneMountRender })),
+  ),
+  MikroChartMount: preloadable<BlokRenderArgs>(() =>
+    import("./MikroChartMount").then((module) => ({ default: module.MikroChartMountRender })),
   ),
 };
 
@@ -194,11 +202,64 @@ export const MikroSceneProbeBlok = panel(
   Parts.MikroSceneProbe,
 );
 
+export const mikroSceneMountSchema = z
+  .object({
+    value: markStructureSchema(
+      z.object({ object: z.union([z.string(), z.number()]), __identifier: z.string() }),
+      "@mikro/scene",
+    )
+      .nullish()
+      .describe("The scene, a structure reference: typically `{args.scene}`."),
+    transform: transformSchema,
+    output: outputSchema,
+    live: boolSchema.describe("Follow the scene as others change it. Defaults to true."),
+  })
+  .describe(
+    "A mikro scene's 3D layers in a Scene, placed by its world's axes and reference and moved by mikro-style transform steps. Viewing only; one per Scene.",
+  );
+
+export const MikroSceneMountBlok = createBlokComponent(
+  {
+    name: "MikroSceneMount",
+    service: MIKRO_SERVICE,
+    placement: { context: "scene", downstreamOf: ["Scene", "Space"] },
+    schema: mikroSceneMountSchema,
+  },
+  lazily(Parts.MikroSceneMount),
+);
+
+export const mikroChartMountSchema = z
+  .object({
+    value: markStructureSchema(
+      z.object({ object: z.union([z.string(), z.number()]), __identifier: z.string() }),
+      "@mikro/chart",
+    )
+      .nullish()
+      .describe("The chart, a structure reference: typically `{args.chart}`."),
+    transform: transformSchema,
+    output: outputSchema,
+  })
+  .describe(
+    "A mikro chart's lines in a Plot: its axis converted into the plot's (and moved by mikro-style transform steps), its rows in one row of the plot.",
+  );
+
+export const MikroChartMountBlok = createBlokComponent(
+  {
+    name: "MikroChartMount",
+    service: MIKRO_SERVICE,
+    placement: { downstreamOf: ["Plot"] },
+    schema: mikroChartMountSchema,
+  },
+  lazily(Parts.MikroChartMount),
+);
+
 export const MIKRO_BLOKS: readonly BlokComponentDefinition[] = [
   MikroSceneBlok,
   MikroSceneViewportBlok,
   MikroSceneLayersBlok,
   MikroSceneAnnotationsBlok,
   MikroSceneProbeBlok,
+  MikroChartMountBlok,
+  MikroSceneMountBlok,
   ...MIKRO_TABLE_BLOKS,
 ];

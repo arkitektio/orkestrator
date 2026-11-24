@@ -81,6 +81,8 @@ fragment SpaceAxes on CoordinateSystem {
   id
   name
   epoch
+  # The frame it is, by which a stage lines up mounts of one space.
+  reference
   axes {
     ...Axis
   }

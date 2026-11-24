@@ -12,16 +12,27 @@ interface CameraMatrixSyncProps {
   /** Trailing delay (ms) for the final push once the camera settles. */
   settleMs?: number;
   threshold?: number;
+  /**
+   * The object the scene is mounted under in a host's canvas (a stage), if any: the camera
+   * is then published in its local frame (P·V·M, the position through M⁻¹), so the LOD
+   * planner sees it in the scene's own units however the host scales and turns it.
+   */
+  frame?: THREE.Object3D | null;
 }
+
+/** Relative change below which a mounted camera's P·V·M counts as still: its entries are tiny. */
+const FRAME_RELATIVE_THRESHOLD = 1e-6;
 
 export const CameraMatrixSync = ({
   throttleMs = 60,
   settleMs = 150,
-  threshold = 0.00001
+  threshold = 0.00001,
+  frame = null,
 }: CameraMatrixSyncProps) => {
   const updateCameraData = useViewStore((s) => s.updateCameraData);
 
   const matrixRef = useRef(new THREE.Matrix4());
+  const frameInverse = useRef(new THREE.Matrix4()).current;
   const previousFrameMatrix = useRef(new THREE.Matrix4());
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastEmitRef = useRef(0);
@@ -97,6 +108,7 @@ export const CameraMatrixSync = ({
       camera.projectionMatrix,
       camera.matrixWorldInverse
     );
+    if (frame) matrixRef.current.multiply(frame.matrixWorld);
 
     // 3. Movement/Zoom check. The viewport SIZE is a dirty input in its own
     // right: an aspect-preserving resize of a perspective camera changes no
@@ -111,7 +123,10 @@ export const CameraMatrixSync = ({
     const cur = matrixRef.current.elements;
     const prev = previousFrameMatrix.current.elements;
 
-    for (let i = 0; !hasChanged && i < 16; i++) {
+    if (frame) {
+      hasChanged ||= matrixRelativeDelta(cur, prev, 1e-12) > FRAME_RELATIVE_THRESHOLD;
+    }
+    for (let i = 0; !frame && !hasChanged && i < 16; i++) {
       if (Math.abs(cur[i] - prev[i]) > threshold) {
         hasChanged = true;
       }
@@ -141,6 +156,7 @@ export const CameraMatrixSync = ({
     pendingSize.current.width = size.width;
     pendingSize.current.height = size.height;
     camera.getWorldPosition(pendingPosition.current);
+    if (frame) pendingPosition.current.applyMatrix4(frameInverse.copy(frame.matrixWorld).invert());
     const perspective = (camera as THREE.PerspectiveCamera).isPerspectiveCamera === true;
     pendingPerspective.current = perspective;
     pendingFovY.current = perspective

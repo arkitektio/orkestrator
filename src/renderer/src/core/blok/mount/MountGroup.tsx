@@ -45,6 +45,11 @@ const NONE: string[] = [];
 const noSubscription = () => () => {};
 const noStray = () => NONE;
 
+/** The group a mount's content stands in: what a scene publishes its camera relative to. */
+const MountObjectContext = React.createContext<THREE.Object3D | null>(null);
+
+export const useMountObject = (): THREE.Object3D | null => React.useContext(MountObjectContext);
+
 /** What a mount's content says once it has something to frame (a quad with a size). */
 const MountReadyContext = React.createContext<(ready: boolean) => void>(() => {});
 
@@ -124,7 +129,9 @@ export const MountGroup = ({
 
   return (
     <group ref={setGroup} matrixAutoUpdate={false}>
-      <MountReadyContext.Provider value={setReady}>{children}</MountReadyContext.Provider>
+      <MountObjectContext.Provider value={group}>
+        <MountReadyContext.Provider value={setReady}>{children}</MountReadyContext.Provider>
+      </MountObjectContext.Provider>
     </group>
   );
 };

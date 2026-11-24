@@ -5,6 +5,7 @@ import {
 } from "@/core/data/plot/scope/plotScope";
 import { ChartAnnotationsPanel } from "./features/annotations/ChartAnnotationsPanel";
 import { ChartProbePanel } from "./features/probe/ChartProbePanel";
+import { ChartMount } from "./shell/ChartMount";
 import { ChartProvider } from "./shell/ChartProvider";
 import { CHART_PHASE_WORDING, ChartViewport } from "./shell/ChartViewport";
 import { ChartLayerPanel } from "./shell/layerPanel/ChartLayerPanel";
@@ -58,6 +59,8 @@ const hasAnnotationLayer = (chart: { layers: readonly { __typename?: string }[] 
 export const Chart = {
   Provider: ChartProvider,
   Viewport: ChartViewport,
+  /** The chart's lines inside another plot's canvas (a base `Plot` that mounts it). */
+  Mount: ChartMount,
   LayersSidebar,
   AnnotationsSidebar,
   ProbeSidebar,

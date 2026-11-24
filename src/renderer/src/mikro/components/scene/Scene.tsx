@@ -7,6 +7,7 @@ import {
   SceneColumnTrigger,
 } from "./shell/SceneColumn";
 import { SceneDock } from "./shell/SceneDock";
+import { SceneMount } from "./shell/SceneMount";
 import { SceneProvider } from "./shell/SceneProvider";
 import { DefaultScenePanels, SceneViewport } from "./shell/SceneViewport";
 import { sceneHasMeshLayer } from "./platform/model/collectionPlacement";
@@ -74,6 +75,8 @@ const SceneRoot = (props: {
 export const Scene = Object.assign(SceneRoot, {
   Provider: SceneProvider,
   Viewport: SceneViewport,
+  /** The scene's 3D layers inside another canvas (a stage that mounts it). */
+  Mount: SceneMount,
   Column: SceneColumn,
   Trigger: SceneColumnTrigger,
   Panels: SceneColumnPanels,

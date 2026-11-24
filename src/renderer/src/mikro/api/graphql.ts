@@ -14415,7 +14415,7 @@ type Resident_TableLens_Fragment = (
 
 export type ResidentFragment = Resident_AnnotationCollection_Fragment | Resident_AnnotationLens_Fragment | Resident_ArrayDataset_Fragment | Resident_ArrayLens_Fragment | Resident_DataArray_Fragment | Resident_Fixture_Fragment | Resident_FixtureLens_Fragment | Resident_MeshCollection_Fragment | Resident_MeshLens_Fragment | Resident_NetworkCollection_Fragment | Resident_NetworkLens_Fragment | Resident_SparseDataset_Fragment | Resident_SparseLens_Fragment | Resident_TableDataset_Fragment | Resident_TableLens_Fragment;
 
-export type SpaceAxesFragment = { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, axes: Array<(
+export type SpaceAxesFragment = { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, reference?: string | null, axes: Array<(
     { __typename?: 'Axis' }
     & AxisFragment
   )> };
@@ -21489,6 +21489,7 @@ export const SpaceAxesFragmentDoc = gql`
   id
   name
   epoch
+  reference
   axes {
     ...Axis
   }
