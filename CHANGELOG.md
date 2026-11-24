@@ -1,3 +1,13 @@
+# [8.32.0](https://github.com/arkitektio/orkestrator/compare/v8.31.0...v8.32.0) (2026-11-24)
+
+
+### Features
+
+* **alpaka:** a chat picks which implementation of a replyer answers ([3987260](https://github.com/arkitektio/orkestrator/commit/3987260cf3b9818059c5b85b422470a6f905004c))
+* **blok:** a Plot, and live lovekit streams mounted in a Scene or a Plot ([e87a10a](https://github.com/arkitektio/orkestrator/commit/e87a10aab993660afe4f60be4d48b00bc77fd031))
+* **blok:** catalog props are typed by ports (bsx 7) ([091edea](https://github.com/arkitektio/orkestrator/commit/091edea9da7dadea8fe0837587b697ff22036b86))
+* **rekuest:** a blok shows its own logo in lists, pins, agent headers and tabs ([96440bd](https://github.com/arkitektio/orkestrator/commit/96440bdcb39a46ba012a84f27921aa583ab37b64))
+
 # [8.31.0](https://github.com/arkitektio/orkestrator/compare/v8.30.0...v8.31.0) (2026-11-24)
 
 
