@@ -67,11 +67,11 @@ import (
 	"tailscale.com/types/logger"
 )
 
-const version = "0.2.0"
+const version = "0.3.0"
 
 // protocol is bumped whenever the stdio protocol changes; the parent refuses
 // a sidecar that speaks another one.
-const protocol = 2
+const protocol = 3
 
 type command struct {
 	Op         string `json:"op"`
@@ -85,6 +85,8 @@ type command struct {
 	NodeKey    string `json:"nodeKey,omitempty"`
 	// Other signers' lock keys for lock-init; this node's own is implied.
 	TrustedKeys []string `json:"trustedKeys,omitempty"`
+	// What a media bridge relays to: the media server's host (see mediabridge.go).
+	Allow []string `json:"allow,omitempty"`
 }
 
 type peer struct {
@@ -154,6 +156,8 @@ type node struct {
 	cancel   context.CancelFunc
 	mu       sync.Mutex
 	last     nodeStatus
+	// The media bridge, once a window asked for one (mediabridge.go).
+	bridge *mediaBridge
 }
 
 var (
@@ -245,6 +249,13 @@ func handle(cmd command) {
 			return
 		}
 		go n.lockInit(cmd.TrustedKeys)
+	case "media-bridge":
+		n := nodeAt(cmd.ID, cmd.Gen)
+		if n == nil {
+			emit(mediaBridgeEvent{Ev: "media-bridge", ID: cmd.ID, Gen: cmd.Gen, Error: "no such node"})
+			return
+		}
+		go n.startMediaBridge(cmd.Allow)
 	case "status":
 		nodMu.Lock()
 		all := make([]*node, 0, len(nodes))
@@ -443,6 +454,7 @@ func disconnect(id string, gen int64) {
 	delete(nodes, id)
 	nodMu.Unlock()
 	n.cancel()
+	n.closeMediaBridge()
 	_ = n.listener.Close()
 	_ = n.srv.Close()
 }

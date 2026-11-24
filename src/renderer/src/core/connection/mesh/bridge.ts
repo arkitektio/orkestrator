@@ -7,6 +7,8 @@ import type {
   MeshLockInitResult,
   MeshLockSignRequest,
   MeshLockSignResult,
+  MeshMediaBridgeRequest,
+  MeshMediaBridgeResult,
   MeshPingRequest,
   MeshPingResult,
   MeshStatusPayload,
@@ -23,6 +25,8 @@ export type MeshBridge = {
   ping: (request: MeshPingRequest) => Promise<MeshPingResult[]>;
   lockSign: (request: MeshLockSignRequest) => Promise<MeshLockSignResult>;
   lockInit: (request: MeshLockInitRequest) => Promise<MeshLockInitResult>;
+  /** The media bridge: an ICE server for a media server only on the mesh. Absent in an older app. */
+  mediaBridge?: (request: MeshMediaBridgeRequest) => Promise<MeshMediaBridgeResult>;
   restart: () => Promise<MeshStatusPayload>;
   firewall: () => Promise<MeshFirewallState>;
   onEvent: (cb: (event: MeshEvent) => void) => () => void;

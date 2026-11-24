@@ -31,6 +31,7 @@ export const MESH_LOCK_SIGN_CHANNEL = "mesh:lock-sign";
 export const MESH_LOCK_INIT_CHANNEL = "mesh:lock-init";
 export const MESH_RESTART_CHANNEL = "mesh:restart";
 export const MESH_FIREWALL_CHANNEL = "mesh:firewall";
+export const MESH_MEDIA_BRIDGE_CHANNEL = "mesh:media-bridge";
 
 /**
  * Windows Defender Firewall's inbound rules for meshd (`firewall.ts`).
@@ -176,6 +177,24 @@ export type MeshLockSignRequest = {
 
 export type MeshLockSignResult = { ok: boolean; error?: string };
 
+/**
+ * A media bridge: how a window's WebRTC reaches a media server (LiveKit) that is only on the
+ * mesh. A TURN server on 127.0.0.1 whose allocations are UDP sockets on the mesh, relaying only
+ * to the machines in `allow` (the media server's host). See tools/meshd/mediabridge.go.
+ */
+export type MeshMediaBridgeRequest = { meshId: string; allow: string[] };
+
+/** The bridge as one ICE server, or why there is none. */
+export type MeshMediaBridgeResult =
+  | { ok: true; urls: string[]; username: string; credential: string; allowed: string[] }
+  | { ok: false; error: string };
+
+/** A host (or host:port) a media bridge may be started for: a name or an address, nothing else. */
+export const isMediaBridgeHost = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0 && value.length <= 260 && /^[A-Za-z0-9.\-:[\]]+$/.test(value);
+
+export const MESH_MEDIA_BRIDGE_MAX_HOSTS = 4;
+
 /** "tlpub:" + 64 hex — a Tailnet Lock public key as `tailscale lock` prints it. */
 export const isLockPublicKey = (value: string): boolean => /^tlpub:[0-9a-f]{64}$/.test(value);
 
@@ -259,7 +278,7 @@ export type MeshEvent =
  * The stdio protocol main speaks; meshd announces its own in `ready`, and
  * main refuses a sidecar that speaks another (`unavailable/outdated`).
  */
-export const MESHD_PROTOCOL = 2;
+export const MESHD_PROTOCOL = 3;
 
 /**
  * `gen` is the generation of one connect: main mints a new one for every
@@ -273,6 +292,7 @@ export type MeshdCommand =
   | { op: "ping"; id: string; gen: number; target: string }
   | { op: "lock-sign"; id: string; gen: number; nodeKey: string }
   | { op: "lock-init"; id: string; gen: number; trustedKeys: string[] }
+  | { op: "media-bridge"; id: string; gen: number; allow: string[] }
   | { op: "status" }
   | { op: "shutdown" };
 
@@ -282,6 +302,16 @@ export type MeshdEvent =
   | ({ ev: "ping"; id: string; gen?: number } & MeshPingResult)
   | ({ ev: "lock-sign"; id: string; gen?: number; nodeKey: string } & MeshLockSignResult)
   | ({ ev: "lock-init"; id: string; gen?: number } & MeshLockInitResult)
+  | {
+      ev: "media-bridge";
+      id: string;
+      gen?: number;
+      urls?: string[];
+      username?: string;
+      credential?: string;
+      allowed?: string[];
+      error?: string;
+    }
   | { ev: "log"; id: string; gen?: number; message: string }
   | { ev: "error"; id: string; gen?: number; message: string };
 
@@ -297,7 +327,7 @@ export const parseMeshdLine = (line: string): MeshdEvent | undefined => {
   }
   if (!value || typeof value !== "object") return undefined;
   const ev = (value as { ev?: unknown }).ev;
-  if (ev === "ready" || ev === "status" || ev === "ping" || ev === "lock-sign" || ev === "lock-init" || ev === "log" || ev === "error") {
+  if (ev === "ready" || ev === "status" || ev === "ping" || ev === "lock-sign" || ev === "lock-init" || ev === "media-bridge" || ev === "log" || ev === "error") {
     return value as MeshdEvent;
   }
   return undefined;

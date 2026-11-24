@@ -27,6 +27,9 @@ import {
   MESH_FIREWALL_CHANNEL,
   MESH_JOIN_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
+  MESH_MEDIA_BRIDGE_CHANNEL,
+  MESH_MEDIA_BRIDGE_MAX_HOSTS,
+  isMediaBridgeHost,
   MESH_LOCK_MAX_TRUSTED_KEYS,
   MESH_LOCK_SIGN_CHANNEL,
   isLockPublicKey,
@@ -42,6 +45,8 @@ import {
   type MeshFirewallState,
   type MeshJoinRequest,
   type MeshLockInitRequest,
+  type MeshMediaBridgeRequest,
+  type MeshMediaBridgeResult,
   type MeshLockInitResult,
   type MeshLockSignRequest,
   type MeshLockSignResult,
@@ -111,6 +116,8 @@ const PING_TIMEOUT_MS = 30_000;
 const LOCK_SIGN_TIMEOUT_MS = 30_000;
 /** Init signs every machine on the mesh before the lock goes live. */
 const LOCK_INIT_TIMEOUT_MS = 90_000;
+/** A media bridge is a local server and one netmap lookup: quick, or something is wrong. */
+const MEDIA_BRIDGE_TIMEOUT_MS = 15_000;
 
 type Waiter<T> = { meshId: string; settle: (result: T) => void };
 
@@ -126,6 +133,8 @@ export class MeshService implements AppModule {
   private readonly pings = new Map<string, Waiter<MeshPingResult[]> & { results: MeshPingResult[] }>();
   /** Tailnet Lock signatures in flight, keyed `<meshId>::<nodeKey>`. */
   private readonly lockSigns = new Map<string, { promise: Promise<MeshLockSignResult>; waiter: Waiter<MeshLockSignResult> }>();
+  /** Media bridge requests in flight, per mesh: one answer settles them all. */
+  private readonly mediaBridges = new Map<string, Waiter<MeshMediaBridgeResult>[]>();
   /** At most one lock init per mesh; its answer carries secrets, so it has exactly one waiter. */
   private readonly lockInits = new Map<string, Waiter<MeshLockInitResult>>();
   private readonly watched = new Set<number>();
@@ -167,6 +176,9 @@ export class MeshService implements AppModule {
     );
     this.transport.handleChannel(MESH_LOCK_INIT_CHANNEL, (_event, request: MeshLockInitRequest) =>
       this.lockInit(request),
+    );
+    this.transport.handleChannel(MESH_MEDIA_BRIDGE_CHANNEL, (_event, request: MeshMediaBridgeRequest) =>
+      this.mediaBridge(request),
     );
     this.transport.handleChannel(MESH_RESTART_CHANNEL, () => this.restart());
     this.transport.handleChannel(MESH_FIREWALL_CHANNEL, () => this.deps.firewall?.() ?? "not-windows");
@@ -382,6 +394,21 @@ export class MeshService implements AppModule {
       this.lockSigns.get(`${event.id}::${event.nodeKey}`)?.waiter.settle({ ok: event.ok, error: event.error || undefined });
       return;
     }
+    if (event.ev === "media-bridge") {
+      if (!isCurrent(this.records.get(event.id), event.gen)) return;
+      const result: MeshMediaBridgeResult =
+        event.error || !event.urls?.length || !event.username || !event.credential
+          ? { ok: false, error: event.error || "The mesh client started no media bridge" }
+          : {
+              ok: true,
+              urls: event.urls,
+              username: event.username,
+              credential: event.credential,
+              allowed: event.allowed ?? [],
+            };
+      for (const waiter of this.mediaBridges.get(event.id) ?? []) waiter.settle(result);
+      return;
+    }
     if (event.ev === "lock-init") {
       if (!isCurrent(this.records.get(event.id), event.gen)) return;
       // Carries the disablement secret: to its one waiter, nowhere else.
@@ -559,6 +586,44 @@ export class MeshService implements AppModule {
     });
   }
 
+  /**
+   * The mesh's media bridge, relaying to `allow` (the media server's host): started on the first
+   * ask, widened by later ones. Its credentials go to the window that asked, nowhere else.
+   */
+  async mediaBridge(request: MeshMediaBridgeRequest): Promise<MeshMediaBridgeResult> {
+    const record = this.records.get(request?.meshId);
+    if (!record?.connected || record.status.state !== "running") {
+      return { ok: false, error: "The mesh is not connected" };
+    }
+    const raw = Array.isArray(request.allow) ? request.allow : [];
+    const allow = [...new Set(raw.filter(isMediaBridgeHost))];
+    if (allow.length === 0 || allow.length !== raw.length || allow.length > MESH_MEDIA_BRIDGE_MAX_HOSTS) {
+      return { ok: false, error: "A media bridge relays to the media server's host only" };
+    }
+    if (!this.process.running) return { ok: false, error: "The mesh client is not running" };
+    const meshId = request.meshId;
+    return new Promise<MeshMediaBridgeResult>((resolve) => {
+      const timer = setTimeout(
+        () => waiter.settle({ ok: false, error: "The mesh client did not answer" }),
+        MEDIA_BRIDGE_TIMEOUT_MS,
+      );
+      const waiter: Waiter<MeshMediaBridgeResult> = {
+        meshId,
+        settle: (result) => {
+          const waiting = this.mediaBridges.get(meshId) ?? [];
+          if (!waiting.includes(waiter)) return;
+          clearTimeout(timer);
+          const rest = waiting.filter((other) => other !== waiter);
+          if (rest.length) this.mediaBridges.set(meshId, rest);
+          else this.mediaBridges.delete(meshId);
+          resolve(result);
+        },
+      };
+      this.mediaBridges.set(meshId, [...(this.mediaBridges.get(meshId) ?? []), waiter]);
+      this.process.send({ op: "media-bridge", id: meshId, gen: record.gen, allow });
+    });
+  }
+
   /** Whatever was asked of a node that is gone now is answered, not left to time out. */
   private settleWaiters(meshId: string, error: string) {
     for (const entry of [...this.pings.values()]) {
@@ -572,6 +637,7 @@ export class MeshService implements AppModule {
     for (const { waiter } of [...this.lockSigns.values()]) {
       if (waiter.meshId === meshId) waiter.settle({ ok: false, error });
     }
+    for (const waiter of [...(this.mediaBridges.get(meshId) ?? [])]) waiter.settle({ ok: false, error });
     const init = this.lockInits.get(meshId);
     init?.settle({ ok: false, error: `${error}. Check the mesh before trying again.` });
   }

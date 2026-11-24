@@ -57,6 +57,7 @@ import {
   MESH_JOIN_CHANNEL,
   MESH_EVENT_CHANNEL,
   MESH_FIREWALL_CHANNEL,
+  MESH_MEDIA_BRIDGE_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
   MESH_LOCK_SIGN_CHANNEL,
   MESH_PING_CHANNEL,
@@ -66,6 +67,8 @@ import {
   type MeshJoinRequest,
   type MeshEvent,
   type MeshFirewallState,
+  type MeshMediaBridgeRequest,
+  type MeshMediaBridgeResult,
   type MeshLockInitRequest,
   type MeshLockInitResult,
   type MeshLockSignRequest,
@@ -335,6 +338,9 @@ const api = {
       ipcRenderer.invoke(MESH_LOCK_INIT_CHANNEL, request),
     restart: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_RESTART_CHANNEL),
     firewall: (): Promise<MeshFirewallState> => ipcRenderer.invoke(MESH_FIREWALL_CHANNEL),
+    /** The mesh's media bridge, as an ICE server for a media server only on the mesh. */
+    mediaBridge: (request: MeshMediaBridgeRequest): Promise<MeshMediaBridgeResult> =>
+      ipcRenderer.invoke(MESH_MEDIA_BRIDGE_CHANNEL, request),
     onEvent: (cb: (event: MeshEvent) => void) => subscribe<MeshEvent>(MESH_EVENT_CHANNEL, cb),
   },
   /** The computer's network may have changed: an address came or went, or it woke from sleep. */

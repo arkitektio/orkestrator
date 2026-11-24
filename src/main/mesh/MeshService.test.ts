@@ -516,6 +516,59 @@ describe("MeshService", () => {
     expect(results.at(-1)).toMatchObject({ final: true, ok: false });
   });
 
+  describe("media bridge", () => {
+    const running = async () => {
+      await h.service.claim(1, { mesh: LAB });
+      await flush();
+      const child = h.children[0];
+      child.node().status("running", { proxyPort: 5000, peers: [] });
+      await flush();
+      return child;
+    };
+
+    it("asks the sidecar for one, for the media server only, and hands its answer to every asker", async () => {
+      const child = await running();
+      const node = child.node();
+      const first = h.service.mediaBridge({ meshId: "lab", allow: ["hub.lab.example"] });
+      const second = h.service.mediaBridge({ meshId: "lab", allow: ["hub.lab.example"] });
+      await flush();
+      expect(child.commands.filter((c) => c.op === "media-bridge")[0]).toEqual({
+        op: "media-bridge",
+        id: "lab",
+        gen: node.gen,
+        allow: ["hub.lab.example"],
+      });
+      node.say({
+        ev: "media-bridge",
+        urls: ["turn:127.0.0.1:41234?transport=udp"],
+        username: "u",
+        credential: "c",
+        allowed: ["100.64.0.9"],
+      });
+      const answer = { ok: true, urls: ["turn:127.0.0.1:41234?transport=udp"], username: "u", credential: "c", allowed: ["100.64.0.9"] };
+      await expect(first).resolves.toEqual(answer);
+      await expect(second).resolves.toEqual(answer);
+    });
+
+    it("refuses without a running mesh or a media server to relay to, before reaching the sidecar", async () => {
+      await expect(h.service.mediaBridge({ meshId: "lab", allow: ["hub"] })).resolves.toMatchObject({ ok: false });
+      const child = await running();
+      await expect(h.service.mediaBridge({ meshId: "lab", allow: [] })).resolves.toMatchObject({ ok: false });
+      await expect(h.service.mediaBridge({ meshId: "lab", allow: ["evil host; rm -rf"] })).resolves.toMatchObject({
+        ok: false,
+      });
+      expect(child.commands.some((c) => c.op === "media-bridge")).toBe(false);
+    });
+
+    it("says why the sidecar could not start one", async () => {
+      const child = await running();
+      const asked = h.service.mediaBridge({ meshId: "lab", allow: ["nope"] });
+      await flush();
+      child.node().say({ ev: "media-bridge", error: "nope is not a machine on this mesh" });
+      await expect(asked).resolves.toEqual({ ok: false, error: "nope is not a machine on this mesh" });
+    });
+  });
+
   describe("Tailnet Lock approval", () => {
     const id = "lab";
     const WAITING = "nodekey:aaaa";
@@ -668,7 +721,17 @@ describe("MeshService", () => {
 
   it("exposes the IPC surface as a closed set of channels", () => {
     expect([...h.handlers.keys()].sort()).toEqual(
-      ["mesh:claim", "mesh:firewall", "mesh:join", "mesh:lock-init", "mesh:lock-sign", "mesh:ping", "mesh:restart", "mesh:status"].sort(),
+      [
+        "mesh:claim",
+        "mesh:firewall",
+        "mesh:join",
+        "mesh:lock-init",
+        "mesh:lock-sign",
+        "mesh:media-bridge",
+        "mesh:ping",
+        "mesh:restart",
+        "mesh:status",
+      ].sort(),
     );
   });
 });
