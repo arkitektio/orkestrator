@@ -1,3 +1,10 @@
+# [8.33.0](https://github.com/arkitektio/orkestrator/compare/v8.32.0...v8.33.0) (2026-11-24)
+
+
+### Features
+
+* **mikro:** a mikro chart in a Plot and a mikro scene in a Scene ([1d26aed](https://github.com/arkitektio/orkestrator/commit/1d26aeda1a4fd92874cd5baaa31e660868c4a55a))
+
 # [8.32.0](https://github.com/arkitektio/orkestrator/compare/v8.31.0...v8.32.0) (2026-11-24)
 
 
