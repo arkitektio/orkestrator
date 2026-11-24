@@ -1,3 +1,11 @@
+# [8.31.0](https://github.com/arkitektio/orkestrator/compare/v8.30.0...v8.31.0) (2026-11-24)
+
+
+### Features
+
+* **lovekit:** live media goes UDP, direct or through the media bridge, and says how ([69a83b0](https://github.com/arkitektio/orkestrator/commit/69a83b07a3563820b8b5eb259969335edbae36c3))
+* **mesh:** a media bridge carries live media to a LiveKit only on the mesh ([9660f1f](https://github.com/arkitektio/orkestrator/commit/9660f1f2e79a3d0cfaa49ded0f6b104e0b526b97))
+
 # [8.30.0](https://github.com/arkitektio/orkestrator/compare/v8.29.0...v8.30.0) (2026-11-23)
 
 
