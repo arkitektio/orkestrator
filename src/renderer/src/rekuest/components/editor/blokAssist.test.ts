@@ -18,9 +18,14 @@ const catalog = {
       not_downstream_of: [],
       text_prop: "label",
       props: [
-        { key: "label", kind: "STRING", required: false, description: "Its text" },
-        { key: "variant", kind: "STRING", required: false, description: null, values: ["default", "ghost"] },
-        { key: "onClick", kind: "ACTION", required: false, description: null, event: [] },
+        { key: "label", port: { kind: "STRING" }, required: false, description: "Its text" },
+        {
+          key: "variant",
+          port: { kind: "STRING", choices: [{ value: "default" }, { value: "ghost" }] },
+          required: false,
+          description: null,
+        },
+        { key: "onClick", port: { kind: "CALLBACK", children: [] }, required: false, description: null },
       ],
     },
     { name: "Robot", description: null, context: "SCENE", children_context: null, inherits_context: false, accepts_children: false, downstream_of: [], not_downstream_of: [], text_prop: null, props: [] },
@@ -39,7 +44,7 @@ describe("what an assistant is told", () => {
     expect(componentIndex(catalog)).toBe("Button: A button. Press it.");
     const reference = componentReference(catalog, ["Button", "Buton", "ob"]);
     expect(reference).toContain('text between its tags fills "label"');
-    expect(reference).toContain('variant: string one of "default", "ghost"');
+    expect(reference).toContain("variant: 'default' | 'ghost'");
     expect(reference).toContain("<Buton> does not exist.");
     expect(reference).toContain("Did you mean: Robot?");
   });
