@@ -132,6 +132,29 @@ fragment RunOnImplementation on Implementation {
   }
 }
 
+# An implementation a chat may reply with: the app that answers, its release,
+# and where it runs (the agent and its device).
+fragment ReplyerImplementation on Implementation {
+  id
+  interface
+  agent {
+    id
+    name
+    kind
+    active
+    connected
+    app {
+      identifier
+    }
+    release {
+      version
+    }
+    device {
+      deviceId
+    }
+  }
+}
+
 fragment EstimatedRuntime on EstimatedRuntime {
   callJson
   source

@@ -8283,6 +8283,8 @@ export type RunOnImplementationFragment = { __typename?: 'Implementation', id: s
       & AgentHardwareFragment
     ) | null } };
 
+export type ReplyerImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, kind: AgentKind, active: boolean, connected: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', deviceId: string } | null } };
+
 export type EstimatedRuntimeFragment = { __typename?: 'EstimatedRuntime', callJson: any, source?: string | null, uiCallJson?: any | null, uiSource?: string | null };
 
 export type ImplementationFitFragment = { __typename?: 'ImplementationFit', port: string, callJson: any, source?: string | null, compiledPath: string };
@@ -9745,7 +9747,10 @@ export type ReplyerActionsQueryVariables = Exact<{
 
 
 export type ReplyerActionsQuery = { __typename?: 'Query', actions: Array<(
-    { __typename?: 'Action', latestTask?: { __typename?: 'Task', id: string, args: any } | null }
+    { __typename?: 'Action', latestTask?: { __typename?: 'Task', id: string, args: any } | null, implementations: Array<(
+      { __typename?: 'Implementation' }
+      & ReplyerImplementationFragment
+    )> }
     & ListActionFragment
   )> };
 
@@ -13348,6 +13353,28 @@ export const RunOnImplementationFragmentDoc = gql`
 }
     ${ImplementationFitFragmentDoc}
 ${AgentHardwareFragmentDoc}`;
+export const ReplyerImplementationFragmentDoc = gql`
+    fragment ReplyerImplementation on Implementation {
+  id
+  interface
+  agent {
+    id
+    name
+    kind
+    active
+    connected
+    app {
+      identifier
+    }
+    release {
+      version
+    }
+    device {
+      deviceId
+    }
+  }
+}
+    `;
 export const HoverImplementationFragmentDoc = gql`
     fragment HoverImplementation on Implementation {
   id
@@ -17104,9 +17131,13 @@ export const ReplyerActionsDocument = gql`
       id
       args
     }
+    implementations {
+      ...ReplyerImplementation
+    }
   }
 }
-    ${ListActionFragmentDoc}`;
+    ${ListActionFragmentDoc}
+${ReplyerImplementationFragmentDoc}`;
 
 /**
  * __useReplyerActionsQuery__

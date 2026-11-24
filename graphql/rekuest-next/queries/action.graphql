@@ -43,12 +43,17 @@ query AllActions(
 
 # The actions a chat replies with. `latestTask` (one lookup per row on the
 # server) is asked only here: a reply starts from the args it last ran with.
+# Its implementations say which app answers and where (agent, device): the
+# picker offers each one.
 query ReplyerActions($filters: ActionFilter, $pagination: OffsetPaginationInput) {
   actions(filters: $filters, pagination: $pagination) {
     ...ListAction
     latestTask {
       id
       args
+    }
+    implementations {
+      ...ReplyerImplementation
     }
   }
 }

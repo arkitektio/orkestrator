@@ -8002,6 +8002,8 @@ export type ListImplementationFragment = { __typename?: 'Implementation', id: st
 
 export type RunOnImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, fits: Array<{ __typename?: 'ImplementationFit', port: string, callJson: any, source?: string | null, compiledPath: string }>, action: { __typename?: 'Action', id: string, name: string }, agent: { __typename?: 'Agent', id: string, name: string, kind: AgentKind, active: boolean, connected: boolean, hardware?: { __typename?: 'AgentHardware', cpuCount?: number | null, memoryMib?: number | null, gpus: Array<{ __typename?: 'AgentGpu', name: string, memoryMib?: number | null }> } | null } };
 
+export type ReplyerImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, kind: AgentKind, active: boolean, connected: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', deviceId: string } | null } };
+
 export type EstimatedRuntimeFragment = { __typename?: 'EstimatedRuntime', callJson: any, source?: string | null, uiCallJson?: any | null, uiSource?: string | null };
 
 export type ImplementationFitFragment = { __typename?: 'ImplementationFit', port: string, callJson: any, source?: string | null, compiledPath: string };
@@ -8752,7 +8754,7 @@ export type ReplyerActionsQueryVariables = Exact<{
 }>;
 
 
-export type ReplyerActionsQuery = { __typename?: 'Query', actions: Array<{ __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, latestTask?: { __typename?: 'Task', id: string, args: any } | null, logo?: { __typename?: 'Blok', id: string, hash: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string } }> };
+export type ReplyerActionsQuery = { __typename?: 'Query', actions: Array<{ __typename?: 'Action', id: string, availability: ActionAvailability, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, latestTask?: { __typename?: 'Task', id: string, args: any } | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, kind: AgentKind, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', deviceId: string } | null } }>, logo?: { __typename?: 'Blok', id: string, hash: string } | null, app: { __typename?: 'App', identifier: string } }> };
 
 export type BrowseActionsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -12029,6 +12031,28 @@ export const RunOnImplementationFragmentDoc = gql`
 }
     ${ImplementationFitFragmentDoc}
 ${AgentHardwareFragmentDoc}`;
+export const ReplyerImplementationFragmentDoc = gql`
+    fragment ReplyerImplementation on Implementation {
+  id
+  interface
+  agent {
+    id
+    name
+    kind
+    active
+    connected
+    app {
+      identifier
+    }
+    release {
+      version
+    }
+    device {
+      deviceId
+    }
+  }
+}
+    `;
 export const HoverImplementationFragmentDoc = gql`
     fragment HoverImplementation on Implementation {
   id
@@ -13901,9 +13925,13 @@ export const ReplyerActionsDocument = gql`
       id
       args
     }
+    implementations {
+      ...ReplyerImplementation
+    }
   }
 }
-    ${ListActionFragmentDoc}`;
+    ${ListActionFragmentDoc}
+${ReplyerImplementationFragmentDoc}`;
 export const BrowseActionsDocument = gql`
     query BrowseActions($pagination: OffsetPaginationInput, $filters: ActionFilter, $ordering: [ActionOrder!]) {
   actions(ordering: $ordering, pagination: $pagination, filters: $filters) {

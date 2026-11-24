@@ -10,7 +10,8 @@ import {
 } from "@/alpaka/roomTalkingAbout";
 import { KabinetGuard } from "@/kabinet/api/hooks";
 import { useRekuest } from "@/rekuest/api/hooks";
-import { buildAssignInput, directAssignTarget } from "@/rekuest/assign";
+import { buildAssignInput, canTakeWork } from "@/rekuest/assign";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { trackTask } from "@/rekuest/lib/taskTracker";
 import { useDialog } from "@/core/dialogs/registry";
 import { useSmartDrop } from "@/core/smart/hooks";
@@ -19,6 +20,7 @@ import {
   Bot,
   Check,
   ChevronDown,
+  Cpu,
   Download,
   MessageSquareText,
   PackagePlus,
@@ -95,6 +97,17 @@ import {
   subjectArgKey,
   subjectWire,
 } from "./replyerSubject";
+import {
+  firstReplyerSelection,
+  implementationAgentName,
+  implementationApp,
+  orderedImplementations,
+  replyerAssignTarget,
+  replyerMatches,
+  type ReplyerChoice,
+  type ReplyerImplementation,
+  type ReplyerSelection,
+} from "./replyerTargets";
 
 /** How long after a message lands a still-spinning pill re-checks its task. */
 const RECHECK_AFTER_MESSAGE_MS = 5000;
@@ -234,7 +247,56 @@ const InstallReplyerSection = (props: {
   );
 };
 
-type ReplyerAction = { id: string; name: string };
+type ReplyerAction = ReplyerChoice;
+
+/** The device an implementation's agent runs on, by lok's name for it. */
+const ImplementationDevice = ({ implementation }: { implementation: ReplyerImplementation }) =>
+  implementation.agent.device ? (
+    <StructureDisplay
+      identifier="@lok/device"
+      by="nodeId"
+      id={implementation.agent.device.deviceId}
+      variant="inline"
+      fallback={<span className="italic">unnamed device</span>}
+    />
+  ) : null;
+
+/** Which app answers and where: `app vX · agent · device`, and whether it can now. */
+const ImplementationWhere = ({ implementation }: { implementation: ReplyerImplementation }) => {
+  const live = canTakeWork(implementation.agent);
+  const agentName = implementationAgentName(implementation);
+  return (
+    <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+      <span
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${live ? "bg-primary" : "bg-muted-foreground/40"}`}
+        aria-label={live ? "online" : "offline"}
+      />
+      <span className="truncate font-mono" title={implementation.interface}>
+        {implementationApp(implementation)}
+      </span>
+      {agentName && (
+        <>
+          <span aria-hidden>·</span>
+          <span className="truncate">{agentName}</span>
+        </>
+      )}
+      {implementation.agent.device && (
+        <>
+          <span aria-hidden>·</span>
+          <span className="flex min-w-0 items-center gap-0.5 truncate">
+            <Cpu className="h-3 w-3 shrink-0" />
+            <ImplementationDevice implementation={implementation} />
+          </span>
+        </>
+      )}
+      {!live && (
+        <span className="shrink-0 rounded border border-border/60 px-1 text-[10px] leading-4">
+          offline
+        </span>
+      )}
+    </span>
+  );
+};
 
 const ReplyerControl = (props: {
   /** Replyers that also take the structure the room is about, listed first. */
@@ -242,8 +304,8 @@ const ReplyerControl = (props: {
   /** That structure's identifier, for the group's heading. */
   subjectIdentifier?: string;
   actions: ReplyerAction[];
-  selectedActionId: string;
-  onSelect: (id: string) => void;
+  selection: ReplyerSelection | null;
+  onSelect: (selection: ReplyerSelection | null) => void;
   action: any;
   form: any;
   registry: any;
@@ -254,7 +316,7 @@ const ReplyerControl = (props: {
     specificActions,
     subjectIdentifier,
     actions,
-    selectedActionId,
+    selection,
     onSelect,
     action,
     form,
@@ -262,6 +324,7 @@ const ReplyerControl = (props: {
     hiddenArgs,
     hasPriorTask,
   } = props;
+  const selectedActionId = selection?.action ?? "none";
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [argsOpen, setArgsOpen] = useState(false);
@@ -270,25 +333,80 @@ const ReplyerControl = (props: {
   const selected =
     specificActions.find((a) => a.id === selectedActionId) ??
     actions.find((a) => a.id === selectedActionId);
-  const matching = (list: ReplyerAction[]) =>
-    search ? list.filter((a) => a.name.toLowerCase().includes(search.toLowerCase())) : list;
+  const selectedImplementation = selected?.implementations.find(
+    (implementation) => implementation.id === selection?.implementation,
+  );
+  const matching = (list: ReplyerAction[]) => list.filter((a) => replyerMatches(a, search));
   const filtered = matching(actions);
   const filteredSpecific = matching(specificActions);
-  const replyerItem = (act: ReplyerAction) => (
-    <CommandItem
-      key={act.id}
-      value={act.id}
-      onSelect={() => {
-        onSelect(act.id);
-        setPickerOpen(false);
-      }}
-      className="flex items-center gap-2"
-    >
-      <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="flex-1 truncate text-sm">{act.name}</span>
-      {selectedActionId === act.id && <Check className="h-4 w-4 shrink-0" />}
-    </CommandItem>
-  );
+
+  const pick = (next: ReplyerSelection | null) => {
+    onSelect(next);
+    setPickerOpen(false);
+  };
+
+  const implementationItem = (
+    act: ReplyerAction,
+    implementation: ReplyerImplementation,
+    withName: boolean,
+  ) => {
+    const isSelected =
+      selectedActionId === act.id && selection?.implementation === implementation.id;
+    return (
+      <CommandItem
+        key={`${act.id}:${implementation.id}`}
+        value={`${act.id}:${implementation.id}`}
+        // An agent that cannot take work now is shown, not offered.
+        disabled={!canTakeWork(implementation.agent)}
+        onSelect={() => pick({ action: act.id, implementation: implementation.id })}
+        className={`flex items-center gap-2 ${withName ? "" : "pl-8"}`}
+      >
+        {withName && <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        <span className="flex min-w-0 flex-1 flex-col">
+          {withName && <span className="truncate text-sm">{act.name}</span>}
+          <ImplementationWhere implementation={implementation} />
+        </span>
+        {isSelected && <Check className="h-4 w-4 shrink-0" />}
+      </CommandItem>
+    );
+  };
+
+  // One row per implementation: the app that answers, and where it runs. A
+  // replyer with several heads its rows with its name.
+  const replyerItems = (act: ReplyerAction) => {
+    const implementations = orderedImplementations(act);
+    if (implementations.length === 0) {
+      return (
+        <CommandItem
+          key={act.id}
+          value={act.id}
+          disabled
+          className="flex items-center gap-2"
+        >
+          <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-sm">{act.name}</span>
+            <span className="text-[11px] text-muted-foreground">No app implements it</span>
+          </span>
+        </CommandItem>
+      );
+    }
+    if (implementations.length === 1) {
+      return implementationItem(act, implementations[0], true);
+    }
+    return (
+      <div key={act.id} className="flex flex-col">
+        <div className="flex items-center gap-2 px-2 pt-1.5 pb-0.5 text-sm">
+          <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="flex-1 truncate">{act.name}</span>
+          <span className="text-[11px] text-muted-foreground">
+            {implementations.length} apps
+          </span>
+        </div>
+        {implementations.map((implementation) => implementationItem(act, implementation, false))}
+      </div>
+    );
+  };
 
   const visibleArgs = useMemo(
     () => ((action?.args ?? []) as any[]).filter((arg) => !hiddenArgs[arg.key]),
@@ -321,32 +439,43 @@ const ReplyerControl = (props: {
             className="h-8 min-w-0 gap-1.5 rounded-lg px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Bot className="h-4 w-4 shrink-0" />
-            <span className="max-w-[120px] truncate">
+            <span
+              className="max-w-[200px] truncate"
+              title={
+                selectedImplementation
+                  ? `${selected?.name} — ${implementationApp(selectedImplementation)} on ${selectedImplementation.agent.name}`
+                  : undefined
+              }
+            >
               {selected ? selected.name : "No replyer"}
+              {selectedImplementation && (
+                <span className="opacity-60">
+                  {" · "}
+                  {implementationAgentName(selectedImplementation) ??
+                    selectedImplementation.agent.app.identifier}
+                </span>
+              )}
             </span>
             <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="start" side="top">
+        <PopoverContent className="w-96 p-0" align="start" side="top">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search replyers..."
+              placeholder="Search replyers, apps, agents..."
               value={search}
               onValueChange={setSearch}
             />
             <CommandList>
               {filteredSpecific.length > 0 && (
                 <CommandGroup heading={`For ${subjectIdentifier ?? "this structure"}`}>
-                  {filteredSpecific.map(replyerItem)}
+                  {filteredSpecific.map(replyerItems)}
                 </CommandGroup>
               )}
               <CommandGroup heading="Replyers">
                 <CommandItem
                   value="none"
-                  onSelect={() => {
-                    onSelect("none");
-                    setPickerOpen(false);
-                  }}
+                  onSelect={() => pick(null)}
                   className="flex items-center gap-2"
                 >
                   <Ban className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -355,7 +484,7 @@ const ReplyerControl = (props: {
                     <Check className="h-4 w-4 shrink-0" />
                   )}
                 </CommandItem>
-                {filtered.map(replyerItem)}
+                {filtered.map(replyerItems)}
               </CommandGroup>
               <KabinetGuard fallback={<></>}>
                 <CommandSeparator />
@@ -448,7 +577,9 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   // nothing covers the conversation while a message is on its way.
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
 
-  const [selectedActionId, setSelectedActionId] = useState<string>("none");
+  // The replyer picked, and the implementation of it that answers (which app, where).
+  const [selection, setSelection] = useState<ReplyerSelection | null>(null);
+  const selectedActionId = selection?.action ?? "none";
   // Off, what the replyer asks other actions to do waits for the user's approval.
   const autoMode = useAutoMode(`room:${room.id}`);
   // Once the user picks a replyer (or none), the picker stops choosing for them.
@@ -540,12 +671,13 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
     if (pickedByHand) return;
     // With a subject, wait for its replyers before falling back to the generic ones.
     if (subjectIdentifier && !specificData) return;
-    const first = replyers.specific[0] ?? replyers.rest[0];
+    const first =
+      firstReplyerSelection(replyers.specific) ?? firstReplyerSelection(replyers.rest);
     if (!first) return;
     const key = subjectIdentifier ?? "";
     if (autoselectedFor.current === key) return;
     autoselectedFor.current = key;
-    setSelectedActionId(first.id);
+    setSelection(first);
   }, [replyers, subjectIdentifier, specificData, pickedByHand]);
 
   const { data: actionDetailData } = useDetailActionQuery({
@@ -674,7 +806,8 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
       assignArgs[aboutKey] = subjectWire(about);
     }
 
-    const target = directAssignTarget(action);
+    // The implementation picked: the app that answers, where it runs.
+    const target = replyerAssignTarget(action, selection?.implementation);
     if (!target) {
       // A stateful replyer with no one agent to name: the assign form says which it runs on,
       // with everything else decided here. Its pill follows the run like a direct one's.
@@ -913,10 +1046,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
             specificActions={replyers.specific}
             subjectIdentifier={subjectIdentifier}
             actions={replyers.rest}
-            selectedActionId={selectedActionId}
-            onSelect={(id) => {
+            selection={selection}
+            onSelect={(next) => {
               setPickedByHand(true);
-              setSelectedActionId(id);
+              setSelection(next);
             }}
             action={action}
             form={form}
