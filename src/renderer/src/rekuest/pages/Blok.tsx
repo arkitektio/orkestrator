@@ -19,6 +19,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { GitFork, Plus } from "lucide-react";
 import { BlokHistory } from "../components/editor/BlokHistory";
 import { REKUEST_HELP } from "../help";
+import { useTabGlyph } from "@/core/tabs/useTabGlyph";
 
 type DetailBlok = GetBlokQuery["blok"];
 
@@ -72,6 +73,8 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const blok = data.blok;
   const provided = blok.provided;
   const context = BLOK_CONTEXTS[blok.context];
+  // Its own <logo>, in the tab strip.
+  useTabGlyph(blok.hasLogo ? { identifier: "@rekuest/blok", id: blok.id } : null);
 
   return (
     <RekuestBlok.ModelPage

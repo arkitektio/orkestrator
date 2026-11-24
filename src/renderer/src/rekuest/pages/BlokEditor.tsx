@@ -3,6 +3,7 @@ import {
   blokHeader,
   BsxPrintError,
   mountedBlokScope,
+  declaredLogo,
   parseBsxPartial,
   printBsx,
   type BlokCheckScope,
@@ -77,6 +78,7 @@ import {
   emptyDeclarationsDraft,
 } from "../components/editor/blokDeclarationsDraft";
 import type { BlokDeclaredLocal, BlokDeclarations } from "@arkitektio/bsx/renderer/declarations";
+import { DraftBlokLogo } from "../components/logo/OwnBlokLogo";
 
 /** What the editor holds of a blok: also what a blok file carries (`blokFile.ts`). */
 type EditorDraft = BlokFileDraft;
@@ -136,6 +138,8 @@ const DemoEditor = (props: { value: string; error: string | null; onChange: (val
 
 const DetailsPanel = (props: {
   draft: EditorDraft;
+  /** The draft's tree as far as it parses: what its `<logo>` is drawn from. */
+  tree: BlokComponentNode | null;
   /** What the source's `<Blok context>` says; null while it says none. */
   context: ComponentContext | null;
   onChange: (patch: Partial<EditorDraft>) => void;
@@ -159,6 +163,18 @@ const DetailsPanel = (props: {
       <p className="text-sm">{props.context ? BLOK_CONTEXTS[props.context].label : "—"}</p>
       <p className="text-xs text-muted-foreground">
         As the source&apos;s <span className="font-mono">{'<Blok context="...">'}</span> says: a custom blok is a panel or a scene.
+      </p>
+    </div>
+    <div className="flex flex-col gap-1">
+      <Label>Logo</Label>
+      {declaredLogo(props.tree) ? (
+        <DraftBlokLogo tree={props.tree} className="h-10 w-10" />
+      ) : (
+        <p className="text-sm">The context&apos;s icon</p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        What stands for it in lists, pins and tabs: a <span className="font-mono">{"<logo>"}</span> at the top of the source,
+        drawn on a 24-unit grid with the logo pens.
       </p>
     </div>
   </div>
@@ -719,7 +735,7 @@ const BlokEditorWorkspace = (props: {
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Details">
-            <DetailsPanel draft={draft} context={context} onChange={change} />
+            <DetailsPanel draft={draft} context={context} tree={previewTree ?? lastTree.current} onChange={change} />
           </Sidebars.Tab>
           <Sidebars.Tab label="Agents">
             <DependencyListEditor

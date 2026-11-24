@@ -45,6 +45,7 @@ import {
   unsplit,
   warmIds as warmIdsOf,
   type LabelSource,
+  setTabGlyph,
   NEW_TAB_PATH,
   type OpenOptions,
   type SplitPanes,
@@ -108,6 +109,8 @@ export type TabActions = {
   closeOthers: (id: string) => void;
   move: (id: string, toIndex: number) => void;
   setLabel: (id: string, label: string, origin?: LabelSource) => void;
+  /** The glyph a page shows its tab with (`useTabGlyph`), for `pathname`; `null` drops it. */
+  setGlyph: (id: string, glyph: { identifier: string; id: string } | null, pathname: string) => void;
   /** Pin or unpin a tab — see `setTabPinned`. */
   setPinned: (id: string, pinned: boolean) => void;
   /** Make a tab a sidebar tab, or an ordinary one — see `TabRecord.sidebar`. */
@@ -374,6 +377,10 @@ export const TabsProvider = ({
     (id, label, origin) => store.set((s) => setTabLabel(s, id, label, origin)),
     [store],
   );
+  const setGlyph = useCallback<TabActions["setGlyph"]>(
+    (id, glyph, pathname) => store.set((s) => setTabGlyph(s, id, glyph, pathname)),
+    [store],
+  );
   const setPinned = useCallback<TabActions["setPinned"]>(
     (id, pinned) => store.set((s) => setTabPinned(s, id, pinned)),
     [store],
@@ -525,6 +532,7 @@ export const TabsProvider = ({
       closeOthers,
       move,
       setLabel,
+      setGlyph,
       setPinned,
       setSidebar,
       navigateSibling,
@@ -542,6 +550,7 @@ export const TabsProvider = ({
       closeOthers,
       move,
       setLabel,
+      setGlyph,
       setPinned,
       setSidebar,
       navigateSibling,
@@ -569,6 +578,7 @@ const ActionsContext = createContext<TabActions>({
   closeOthers: noop,
   move: noop,
   setLabel: noop,
+  setGlyph: noop,
   setPinned: noop,
   setSidebar: noop,
   navigateSibling: () => false,

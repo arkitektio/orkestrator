@@ -27,7 +27,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { toTaskChange, type ListSnapshot, type WireTaskChange } from "@/rekuest/session/frames";
 import { useRekuestSession } from "@/rekuest/session/hooks";
-import { LayoutPanelTop, Pin, PinOff } from "lucide-react";
+import { Pin, PinOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageAction } from "@/core/ui/page-action";
 import { useEffect, useMemo } from "react";
@@ -43,6 +43,7 @@ import { AgentFacts } from "../sidebars/AgentInfoSidebar";
 import { AgentTasksSidebar } from "../sidebars/AgentTasksSidebar";
 import { REKUEST_HELP } from "../help";
 import { agentPanelLink } from "./agent/AgentPanelPage";
+import { OwnBlokLogo } from "../components/logo/OwnBlokLogo";
 
 export const PinAgent = (props: { agent: AgentFragment }) => {
   const [pin] = usePinAgentMutation({ refetchQueries: ["Pinned"] });
@@ -279,7 +280,8 @@ export const AgentPage = asDetailQueryRoute(
                 asChild
                 size="sm"
                 collapse="icon"
-                icon={<LayoutPanelTop className="h-4 w-4" />}
+                // The panel's own <logo> when it declares one.
+                icon={<OwnBlokLogo blok={panel.blok} className="h-4 w-4" />}
                 menuLabel={panel.name || panel.blok.name}
               >
                 <Link

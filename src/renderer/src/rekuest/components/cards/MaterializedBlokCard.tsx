@@ -6,8 +6,8 @@ import { cn } from "@/core/util/utils";
 import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 
 import { ListMaterializedBlokFragment } from "@/rekuest/api/graphql";
-import { BLOK_CONTEXTS } from "@/rekuest/components/blokContexts";
 import { BlokScreen } from "./BlokScreen";
+import { OwnBlokLogo } from "../logo/OwnBlokLogo";
 
 interface Props {
   item: ListMaterializedBlokFragment;
@@ -29,7 +29,6 @@ export const boundPresence = (agents: readonly { connected: boolean }[]): { onli
  * agents are all away steps back, as an offline agent's card does.
  */
 const MaterializedBlokCard = ({ item }: Props) => {
-  const context = BLOK_CONTEXTS[item.blok.context];
   // One per app, however many of the blok's dependencies it answers.
   const agents = [...new Map(item.agentMappings.map((mapping) => [mapping.agent.id, mapping.agent])).values()];
   const presence = boundPresence(agents);
@@ -38,7 +37,6 @@ const MaterializedBlokCard = ({ item }: Props) => {
     () => new Map(item.agentMappings.map((mapping) => [mapping.key, mapping.agent.id])),
     [item.agentMappings],
   );
-  const Icon = context?.icon;
   const name = item.name ?? item.blok.name;
   const agentNames = agents.map((agent) => agent.name).join(", ");
 
@@ -48,11 +46,9 @@ const MaterializedBlokCard = ({ item }: Props) => {
         tone="interface"
         quiet={agents.length > 0 && presence.online === 0}
         leading={
-          Icon && (
-            <LeadWithBead label={presence.label} bead={<span className={cn("h-1.5 w-1.5 rounded-full", presence.dot)} />}>
-              <Icon className="h-4 w-4 text-chart-4" aria-label={context.label} />
-            </LeadWithBead>
-          )
+          <LeadWithBead label={presence.label} bead={<span className={cn("h-1.5 w-1.5 rounded-full", presence.dot)} />}>
+            <OwnBlokLogo blok={item.blok} className="h-4 w-4 text-chart-4" />
+          </LeadWithBead>
         }
         title={
           <RekuestMaterializedBlok.DetailLink

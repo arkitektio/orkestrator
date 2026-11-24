@@ -11,6 +11,7 @@ import { BlokDebugTab, useBlokDebugTab } from "../../components/BlokDebugTab";
 import MaterializedBlokById from "../../components/MaterializedBlokById";
 import { PinMaterializedBlokAction } from "../../components/PinBlokActions";
 import { REKUEST_HELP } from "../../help";
+import { useTabGlyph } from "@/core/tabs/useTabGlyph";
 
 /** Where one of an agent's panels is shown: a page below the agent's. */
 export const agentPanelLink = (agent: string, panel: string) =>
@@ -42,6 +43,8 @@ const AgentPanelPage = asDetailQueryRoute(useAgentQuery, ({ data }) => {
   const panelName = materialized?.name || blok?.name;
   // In debug mode, the panel's blok in a Debug tab, like any blok's page.
   const debug = useBlokDebugTab();
+  // The panel's own <logo>, in the tab strip.
+  useTabGlyph(materialized?.blok.hasLogo ? { identifier: "@rekuest/materialized_blok", id: materialized.id } : null);
 
   return (
     <RekuestAgent.ModelPage

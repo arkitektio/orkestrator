@@ -4,6 +4,7 @@ import { Name } from "@/core/ui/name";
 import { RekuestBlok } from "@/core/linkers";
 
 import { ListBlokFragment } from "@/rekuest/api/graphql";
+import { OwnBlokLogo } from "@/rekuest/components/logo/OwnBlokLogo";
 import { BLOK_CONTEXTS } from "@/rekuest/components/blokContexts";
 import { BlokScreen } from "./BlokScreen";
 
@@ -22,7 +23,8 @@ const TheCard = ({ item }: Props) => {
     <RekuestBlok.Smart object={item} menuButton="top" className={`${CARD_FRAME_SIZE} [container-type:normal]!`}>
       <CardFrame
         tone="interface"
-        icon={context?.icon}
+        // Its own <logo> when it declares one, else its context's icon.
+        leading={<OwnBlokLogo blok={item} className="h-4 w-4 text-chart-4" />}
         iconLabel={context?.label}
         title={
           <RekuestBlok.DetailLink object={item} className="block min-w-0 hover:underline" title={item.description ?? undefined}>

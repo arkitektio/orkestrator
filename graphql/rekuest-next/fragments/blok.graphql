@@ -162,6 +162,9 @@ fragment Blok on Blok {
     isRegistered
   }
   context
+  # Its own <logo>, drawn in place of the context icon (OwnBlokLogo), cached by its hash.
+  hasLogo
+  hash
   forModel
   forNode
   componentTree
@@ -294,6 +297,8 @@ fragment ListBlok on Blok {
   description
   context
   hash
+  # Its own <logo>, drawn in place of the context icon (OwnBlokLogo).
+  hasLogo
   provided
   # Installed from a repository (kabinet's RepoBlok.origin), and what it drew then.
   origin
@@ -321,6 +326,8 @@ fragment ListMaterializedBlok on MaterializedBlok {
     description
     context
     hash
+    # Its own <logo>, drawn in place of the context icon (OwnBlokLogo).
+    hasLogo
   }
   agentMappings {
     key

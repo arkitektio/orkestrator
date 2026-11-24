@@ -46,6 +46,12 @@ export type TabRecord = {
    */
   labelPath?: string;
   /**
+   * What stands for the tab's page beside its name: an object the page shows
+   * (a blok's own logo), drawn by its display. Kept for the pathname the page
+   * set it on, so a tab that navigates elsewhere shows its dot again.
+   */
+  glyph?: TabGlyph;
+  /**
    * Kept. Pinned tabs form a block at the top of the strip — every transition
    * below preserves that — so "pinned" reads off the position as well as the
    * icon.
@@ -448,6 +454,29 @@ export const setTabSidebar = (state: TabsState, id: string, sidebar: boolean): T
     }),
   };
 };
+
+/** A tab's glyph: an object by its structure (`identifier`, `id`), and the pathname it is for. */
+export type TabGlyph = { identifier: string; id: string; pathname: string };
+
+/** Set (or with `null`, drop) the glyph a page shows its tab with, for the pathname it is on. */
+export const setTabGlyph = (
+  state: TabsState,
+  id: string,
+  glyph: { identifier: string; id: string } | null,
+  pathname: string,
+): TabsState => {
+  const tab = state.tabs.find((t) => t.id === id);
+  if (!tab) return state;
+  const next = glyph ? { identifier: glyph.identifier, id: glyph.id, pathname } : undefined;
+  const same =
+    tab.glyph?.identifier === next?.identifier && tab.glyph?.id === next?.id && tab.glyph?.pathname === next?.pathname;
+  if (same) return state;
+  return { ...state, tabs: state.tabs.map((t) => (t.id === id ? { ...t, glyph: next } : t)) };
+};
+
+/** The glyph a tab shows: its page's, while it is still on the pathname the page set it for. */
+export const tabGlyphOf = (tab: TabRecord): { identifier: string; id: string } | null =>
+  tab.glyph && tab.glyph.pathname === tab.history.location.pathname ? tab.glyph : null;
 
 export type LabelSource = {
   /** `page`: the page's own `title`. `path`: derived from the URL, a fallback. */

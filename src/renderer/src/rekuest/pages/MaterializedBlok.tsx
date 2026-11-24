@@ -32,6 +32,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
 import { REKUEST_HELP } from "../help";
+import { useTabGlyph } from "@/core/tabs/useTabGlyph";
 
 const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedBlokFragment }) => (
   <div className="flex flex-col gap-4 p-3 text-sm">
@@ -134,6 +135,8 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
   const { openDialog } = useDialog();
   const [args, setArgs] = useBlokArgs();
   const debug = useBlokDebugTab();
+  // Its blok's own <logo>, in the tab strip.
+  useTabGlyph(materializedBlok.blok.hasLogo ? { identifier: "@rekuest/materialized_blok", id: materializedBlok.id } : null);
   const ports = materializedBlok.blok.args;
   // Asked for on the way in, and again on "Reinstantiate"; between those
   // changing the item is the tree's to do.

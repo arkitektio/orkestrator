@@ -1741,6 +1741,11 @@ type Blok {
   forNode: String
 
   """
+  Whether the blok declares a logo of its own (`<logo>`, a child of its `<Blok>`): what lists, pins and tabs draw for it instead of its context's icon. Read it before asking for the tree, which a list never needs otherwise.
+  """
+  hasLogo: Boolean!
+
+  """
   A SHA-256 of what the blok renders: its component tree (its declarations included), context, language version, catalogs and demo. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it.
   """
   hash: String!

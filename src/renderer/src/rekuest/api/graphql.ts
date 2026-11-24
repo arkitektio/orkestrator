@@ -1331,6 +1331,8 @@ export type Blok = {
   forModel?: Maybe<Scalars['String']['output']>;
   /** The node of `forModel` this blok attaches to; the model's root when null. */
   forNode?: Maybe<Scalars['String']['output']>;
+  /** Whether the blok declares a logo of its own (`<logo>`, a child of its `<Blok>`): what lists, pins and tabs draw for it instead of its context's icon. Read it before asking for the tree, which a list never needs otherwise. */
+  hasLogo: Scalars['Boolean']['output'];
   /** A SHA-256 of what the blok renders: its component tree (its declarations included), context, language version, catalogs and demo. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it. */
   hash: Scalars['String']['output'];
   /** The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead. */
@@ -8049,7 +8051,7 @@ export type ResolvedBlokLocalFragment = { __typename?: 'ResolvedBlokLocal', node
 
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, vocab: number, catalogs: Array<string>, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, hasLogo: boolean, hash: string, forModel?: string | null, forNode?: string | null, componentTree: any, vocab: number, catalogs: Array<string>, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
   )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, module: { __typename?: 'Module', id: string, name: string, description?: string | null, isRegistered: boolean }, resolvedLocals: Array<(
@@ -8086,9 +8088,9 @@ export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: st
         & BlokArgumentFragment
       )> }> } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
-export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
+export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, pinned: boolean, description?: string | null, context: ComponentContext, hash: string, hasLogo: boolean, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
-export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, pinned: boolean, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, pinned: boolean, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, hasLogo: boolean }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type OpenableBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean }> } };
 
@@ -12349,6 +12351,7 @@ export const ListMaterializedBlokFragmentDoc = gql`
     description
     context
     hash
+    hasLogo
   }
   agentMappings {
     key
@@ -12694,6 +12697,7 @@ export const ListBlokFragmentDoc = gql`
   description
   context
   hash
+  hasLogo
   provided
   origin
   originHash
@@ -12905,6 +12909,8 @@ export const BlokFragmentDoc = gql`
     isRegistered
   }
   context
+  hasLogo
+  hash
   forModel
   forNode
   componentTree

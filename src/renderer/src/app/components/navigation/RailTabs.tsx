@@ -4,7 +4,8 @@ import {
   useTabActions,
   useTabList,
 } from "@/core/tabs/TabsProvider";
-import { NEW_TAB_PATH, type TabRecord } from "@/core/tabs/tabs";
+import { NEW_TAB_PATH, tabGlyphOf, type TabRecord } from "@/core/tabs/tabs";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import {
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -127,6 +128,8 @@ const TabCell = ({
     useTabActions();
   // On screen as the OTHER pane: visible, but not the focused one.
   const shown = half && onScreen && !active;
+  // What its page shows, when it says (`useTabGlyph`): drawn in the dot's place.
+  const glyph = tabGlyphOf(tab);
   // Read once, at mount: a tab that arrived in the BACKGROUND (⌘-click,
   // middle-click) gets a brief tint, since nothing else on screen changed to
   // say it is there. A focused new tab needs none — its page is the sign.
@@ -187,13 +190,28 @@ const TabCell = ({
               transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
             />
           )}
-          <span
-            aria-hidden
-            className={cn(
-              "h-1.5 w-1.5 shrink-0 rounded-full",
-              active ? "bg-primary" : shown ? "bg-primary/50" : "bg-muted-foreground/40",
-            )}
-          />
+          {glyph ? (
+            // What the page shows (a blok's own logo), in the dot's place; its ring says what
+            // the dot said. Clicks go to the row, never to the glyph's own link.
+            <span
+              aria-hidden
+              data-testid="tab-glyph"
+              className={cn(
+                "pointer-events-none flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-sm",
+                active ? "ring-1 ring-primary" : shown ? "ring-1 ring-primary/40" : "opacity-80",
+              )}
+            >
+              <StructureDisplay identifier={glyph.identifier} id={glyph.id} variant="avatar" />
+            </span>
+          ) : (
+            <span
+              aria-hidden
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                active ? "bg-primary" : shown ? "bg-primary/50" : "bg-muted-foreground/40",
+              )}
+            />
+          )}
           <span className="min-w-0 flex-1 truncate">{tab.label}</span>
           {/* A sidebar tab: its links open in the pane beside it. */}
           {tab.sidebar && (
