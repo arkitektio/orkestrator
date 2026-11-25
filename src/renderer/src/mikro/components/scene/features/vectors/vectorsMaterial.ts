@@ -205,7 +205,7 @@ export const createVectorMaterial = (capacity: number): VectorMaterialBundle => 
         return mesh;
       }),
     ]),
-  ) as Record<VectorGlyphKind, THREE.Mesh[]>;
+  ) as Record<VectorGlyphKind, THREE.Mesh<THREE.InstancedBufferGeometry, MeshBasicNodeMaterial>[]>;
   const meshes = [...meshesByGlyph.arrow, ...meshesByGlyph.line, ...meshesByGlyph.cone];
 
   for (const geometry of geometries) geometry.instanceCount = 0;

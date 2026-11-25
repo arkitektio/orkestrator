@@ -64,7 +64,7 @@ const objectKey = (object: THREE.Object3D): string => {
     | THREE.Material
     | THREE.Material[]
     | undefined;
-  const id = Array.isArray(material) ? material.map((m) => m.id).join("+") : material?.id;
+  const id = Array.isArray(material) ? material.map((m) => m.uuid).join("+") : material?.uuid;
   return `|${id}:${object.matrixWorld.elements.join(",")}`;
 };
 

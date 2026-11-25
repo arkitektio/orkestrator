@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { positionGeometry, positionLocal, uniform } from "three/tsl";
-import { MeshBasicNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial, type UniformNode } from "three/webgpu";
 
 import type { PointEntry } from "./placedAnnotations";
 
@@ -46,7 +46,7 @@ export function syncPointMatrices(
  */
 export function createPointMaterial(opacity: number): {
   material: MeshBasicNodeMaterial;
-  uScale: ReturnType<typeof uniform<number>>;
+  uScale: UniformNode<"float", number>;
 } {
   const uScale = uniform(0);
   const material = new MeshBasicNodeMaterial({

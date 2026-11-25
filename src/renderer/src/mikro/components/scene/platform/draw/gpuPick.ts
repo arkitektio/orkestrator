@@ -371,7 +371,9 @@ export class GpuPicker {
 
   private cameraFor(camera: THREE.Camera): THREE.Camera {
     if (!this.pickCamera || this.pickCamera.type !== camera.type) {
-      this.pickCamera = camera.clone(false);
+      // What `clone(false)` does (the types only declare `clone()`): the same
+      // kind of camera, without the source's children.
+      this.pickCamera = new (camera.constructor as new () => THREE.Camera)().copy(camera, false);
     }
     const pick = this.pickCamera;
     pick.copy(camera, false);

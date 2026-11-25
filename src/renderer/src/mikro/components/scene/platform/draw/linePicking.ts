@@ -296,7 +296,9 @@ function raycastRuns(
   runs: WorldRuns,
   intersects: THREE.Intersection[],
 ): void {
-  const { camera, ray } = raycaster;
+  const ray = raycaster.ray;
+  // A line is picked through a perspective or orthographic camera, both with a near plane.
+  const camera = raycaster.camera as THREE.PerspectiveCamera | THREE.OrthographicCamera;
   const resolution = line._resolution;
   const threshold = (raycaster.params as Line2Params).Line2?.threshold || 0;
   const lineWidth = line.material.linewidth + threshold;

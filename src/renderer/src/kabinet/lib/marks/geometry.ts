@@ -271,7 +271,7 @@ export function letterGeometry(ch: string, geom: string): THREE.BufferGeometry |
       else if (op === 'C') path.bezierCurveTo(n[0], n[1], n[2], n[3], n[4], n[5]);
     }
   }
-  const shapes = path.toShapes();
+  const shapes = path.toShapes(false);
   if (!shapes.length) return null;
 
   const geo = new THREE.ExtrudeGeometry(shapes, LETTER);

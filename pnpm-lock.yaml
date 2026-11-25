@@ -424,6 +424,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      '@types/three':
+        specifier: 0.184.1
+        version: 0.184.1
       '@uidotdev/usehooks':
         specifier: ^2.2.0
         version: 2.4.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
