@@ -1,7 +1,7 @@
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import EntityCategoriesPage from "./pages/EntityCategoriesPage";
 import EntityCategoryPage from "./pages/EntityCategoryPage";
 import EntityPage from "./pages/EntityPage";
@@ -94,6 +94,10 @@ export const KraphModule: React.FC<Props> = () => {
           <Route path="nodes/:id" element={<NodePage />} />
           <Route path="entities/:id" element={<EntityPage />} />
           <Route path="protocolevents/:id" element={<ProtocolEventPage />} />
+          {/* The graph's page lists its nodes, entities and events. */}
+          <Route path="nodes" element={<Navigate to=".." relative="path" replace />} />
+          <Route path="entities" element={<Navigate to=".." relative="path" replace />} />
+          <Route path="protocolevents" element={<Navigate to=".." relative="path" replace />} />
         </Route>
         <Route path="graphqueries/:id" element={<GraphQueryPage />} />
         <Route path="graphqueries/:id/builder" element={<BuilderPage />} />
@@ -159,6 +163,16 @@ export const KraphModule: React.FC<Props> = () => {
         />
         <Route path="scatterplots" element={<ScatterPlotsPage />} />
         <Route path="structures" element={<StructuresPage />} />
+        {/* These are listed per graph or per category, not on their own: the bare path opens the page that lists them. */}
+        <Route path="expressions" element={<Navigate to="../structurekinds" relative="path" replace />} />
+        <Route path="instances" element={<Navigate to="../graphs" relative="path" replace />} />
+        <Route path="links" element={<Navigate to="../graphs" relative="path" replace />} />
+        <Route path="relations" element={<Navigate to="../relationcategories" relative="path" replace />} />
+        <Route path="structurerelations" element={<Navigate to="../structurerelationcategories" relative="path" replace />} />
+        <Route path="metrics" element={<Navigate to="../metrickinds" relative="path" replace />} />
+        <Route path="graphqueries" element={<Navigate to="../graphs" relative="path" replace />} />
+        <Route path="todoitems" element={<Navigate to="../todos" relative="path" replace />} />
+        <Route path="todolists" element={<Navigate to="../projects" relative="path" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

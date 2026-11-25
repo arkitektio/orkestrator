@@ -1,5 +1,6 @@
 import React from "react";
 import { Pin } from "lucide-react";
+import { Link } from "react-router-dom";
 import { CARD_FRAME_SIZE, CardFrame, LeadWithBead } from "@/core/ui/card-frame";
 import { Name } from "@/core/ui/name";
 import { cn } from "@/core/util/utils";
@@ -11,6 +12,8 @@ import { OwnBlokLogo } from "../logo/OwnBlokLogo";
 
 interface Props {
   item: ListMaterializedBlokFragment;
+  /** Where its title leads instead of the materialized blok's own page (an agent's panel page). */
+  to?: string;
 }
 
 /** How many of its agents can answer, as the bead on its glyph says it. */
@@ -28,7 +31,7 @@ export const boundPresence = (agents: readonly { connected: boolean }[]): { onli
  * agents can answer, as a bead on its glyph, and the blok it is of. One whose
  * agents are all away steps back, as an offline agent's card does.
  */
-const MaterializedBlokCard = ({ item }: Props) => {
+const MaterializedBlokCard = ({ item, to }: Props) => {
   // One per app, however many of the blok's dependencies it answers.
   const agents = [...new Map(item.agentMappings.map((mapping) => [mapping.agent.id, mapping.agent])).values()];
   const presence = boundPresence(agents);
@@ -51,13 +54,23 @@ const MaterializedBlokCard = ({ item }: Props) => {
           </LeadWithBead>
         }
         title={
-          <RekuestMaterializedBlok.DetailLink
-            object={item}
-            className="block min-w-0 hover:underline"
-            title={item.description ?? item.blok.description ?? undefined}
-          >
-            <Name>{name}</Name>
-          </RekuestMaterializedBlok.DetailLink>
+          to ? (
+            <Link
+              to={to}
+              className="block min-w-0 hover:underline"
+              title={item.description ?? item.blok.description ?? undefined}
+            >
+              <Name>{name}</Name>
+            </Link>
+          ) : (
+            <RekuestMaterializedBlok.DetailLink
+              object={item}
+              className="block min-w-0 hover:underline"
+              title={item.description ?? item.blok.description ?? undefined}
+            >
+              <Name>{name}</Name>
+            </RekuestMaterializedBlok.DetailLink>
+          )
         }
         badge={
           (item.pinned || item.isDefault) && (

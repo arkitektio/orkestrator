@@ -106,6 +106,16 @@ export const REKUEST_HELP = {
       ]}
     />
   ),
+  states: (
+    <PageHelp
+      intro="Every state the agents of your organization publish, such as the position of a stage or the settings of a camera. The most recently changed come first."
+      steps={[
+        <>Click a state to see its values.</>,
+        <>Click an agent's name to open the agent.</>,
+      ]}
+      tips={[<>A state whose agent is offline is shown faded: its values are the last ones it reported.</>]}
+    />
+  ),
   agentStates: (
     <PageHelp
       intro="The state an agent publishes about itself, for example the position of a stage or the settings of a camera. Each state is shown with its values."
@@ -157,6 +167,19 @@ export const REKUEST_HELP = {
       tips={[
         <>An empty list means no blok runs on this agent yet. Open a template from <b>Blok Templates</b> and press <b>Install</b> to make one.</>,
         <>For a template its app provides, the agent keeps its own blok, in step with its registrations.</>,
+      ]}
+    />
+  ),
+  agentPanels: (
+    <PageHelp
+      intro="The panels of this agent: bloks whose controls act on it. Each opens on a page of its own below the agent."
+      steps={[
+        <>Click a panel to open it and use its controls.</>,
+        <>On the page of a panel its app provides, press <b>Fork</b> to copy its template into one of your own.</>,
+      ]}
+      tips={[
+        <>The same panels sit as buttons in the agent page's header.</>,
+        <>An empty list means no panel runs on this agent yet.</>,
       ]}
     />
   ),
@@ -301,6 +324,15 @@ export const REKUEST_HELP = {
       tips={[
         <>The dot next to the agent name is green while the agent is online. An offline agent cannot run the task.</>,
         <>The form starts with the arguments of the latest run.</>,
+      ]}
+    />
+  ),
+  implementationDependencies: (
+    <PageHelp
+      intro="What this implementation needs from other agents to run: each dependency names the kind of app it needs and how many."
+      steps={[<>Click a dependency to open it.</>]}
+      tips={[
+        <><b>auto</b> means a matching agent is picked for you when the task starts; <b>optional</b> means the task runs without one.</>,
       ]}
     />
   ),

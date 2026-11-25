@@ -6,6 +6,7 @@ import StreamPage from "./pages/StreamPage";
 import AgentPage from "./pages/AgentPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import Streams from "./pages/Streams";
+import Agents from "./pages/Agents";
 import CallPage from "./pages/CallPage";
 import CallsPage from "./pages/Calls";
 interface Props { }
@@ -20,6 +21,7 @@ export const Module: React.FC<Props> = (_props) => {
         <Route path="calls" element={<CallsPage />} />
         <Route index element={<HomePage />} />
         <Route path="streams" element={<Streams />} />
+        <Route path="agents" element={<Agents />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

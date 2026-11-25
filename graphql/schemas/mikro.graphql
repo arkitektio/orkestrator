@@ -344,7 +344,7 @@ type Annotation {
 
   """Whether the geometry is filled with fill_color"""
   filled: Boolean!
-  id: UUID!
+  id: ID!
 
   """
   The annotation's bounding box in the nearest intrinsic space its collection's chain reaches, derived from every corner of its geometry (an affine-transformed box is not a box: min/max alone gives a strictly too-small answer under rotation or shear). Intrinsic, not world: world is scene-owned, and one collection can sit in two scenes under two registrations. **Not always a dataset's pixel grid**: a registration, or a derivation that changes rank, is not something a box can be pushed across -- it says nothing about the axes it does not name, so there is no extent to give them -- and the box then stays in the collection's own drawing space. Boxes compare only within one frame, which is why the spatial filters require a collection or coordinate system alongside
@@ -677,7 +677,7 @@ input AnnotationFilter {
   """
   dataset: ID
   description: StrFilterLookup
-  id: UUID
+  id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
@@ -11946,7 +11946,9 @@ type Query {
   """List animations (named camera tours through a scene)"""
   animations(filters: AnimationFilter, ordering: [AnimationOrder!]! = [], pagination: OffsetPaginationInput): [Animation!]!
 
-  """Get a single annotation by ID"""
+  """
+  Get a single annotation by ID (or by the UUID that was its ID before shapes got integer ids)
+  """
   annotation(id: ID!): Annotation!
 
   """Get a single annotation collection by ID"""
@@ -15265,8 +15267,6 @@ type TranslationTransformation implements Transformation {
   """
   version: Int!
 }
-
-scalar UUID
 
 """
 A physical unit of measurement (``"mV"``, ``"S/cm2"``, ``"second"``).

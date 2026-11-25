@@ -738,7 +738,7 @@ type Agent {
   specVersion: String
 
   """Current and historical states associated with the agent."""
-  states: [State!]!
+  states(filters: StateFilter, ordering: [StateOrder!]! = [], pagination: OffsetPaginationInput): [State!]!
 
   """
   The app that provisioned this agent's client (e.g. 'plugin_engine'), as lok signed it into the token of its last registration. Null for an agent whose client nobody provisioned. Pickers match it as the descriptor @rekuest/supervisor.
@@ -4106,7 +4106,7 @@ type Implementation {
   lowerOrderImplementations(filters: ImplementationFilter, ordering: [ImplementationOrder!]! = [], pagination: OffsetPaginationInput): [Implementation!]!
 
   """States that this implementation manipulates."""
-  manipulates: [State!]!
+  manipulates(filters: StateFilter, ordering: [StateOrder!]! = [], pagination: OffsetPaginationInput): [State!]!
 
   """Get the latest completed task created by the current user."""
   myLatestTask: Task
@@ -6244,6 +6244,9 @@ type Query {
   """Retrieve state for a specific context."""
   stateFor(agent: ID!, demand: StateDemandInput = null, stateHash: String = null): State!
 
+  """The states of the agents in the caller's organization."""
+  states(filters: StateFilter, ordering: [StateOrder!]! = [], pagination: OffsetPaginationInput): [State!]!
+
   """
   Fetch a structure by its '@package/key' identifier: one a port references or a service hosts.
   """
@@ -7470,6 +7473,9 @@ input SpaceOrder @oneOf {
   updatedAt: Ordering
 }
 
+"""
+A state an agent keeps up to date and shares, such as a stage's position.
+"""
 type State {
   """The agent to which this state belongs."""
   agent: Agent!
@@ -7679,6 +7685,28 @@ input StateDependencyInput {
   optional: Boolean! = false
 }
 
+"""A way to filter states"""
+input StateFilter {
+  AND: StateFilter
+  DISTINCT: Boolean
+  NOT: StateFilter
+  OR: StateFilter
+
+  """Only the states of this agent."""
+  agent: ID
+
+  """Only the states of the app with this identifier."""
+  appIdentifier: String
+
+  """Filter by IDs"""
+  ids: [ID!]
+
+  """
+  Search by interface, key or the agent's name (case-insensitive substring).
+  """
+  search: String
+}
+
 """
 A state implementation is a blueprint for a state. It is composed of a definition, a list of dependencies, and a list of params.
 """
@@ -7702,6 +7730,11 @@ input StateImplementationInput {
   The stable identity key of the state, matched by state demands. Defaults to the interface when omitted.
   """
   key: String = null
+}
+
+input StateOrder @oneOf {
+  createdAt: Ordering
+  updatedAt: Ordering
 }
 
 """

@@ -43,6 +43,17 @@ export const LOVEKIT_HELP = {
       ]}
     />
   ),
+  agents: (
+    <PageHelp
+      intro="The apps that offer streams, each as one agent. A green dot means it is live now."
+      steps={[
+        <>Click an agent to see all its streams side by side.</>,
+      ]}
+      tips={[
+        <>An agent cannot be started from this page: it is there while its app runs.</>,
+      ]}
+    />
+  ),
   agent: (
     <PageHelp
       intro="One app that offers streams, and all of them, live, side by side."

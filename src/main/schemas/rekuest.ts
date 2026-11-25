@@ -662,6 +662,14 @@ export type AgentSessionsArgs = {
 
 
 /** Represents a compute agent that can execute implementations. */
+export type AgentStatesArgs = {
+  filters?: InputMaybe<StateFilter>;
+  ordering?: Array<StateOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents a compute agent that can execute implementations. */
 export type AgentTasksArgs = {
   filters?: InputMaybe<TaskFilter>;
   ordering?: Array<TaskOrder>;
@@ -3027,6 +3035,14 @@ export type ImplementationLowerOrderImplementationsArgs = {
 
 
 /** Represents a concrete implementation of an action. */
+export type ImplementationManipulatesArgs = {
+  filters?: InputMaybe<StateFilter>;
+  ordering?: Array<StateOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents a concrete implementation of an action. */
 export type ImplementationResolutionsArgs = {
   filters?: InputMaybe<ResolutionFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -4875,6 +4891,8 @@ export type Query = {
   stateAtGlobalRev: Array<Snapshot>;
   /** Retrieve state for a specific context. */
   stateFor: State;
+  /** The states of the agents in the caller's organization. */
+  states: Array<State>;
   /** Fetch a structure by its '@package/key' identifier: one a port references or a service hosts. */
   structure: Structure;
   /** Fetch a structure package by its key (derived from port identifiers). */
@@ -5369,6 +5387,13 @@ export type QueryStateForArgs = {
   agent: Scalars['ID']['input'];
   demand?: InputMaybe<StateDemandInput>;
   stateHash?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryStatesArgs = {
+  filters?: InputMaybe<StateFilter>;
+  ordering?: Array<StateOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -6342,6 +6367,7 @@ export type SpaceOrder =
   |  { createdAt?: never; name: Ordering; updatedAt?: never; }
   |  { createdAt?: never; name?: never; updatedAt: Ordering; };
 
+/** A state an agent keeps up to date and shares, such as a stage's position. */
 export type State = {
   __typename?: 'State';
   /** The agent to which this state belongs. */
@@ -6485,6 +6511,22 @@ export type StateDependencyInput = {
   optional?: Scalars['Boolean']['input'];
 };
 
+/** A way to filter states */
+export type StateFilter = {
+  AND?: InputMaybe<StateFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<StateFilter>;
+  OR?: InputMaybe<StateFilter>;
+  /** Only the states of this agent. */
+  agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Only the states of the app with this identifier. */
+  appIdentifier?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Search by interface, key or the agent's name (case-insensitive substring). */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** A state implementation is a blueprint for a state. It is composed of a definition, a list of dependencies, and a list of params. */
 export type StateImplementationInput = {
   /** The identifier of the app providing this state. Defaults to the registering agent's app identifier when omitted. */
@@ -6496,6 +6538,10 @@ export type StateImplementationInput = {
   /** The stable identity key of the state, matched by state demands. Defaults to the interface when omitted. */
   key?: InputMaybe<Scalars['String']['input']>;
 };
+
+export type StateOrder =
+  { createdAt: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; updatedAt: Ordering; };
 
 /** One update of a state, with no model cross-references. Its operations are applied in order and together: the state is at `globalRevision` once all of them are. */
 export type StatePatchEvent = {
@@ -8250,6 +8296,8 @@ export type StateSnapshotEventFragment = { __typename?: 'StateSnapshotEvent', st
 
 export type AgentSnapshotEventFragment = { __typename?: 'AgentSnapshotEvent', agentId: string, values: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null };
 
+export type ListStateFragment = { __typename?: 'State', id: string, interface: string, key?: string | null, appIdentifier?: string | null, updatedAt: any, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean }, definition: { __typename?: 'StateDefinition', name: string } };
+
 export type ListPortUsageFragment = { __typename?: 'PortUsage', portKey: string, index: number, keyPath: string, modifiers: Array<string>, action: { __typename?: 'Action', id: string, name: string, description?: string | null } };
 
 export type ListOutputStructureUsageFragment = { __typename?: 'PortUsage', portKey: string, index: number, keyPath: string, modifiers: Array<string>, action: { __typename?: 'Action', id: string, name: string, description?: string | null } };
@@ -9545,6 +9593,15 @@ export type SessionBoundariesQueryVariables = Exact<{
 
 
 export type SessionBoundariesQuery = { __typename?: 'Query', sessionBoundaries?: { __typename?: 'SessionBoundary', sessionId: string, startGlobalRevision?: number | null, endGlobalRevision?: number | null } | null };
+
+export type ListStatesQueryVariables = Exact<{
+  filters?: InputMaybe<StateFilter>;
+  ordering?: InputMaybe<Array<StateOrder> | StateOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListStatesQuery = { __typename?: 'Query', states: Array<{ __typename?: 'State', id: string, interface: string, key?: string | null, appIdentifier?: string | null, updatedAt: any, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean }, definition: { __typename?: 'StateDefinition', name: string } }> };
 
 export type GetStructureQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -12839,6 +12896,23 @@ export const AgentSnapshotEventFragmentDoc = gql`
   timestamp
 }
     `;
+export const ListStateFragmentDoc = gql`
+    fragment ListState on State {
+  id
+  interface
+  key
+  appIdentifier
+  updatedAt
+  agent {
+    id
+    name
+    connected
+  }
+  definition {
+    name
+  }
+}
+    `;
 export const ListPortUsageFragmentDoc = gql`
     fragment ListPortUsage on PortUsage {
   portKey
@@ -14930,6 +15004,13 @@ export const SessionBoundariesDocument = gql`
   }
 }
     `;
+export const ListStatesDocument = gql`
+    query ListStates($filters: StateFilter, $ordering: [StateOrder!], $pagination: OffsetPaginationInput) {
+  states(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListState
+  }
+}
+    ${ListStateFragmentDoc}`;
 export const GetStructureDocument = gql`
     query GetStructure($id: ID!) {
   structure(identifier: $id) {
@@ -15623,6 +15704,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     SessionBoundaries(variables: SessionBoundariesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SessionBoundariesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<SessionBoundariesQuery>({ document: SessionBoundariesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SessionBoundaries', 'query', variables);
+    },
+    ListStates(variables?: ListStatesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ListStatesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ListStatesQuery>({ document: ListStatesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ListStates', 'query', variables);
     },
     GetStructure(variables: GetStructureQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetStructureQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetStructureQuery>({ document: GetStructureDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetStructure', 'query', variables);

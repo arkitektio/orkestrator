@@ -46,3 +46,9 @@ query GetMeshCollection($id: ID!) {
     }
   }
 }
+
+query ListMeshCollections($filters: MeshCollectionFilter, $pagination: OffsetPaginationInput) {
+  meshCollections(filters: $filters, pagination: $pagination) {
+    ...ListMeshCollection
+  }
+}

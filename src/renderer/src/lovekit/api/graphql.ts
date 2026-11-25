@@ -800,6 +800,8 @@ export type AgentFragment = (
   & AgentOwnerFragment
 );
 
+export type ListAgentFragment = { __typename?: 'Agent', id: string, name: string, roomName: string, live: boolean, createdAt: any, user: { __typename?: 'User', id: string, sub: string } };
+
 export type CallParticipantFragment = { __typename?: 'CallParticipant', identity: string, name: string, joinedAt: number };
 
 export type CallStructureFragment = { __typename?: 'Structure', identifier: string, object: number };
@@ -927,6 +929,17 @@ export type GetAgentQuery = { __typename?: 'Query', agent: (
     { __typename?: 'Agent' }
     & AgentFragment
   ) };
+
+export type ListAgentsQueryVariables = Exact<{
+  filters?: InputMaybe<AgentFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListAgentsQuery = { __typename?: 'Query', agents: Array<(
+    { __typename?: 'Agent' }
+    & ListAgentFragment
+  )> };
 
 export type GetCallQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1116,6 +1129,19 @@ export const AgentFragmentDoc = gql`
 }
     ${AgentOwnerFragmentDoc}
 ${ListStreamFragmentDoc}`;
+export const ListAgentFragmentDoc = gql`
+    fragment ListAgent on Agent {
+  id
+  name
+  roomName
+  live
+  createdAt
+  user {
+    id
+    sub
+  }
+}
+    `;
 export const CallStructureFragmentDoc = gql`
     fragment CallStructure on Structure {
   identifier
@@ -1534,6 +1560,42 @@ export function useGetAgentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type GetAgentQueryHookResult = ReturnType<typeof useGetAgentQuery>;
 export type GetAgentLazyQueryHookResult = ReturnType<typeof useGetAgentLazyQuery>;
 export type GetAgentQueryResult = Apollo.QueryResult<GetAgentQuery, GetAgentQueryVariables>;
+export const ListAgentsDocument = gql`
+    query ListAgents($filters: AgentFilter, $pagination: OffsetPaginationInput) {
+  agents(filters: $filters, pagination: $pagination) {
+    ...ListAgent
+  }
+}
+    ${ListAgentFragmentDoc}`;
+
+/**
+ * __useListAgentsQuery__
+ *
+ * To run a query within a React component, call `useListAgentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListAgentsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListAgentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListAgentsQuery, ListAgentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListAgentsQuery, ListAgentsQueryVariables>(ListAgentsDocument, options);
+      }
+export function useListAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListAgentsQuery, ListAgentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListAgentsQuery, ListAgentsQueryVariables>(ListAgentsDocument, options);
+        }
+export type ListAgentsQueryHookResult = ReturnType<typeof useListAgentsQuery>;
+export type ListAgentsLazyQueryHookResult = ReturnType<typeof useListAgentsLazyQuery>;
+export type ListAgentsQueryResult = Apollo.QueryResult<ListAgentsQuery, ListAgentsQueryVariables>;
 export const GetCallDocument = gql`
     query GetCall($id: ID!) {
   call(id: $id) {

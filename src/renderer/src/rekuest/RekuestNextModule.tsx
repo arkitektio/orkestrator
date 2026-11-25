@@ -51,7 +51,10 @@ import AgentTasksPage from "./pages/agent/AgentTasksPage";
 import AgentActionsPage from "./pages/agent/AgentActionsPage";
 import AgentBloksPage from "./pages/agent/AgentBloksPage";
 import AgentPanelPage from "./pages/agent/AgentPanelPage";
+import AgentPanelsPage from "./pages/agent/AgentPanelsPage";
 import StatePage from "./pages/StatePage";
+import StatesPage from "./pages/StatesPage";
+import ImplementationDependenciesPage from "./pages/implementation/ImplementationDependenciesPage";
 import SpacePage from "./pages/SpacePage";
 import SpacesPage from "./pages/SpacesPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
@@ -114,9 +117,12 @@ const Module: React.FC = () => {
         <Route path="materialized_bloks" element={<MaterializedBloks />} />
         <Route path="materialized_bloks/:id" element={<MaterializedBlokPage />} />
         <Route path="materialized_bloks/:id/edit" element={<EditMaterializedBlokEditorPage />} />
+        {/* A dependency is its implementation's: listed at implementations/:id/dependencies. */}
+        <Route path="dependencies" element={<Navigate to="../implementations" relative="path" replace />} />
         <Route path="dependencies/:id" element={<Dependency />} />
         <Route path="implementations" element={<ImplementationsPage />} />
         <Route path="implementations/:id" element={<Implementation />} />
+        <Route path="implementations/:id/dependencies" element={<ImplementationDependenciesPage />} />
         {/* The action's own interface for starting a run (its assign bloks), on a page of its own. */}
         <Route path="implementations/:id/assign" element={<ImplementationAssignPage />} />
         <Route path="agents/:id" element={<AgentPage />} />
@@ -124,9 +130,11 @@ const Module: React.FC = () => {
         <Route path="agents/:id/tasks" element={<AgentTasksPage />} />
         <Route path="agents/:id/actions" element={<AgentActionsPage />} />
         <Route path="agents/:id/bloks" element={<AgentBloksPage />} />
+        <Route path="agents/:id/panels" element={<AgentPanelsPage />} />
         <Route path="agents/:id/panels/:panel" element={<AgentPanelPage />} />
         <Route path="spaces" element={<SpacesPage />} />
         <Route path="spaces/:id" element={<SpacePage />} />
+        <Route path="states" element={<StatesPage />} />
         <Route path="states/:id" element={<StatePage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="org-tasks" element={<OrgTasksPage />} />

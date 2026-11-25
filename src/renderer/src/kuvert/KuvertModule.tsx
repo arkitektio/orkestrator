@@ -3,7 +3,7 @@ import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import { MailboxSyncs } from "./components/useMailboxSyncs";
 import AccountPage from "./pages/AccountPage";
 import AccountsPage from "./pages/AccountsPage";
@@ -56,6 +56,10 @@ export const KuvertModule: React.FC = () => (
         )}
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="tasklists" element={<TaskListsPage />} />
+        {/* Folders are an account's; threads and messages are read in the mailboxes. */}
+        <Route path="folders" element={<Navigate to="../accounts" relative="path" replace />} />
+        <Route path="threads" element={<Navigate to=".." relative="path" replace />} />
+        <Route path="messages" element={<Navigate to=".." relative="path" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

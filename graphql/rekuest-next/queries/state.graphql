@@ -59,3 +59,10 @@ query SessionBoundaries($sessionId: ID!) {
     endGlobalRevision
   }
 }
+
+# The states page: every state of the agents in the caller's organization.
+query ListStates($filters: StateFilter, $ordering: [StateOrder!], $pagination: OffsetPaginationInput) {
+  states(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListState
+  }
+}

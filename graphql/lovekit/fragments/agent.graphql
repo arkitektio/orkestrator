@@ -29,3 +29,16 @@ fragment Agent on Agent {
     ...ListStream
   }
 }
+
+# What a row of the agents page shows.
+fragment ListAgent on Agent {
+  id
+  name
+  roomName
+  live
+  createdAt
+  user {
+    id
+    sub
+  }
+}

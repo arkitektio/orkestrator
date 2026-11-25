@@ -16,6 +16,7 @@ import {
 import {
   RekuestAction,
   RekuestAgent,
+  RekuestDependency,
   RekuestImplementation,
   RekuestResolution,
   RekuestState,
@@ -326,6 +327,15 @@ const ImplementationDetailSheet = ({
         <Separator />
 
         <Group title="Dependencies" count={i.dependencies.length}>
+          {i.dependencies.length > 0 && (
+            <RekuestImplementation.DetailLink
+              object={i}
+              subroute="dependencies"
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Show dependencies
+            </RekuestImplementation.DetailLink>
+          )}
           {i.dependencies.length === 0 ? (
             <Empty />
           ) : (
@@ -333,7 +343,9 @@ const ImplementationDetailSheet = ({
               {i.dependencies.map((d) => (
                 <Row key={d.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{d.key}</span>
+                    <RekuestDependency.DetailLink object={d} className="font-medium hover:underline">
+                      {d.key}
+                    </RekuestDependency.DetailLink>
                     <div className="flex gap-1">
                       {d.autoResolvable && (
                         <Badge variant="outline">auto</Badge>

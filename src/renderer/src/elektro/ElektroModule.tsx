@@ -1,6 +1,6 @@
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import ExperimentPage from "./pages/ExperimentPage";
 import ExperimentsPage from "./pages/ExperimentsPage";
 import FilePage from "./pages/FilePage";
@@ -62,6 +62,9 @@ export const ElektroModule: React.FC<Props> = () => {
         <Route index element={<HomePage />} />
         <Route path="mechanisms" element={<MechanismsPage />} />
         <Route path="environments" element={<EnvironmentsPage />} />
+        {/* Cells and sections belong to a neuron model. */}
+        <Route path="cells" element={<Navigate to="../neuronmodels" relative="path" replace />} />
+        <Route path="sections" element={<Navigate to="../neuronmodels" relative="path" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       </ModuleLayout>

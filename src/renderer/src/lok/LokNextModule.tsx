@@ -74,6 +74,9 @@ export const LokNextModule: React.FC<Props> = () => {
         <Route index element={<TeamHomePage />} />
         <Route path="clients" element={<RoleRoute roles={ADMIN_ROLE}><ClientsPage /></RoleRoute>} />
         <Route path="releases" element={<RoleRoute roles={ADMIN_ROLE}><ReleasesPage /></RoleRoute>} />
+        {/* The team's home lists its members; service instances are the instances page. */}
+        <Route path="members" element={<Navigate to=".." relative="path" replace />} />
+        <Route path="serviceinstances" element={<Navigate to="../instances" relative="path" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

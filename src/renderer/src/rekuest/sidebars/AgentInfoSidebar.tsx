@@ -238,6 +238,11 @@ export const AgentFacts = ({ agent }: { agent: AgentFragment }) => {
             Show bloks
           </SubpageLink>
         </Row>
+        <Row label="Panels">
+          <SubpageLink agent={agent} subroute="panels">
+            Show panels
+          </SubpageLink>
+        </Row>
         <Row label="Python">
           <CopyAgentPythonButton agent={agent} />
         </Row>

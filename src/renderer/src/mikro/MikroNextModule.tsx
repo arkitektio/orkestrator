@@ -1,6 +1,6 @@
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import ArrayDatasetPage from "./pages/ArrayDatasetPage";
 import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
 import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
@@ -10,6 +10,8 @@ import ChartPage from "./pages/ChartPage";
 import ChartsPage from "./pages/ChartsPage";
 import GridPage from "./pages/GridPage";
 import GridsPage from "./pages/GridsPage";
+import FixturesPage from "./pages/FixturesPage";
+import MeshCollectionsPage from "./pages/MeshCollectionsPage";
 import CoordinateSystemPage from "./pages/CoordinateSystemPage";
 import CoordinateSystemsPage from "./pages/CoordinateSystemsPage";
 import FilePage from "./pages/FilePage";
@@ -65,6 +67,8 @@ export const MikroNextModule = () => {
         <Route path="charts" element={<ChartsPage />} />
         <Route path="charts/:id" element={<ChartPage />} />
         <Route path="grids" element={<GridsPage />} />
+        <Route path="fixtures" element={<FixturesPage />} />
+        <Route path="meshcollections" element={<MeshCollectionsPage />} />
         <Route path="grids/:id" element={<GridPage />} />
         <Route path="peerhome/:id" element={<PeerHomePage />} />
         <Route path="files/:id" element={<FilePage />} />
@@ -76,6 +80,10 @@ export const MikroNextModule = () => {
         <Route path="sparsedatasets" element={<SparseDatasetsPage />} />
         <Route path="sparsedatasets/:id" element={<SparseDatasetPage />} />
         <Route path="fixtures/:id" element={<FixturePage />} />
+        {/* A mesh object lives in its collection; a peer's home and a lineage need their id. */}
+        <Route path="meshobjects" element={<Navigate to="../meshcollections" relative="path" replace />} />
+        <Route path="peerhome" element={<Navigate to=".." relative="path" replace />} />
+        <Route path="lineage" element={<Navigate to=".." relative="path" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

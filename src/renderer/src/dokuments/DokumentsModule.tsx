@@ -1,6 +1,6 @@
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import DocumentPage from "./pages/DocumentPage";
 import FilePage from "./pages/FilePage";
 import HomePage from "./pages/HomePage";
@@ -20,6 +20,8 @@ export const Module: React.FC<Props> = (_props) => {
         <Route index element={<HomePage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="files" element={<FilesPage />} />
+        {/* Pages belong to a document. */}
+        <Route path="pages" element={<Navigate to="../documents" relative="path" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

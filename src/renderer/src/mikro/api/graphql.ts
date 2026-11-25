@@ -68,7 +68,6 @@ export type Scalars = {
   Temperature: { input: any; output: any; }
   /** The `Vector` scalar type represents a matrix values as specified by */
   ThreeDVector: { input: any; output: any; }
-  UUID: { input: any; output: any; }
   /**
    * A physical unit of measurement (``"mV"``, ``"S/cm2"``, ``"second"``).
    *
@@ -296,7 +295,7 @@ export type Annotation = {
   fillColor?: Maybe<Array<Scalars['Int']['output']>>;
   /** Whether the geometry is filled with fill_color */
   filled: Scalars['Boolean']['output'];
-  id: Scalars['UUID']['output'];
+  id: Scalars['ID']['output'];
   /** The annotation's bounding box in the nearest intrinsic space its collection's chain reaches, derived from every corner of its geometry (an affine-transformed box is not a box: min/max alone gives a strictly too-small answer under rotation or shear). Intrinsic, not world: world is scene-owned, and one collection can sit in two scenes under two registrations. **Not always a dataset's pixel grid**: a registration, or a derivation that changes rank, is not something a box can be pushed across -- it says nothing about the axes it does not name, so there is no extent to give them -- and the box then stays in the collection's own drawing space. Boxes compare only within one frame, which is why the spatial filters require a collection or coordinate system alongside */
   intrinsicBbox?: Maybe<BoundingBox>;
   kind: AnnotationKind;
@@ -580,7 +579,7 @@ export type AnnotationFilter = {
   /** Filter by the dataset the annotations are drawn over, following the collection's derivation edge */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   description?: InputMaybe<StrFilterLookup>;
-  id?: InputMaybe<Scalars['UUID']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Only what is in this collaboration (its key): put in, or part of what was */
@@ -9830,7 +9829,7 @@ export type Query = {
   animation: Animation;
   /** List animations (named camera tours through a scene) */
   animations: Array<Animation>;
-  /** Get a single annotation by ID */
+  /** Get a single annotation by ID (or by the UUID that was its ID before shapes got integer ids) */
   annotation: Annotation;
   /** Get a single annotation collection by ID */
   annotationCollection: AnnotationCollection;
@@ -13981,14 +13980,14 @@ export type AnimationFragment = { __typename?: 'Animation', id: string, name: st
     & AnimationWaypointFragment
   )> };
 
-export type AnnotationFragment = { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, sourceIds: Array<string>, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinateSystem?: (
+export type AnnotationFragment = { __typename?: 'Annotation', id: string, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, sourceIds: Array<string>, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinateSystem?: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
   ) | null, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, intrinsicBbox?: { __typename?: 'BoundingBox', min: Array<number>, max: Array<number> } | null };
 
-export type SceneAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, vectors: Array<Array<number>>, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, sourceIds: Array<string>, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }> };
+export type SceneAnnotationFragment = { __typename?: 'Annotation', id: string, name: string, kind: AnnotationKind, vectors: Array<Array<number>>, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, sourceIds: Array<string>, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }> };
 
-export type ListAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, collection: { __typename?: 'AnnotationCollection', id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string } | null } };
+export type ListAnnotationFragment = { __typename?: 'Annotation', id: string, name: string, kind: AnnotationKind, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, collection: { __typename?: 'AnnotationCollection', id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string } | null } };
 
 export type DetailAnnotationFragment = (
   { __typename?: 'Annotation', coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, scene?: (
@@ -13999,7 +13998,7 @@ export type DetailAnnotationFragment = (
   & AnnotationShapeLineageFragment
 );
 
-export type AnnotationShapeLineageFragment = { __typename?: 'Annotation', derivedFrom: Array<{ __typename?: 'AnnotationDerivation', id: string, relation: AnnotationRelation, reason?: string | null, source: { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind } }>, derivedAnnotations: Array<{ __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind }> };
+export type AnnotationShapeLineageFragment = { __typename?: 'Annotation', derivedFrom: Array<{ __typename?: 'AnnotationDerivation', id: string, relation: AnnotationRelation, reason?: string | null, source: { __typename?: 'Annotation', id: string, name: string, kind: AnnotationKind } }>, derivedAnnotations: Array<{ __typename?: 'Annotation', id: string, name: string, kind: AnnotationKind }> };
 
 export type AnnotationCollectionFragment = { __typename?: 'AnnotationCollection', id: string, name: string, description?: string | null, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
@@ -15723,6 +15722,8 @@ export type MeshCollectionFragment = { __typename?: 'MeshCollection', id: string
     { __typename?: 'FabriksStore' }
     & FabriksStoreFragment
   ) };
+
+export type ListMeshCollectionFragment = { __typename?: 'MeshCollection', id: string, name?: string | null, label: string, specVersion?: string | null };
 
 export type NetworkCollectionFragment = { __typename?: 'NetworkCollection', id: string, name?: string | null, label: string, specVersion?: string | null, grid: any, encoding: any, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
@@ -18382,7 +18383,7 @@ export type GetAnnotationCreatorQueryVariables = Exact<{
 }>;
 
 
-export type GetAnnotationCreatorQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, creator?: { __typename?: 'User', sub: string } | null } };
+export type GetAnnotationCreatorQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: string, creator?: { __typename?: 'User', sub: string } | null } };
 
 export type GetAnnotationInfoQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -18390,7 +18391,7 @@ export type GetAnnotationInfoQueryVariables = Exact<{
 
 
 export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: (
-    { __typename?: 'Annotation', id: any, kind: AnnotationKind, descriptors: any, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<(
+    { __typename?: 'Annotation', id: string, kind: AnnotationKind, descriptors: any, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<(
       { __typename?: 'AnnotationCollection' }
       & DerivedResident_AnnotationCollection_Fragment
     ) | (
@@ -18439,7 +18440,7 @@ export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: (
     & AnnotationShapeLineageFragment
   ) };
 
-export type AnnotationActionDescriptorsFragment = { __typename?: 'Annotation', id: any, descriptors: any, descriptorsUnder?: any | null };
+export type AnnotationActionDescriptorsFragment = { __typename?: 'Annotation', id: string, descriptors: any, descriptorsUnder?: any | null };
 
 export type GetAnnotationActionDescriptorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -18847,7 +18848,7 @@ export type CollaborationItemNamesQuery = { __typename?: 'Query', arrayDatasets?
   ) | (
     { __typename?: 'TableLens', id: string, name?: string | null }
     & LensSubject_TableLens_Fragment
-  )>, annotations?: Array<{ __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind }> };
+  )>, annotations?: Array<{ __typename?: 'Annotation', id: string, name: string, kind: AnnotationKind }> };
 
 export type TableColumnStatsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -19396,6 +19397,17 @@ export type PlaceableFixtureLensesQueryVariables = Exact<{
 
 
 export type PlaceableFixtureLensesQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'FixtureLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }> };
+
+export type ListFixturesQueryVariables = Exact<{
+  filters?: InputMaybe<FixtureFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListFixturesQuery = { __typename?: 'Query', fixtures: Array<(
+    { __typename?: 'Fixture' }
+    & ListFixtureFragment
+  )> };
 
 export type GetFolderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -20122,6 +20134,17 @@ export type GetMeshCollectionQuery = { __typename?: 'Query', meshCollection: (
       )> } | null, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'Fixture' } | { __typename: 'FixtureLens' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> }
     & MeshCollectionFragment
   ) };
+
+export type ListMeshCollectionsQueryVariables = Exact<{
+  filters?: InputMaybe<MeshCollectionFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListMeshCollectionsQuery = { __typename?: 'Query', meshCollections: Array<(
+    { __typename?: 'MeshCollection' }
+    & ListMeshCollectionFragment
+  )> };
 
 export type ProfileFeedRootsQueryVariables = Exact<{
   kinds: Array<LineageNodeKind> | LineageNodeKind;
@@ -23026,6 +23049,14 @@ export const ListLensFragmentDoc = gql`
 ${LensSubjectFragmentDoc}
 ${LensSpecFragmentDoc}
 ${SceneSnapshotFragmentDoc}`;
+export const ListMeshCollectionFragmentDoc = gql`
+    fragment ListMeshCollection on MeshCollection {
+  id
+  name
+  label
+  specVersion
+}
+    `;
 export const CameraStateFragmentDoc = gql`
     fragment CameraState on CameraState {
   position
@@ -31613,6 +31644,42 @@ export function usePlaceableFixtureLensesLazyQuery(baseOptions?: ApolloReactHook
 export type PlaceableFixtureLensesQueryHookResult = ReturnType<typeof usePlaceableFixtureLensesQuery>;
 export type PlaceableFixtureLensesLazyQueryHookResult = ReturnType<typeof usePlaceableFixtureLensesLazyQuery>;
 export type PlaceableFixtureLensesQueryResult = Apollo.QueryResult<PlaceableFixtureLensesQuery, PlaceableFixtureLensesQueryVariables>;
+export const ListFixturesDocument = gql`
+    query ListFixtures($filters: FixtureFilter, $pagination: OffsetPaginationInput) {
+  fixtures(filters: $filters, pagination: $pagination) {
+    ...ListFixture
+  }
+}
+    ${ListFixtureFragmentDoc}`;
+
+/**
+ * __useListFixturesQuery__
+ *
+ * To run a query within a React component, call `useListFixturesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListFixturesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListFixturesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListFixturesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListFixturesQuery, ListFixturesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListFixturesQuery, ListFixturesQueryVariables>(ListFixturesDocument, options);
+      }
+export function useListFixturesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListFixturesQuery, ListFixturesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListFixturesQuery, ListFixturesQueryVariables>(ListFixturesDocument, options);
+        }
+export type ListFixturesQueryHookResult = ReturnType<typeof useListFixturesQuery>;
+export type ListFixturesLazyQueryHookResult = ReturnType<typeof useListFixturesLazyQuery>;
+export type ListFixturesQueryResult = Apollo.QueryResult<ListFixturesQuery, ListFixturesQueryVariables>;
 export const GetFolderDocument = gql`
     query GetFolder($id: ID!) {
   folder(id: $id) {
@@ -33193,6 +33260,42 @@ export function useGetMeshCollectionLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetMeshCollectionQueryHookResult = ReturnType<typeof useGetMeshCollectionQuery>;
 export type GetMeshCollectionLazyQueryHookResult = ReturnType<typeof useGetMeshCollectionLazyQuery>;
 export type GetMeshCollectionQueryResult = Apollo.QueryResult<GetMeshCollectionQuery, GetMeshCollectionQueryVariables>;
+export const ListMeshCollectionsDocument = gql`
+    query ListMeshCollections($filters: MeshCollectionFilter, $pagination: OffsetPaginationInput) {
+  meshCollections(filters: $filters, pagination: $pagination) {
+    ...ListMeshCollection
+  }
+}
+    ${ListMeshCollectionFragmentDoc}`;
+
+/**
+ * __useListMeshCollectionsQuery__
+ *
+ * To run a query within a React component, call `useListMeshCollectionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListMeshCollectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListMeshCollectionsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListMeshCollectionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListMeshCollectionsQuery, ListMeshCollectionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListMeshCollectionsQuery, ListMeshCollectionsQueryVariables>(ListMeshCollectionsDocument, options);
+      }
+export function useListMeshCollectionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListMeshCollectionsQuery, ListMeshCollectionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListMeshCollectionsQuery, ListMeshCollectionsQueryVariables>(ListMeshCollectionsDocument, options);
+        }
+export type ListMeshCollectionsQueryHookResult = ReturnType<typeof useListMeshCollectionsQuery>;
+export type ListMeshCollectionsLazyQueryHookResult = ReturnType<typeof useListMeshCollectionsLazyQuery>;
+export type ListMeshCollectionsQueryResult = Apollo.QueryResult<ListMeshCollectionsQuery, ListMeshCollectionsQueryVariables>;
 export const ProfileFeedRootsDocument = gql`
     query ProfileFeedRoots($kinds: [LineageNodeKind!]!, $filters: RootFilter, $pagination: OffsetPaginationInput) {
   roots(kinds: $kinds, filters: $filters, pagination: $pagination) {

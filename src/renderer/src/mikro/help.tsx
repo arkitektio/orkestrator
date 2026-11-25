@@ -150,6 +150,18 @@ export const MIKRO_HELP = {
       ]}
     />
   ),
+  meshCollections: (
+    <PageHelp
+      intro="Mesh collections: surfaces extracted from your data, such as segmented cells, stored together in one place."
+      steps={[<>Click a collection to open it and browse its objects.</>]}
+    />
+  ),
+  fixtures: (
+    <PageHelp
+      intro="Fixtures: hardware around the sample, such as a coverslip, a dish or a holder, each a 3D model in its own units."
+      steps={[<>Click a fixture to open its preview.</>]}
+    />
+  ),
   meshCollection: (
     <PageHelp
       intro="A collection of meshes (surfaces, cells, organelles) in a scene of its own space. Each mesh has a page of its own."

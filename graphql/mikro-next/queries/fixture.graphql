@@ -30,3 +30,10 @@ query PlaceableFixtureLenses($fixture: ID!, $space: ID!) {
   }
 }
 
+
+# The fixtures page: every fixture the caller can read, newest first.
+query ListFixtures($filters: FixtureFilter, $pagination: OffsetPaginationInput) {
+  fixtures(filters: $filters, pagination: $pagination) {
+    ...ListFixture
+  }
+}

@@ -21,3 +21,11 @@ fragment MeshCollection on MeshCollection {
   grid
   encoding
 }
+
+# What a row of the mesh collections page shows; no store or grid.
+fragment ListMeshCollection on MeshCollection {
+  id
+  name
+  label
+  specVersion
+}

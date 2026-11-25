@@ -62,3 +62,20 @@ fragment AgentSnapshotEvent on AgentSnapshotEvent {
   sessionId
   timestamp
 }
+
+# A row of the states page: whose it is and what it is, without its ports.
+fragment ListState on State {
+  id
+  interface
+  key
+  appIdentifier
+  updatedAt
+  agent {
+    id
+    name
+    connected
+  }
+  definition {
+    name
+  }
+}
