@@ -1289,6 +1289,10 @@ export type DefinitionFilter = {
   OR?: InputMaybe<DefinitionFilter>;
   /** Keep only definitions already deployed in their organization (a deployment of one of the flavours that provide them, on one of its backends), or with false only those never deployed there: what is left to install. */
   alreadyDeployed?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Any of these demand sets: the definitions that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error. */
+  anyDemands?: InputMaybe<Array<Array<PortDemandInput>>>;
+  /** Keep only definitions provided by the app of this identifier (by any of its releases). */
+  appIdentifier?: InputMaybe<Scalars['String']['input']>;
   /** Keep only definitions provided by these apps. */
   apps?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only definitions in these collections. */
@@ -1311,12 +1315,18 @@ export type DefinitionFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Only what is in this collaboration (its key): put in, or part of what was */
   inCollaboration?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only definitions in the collection of this name. */
+  inCollection?: InputMaybe<Scalars['String']['input']>;
   /** Keep only definitions that declare all of these interfaces. */
   interfaces?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Keep only definitions that are tests for these definitions. */
   isTestFor?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only definitions of these kinds (function, generator, ...). */
   kinds?: InputMaybe<Array<ActionKind>>;
+  /** The cleartext name of this Action */
+  name?: InputMaybe<StrFilterLookup>;
+  /** Keep only definitions whose ports accept the given concrete objects: `demands`, for the case where each match carries the object's descriptors, checked against the port's `requires`. */
+  objectDemands?: InputMaybe<Array<PortDemandInput>>;
   /** Keep only definitions implementing these protocols. */
   protocols?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only pure definitions (their result can be cached), or only impure ones. */
@@ -1385,9 +1395,15 @@ export type DefinitionInput = {
 
 /** Order for action definitions. */
 export type DefinitionOrder =
-  { definedAt: Ordering; kind?: never; name?: never; }
-  |  { definedAt?: never; kind: Ordering; name?: never; }
-  |  { definedAt?: never; kind?: never; name: Ordering; };
+  /** By the identifier of the app that provides the definition (the first, alphabetically, when several do), so one app's definitions stay together across pages. */
+  { appIdentifier: Ordering; collection?: never; definedAt?: never; deployed?: never; kind?: never; name?: never; }
+  |  /** By the name of the definition's first collection (alphabetically): the collection a grouped list files it under. Definitions in no collection come last. */
+  { appIdentifier?: never; collection: Ordering; definedAt?: never; deployed?: never; kind?: never; name?: never; }
+  |  { appIdentifier?: never; collection?: never; definedAt: Ordering; deployed?: never; kind?: never; name?: never; }
+  |  /** Deployed first (DESC) or last (ASC), by `DefinitionFilter.alreadyDeployed`: rekuest's `ActionOrder.assignable` for what is not running yet. The order the filters set (a `search`'s ranking) is kept as the tie-break. */
+  { appIdentifier?: never; collection?: never; definedAt?: never; deployed: Ordering; kind?: never; name?: never; }
+  |  { appIdentifier?: never; collection?: never; definedAt?: never; deployed?: never; kind: Ordering; name?: never; }
+  |  { appIdentifier?: never; collection?: never; definedAt?: never; deployed?: never; kind?: never; name: Ordering; };
 
 /** Input for removing a catalog the organization added. */
 export type DeleteCatalogInput = {
@@ -2468,8 +2484,14 @@ export type PortGroupInput = {
 
 /** The kind of a port: its structural type. Decides which of children, identifier and choices the port must, may or must not carry (see docs/design/ports.md). */
 export enum PortKind {
+  /** A catalog prop that names a file an app registered (`self.assets.<name>`). No children. Never an agent's port. */
+  Asset = 'ASSET',
+  /** A catalog prop that reads and writes a local (`bind`); its one child, keyed '...', is what it writes. Never an agent's port. */
+  Binding = 'BINDING',
   /** A boolean. No children. */
   Bool = 'BOOL',
+  /** A catalog prop that holds a call (onClick); its children are the payload it is called with. Never an agent's port. */
+  Callback = 'CALLBACK',
   /** An ISO-8601 date or datetime string. No children. */
   Date = 'DATE',
   /** A string-keyed map. One child keyed '...' describes a homogeneous value type; several named children describe the known keys. */
@@ -3547,6 +3569,26 @@ export type StateImplementationInput = {
   key?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StrFilterLookup = {
+  contains?: InputMaybe<Scalars['String']['input']>;
+  endsWith?: InputMaybe<Scalars['String']['input']>;
+  exact?: InputMaybe<Scalars['String']['input']>;
+  gt?: InputMaybe<Scalars['String']['input']>;
+  gte?: InputMaybe<Scalars['String']['input']>;
+  iContains?: InputMaybe<Scalars['String']['input']>;
+  iEndsWith?: InputMaybe<Scalars['String']['input']>;
+  iExact?: InputMaybe<Scalars['String']['input']>;
+  iRegex?: InputMaybe<Scalars['String']['input']>;
+  iStartsWith?: InputMaybe<Scalars['String']['input']>;
+  inList?: InputMaybe<Array<Scalars['String']['input']>>;
+  isNull?: InputMaybe<Scalars['Boolean']['input']>;
+  lt?: InputMaybe<Scalars['String']['input']>;
+  lte?: InputMaybe<Scalars['String']['input']>;
+  range?: InputMaybe<Array<Scalars['String']['input']>>;
+  regex?: InputMaybe<Scalars['String']['input']>;
+  startsWith?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type StringAssignWidget = AssignWidget & {
   __typename?: 'StringAssignWidget';
   asParagraph?: Maybe<Scalars['Boolean']['output']>;
@@ -3764,7 +3806,7 @@ export type ListDefinitionFragment = { __typename?: 'Definition', id: string, na
     & KabinetLogoBlokFragment
   ) | null, apps: Array<{ __typename?: 'App', id: string, identifier: string }> };
 
-export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, name: string, description?: string | null, logo?: (
+export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, name: string, description?: string | null, args: Array<{ __typename?: 'ArgPort', identifier?: any | null }>, logo?: (
     { __typename?: 'FlavourBlok' }
     & KabinetLogoBlokFragment
   ) | null };
@@ -5924,6 +5966,9 @@ export const SmartDefinitionFragmentDoc = gql`
   id
   name
   description
+  args {
+    identifier
+  }
   logo {
     ...KabinetLogoBlok
   }

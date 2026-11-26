@@ -71,7 +71,7 @@ const demandSets = (
  * sets are ORed in one indexed statement, and the filter's other fields
  * (search, collection, app) are its siblings, so they bind every set.
  */
-const demandsField = (
+export const demandsField = (
   demands: PortDemandInput[],
   also: readonly PortDemandInput[][] | undefined,
   only: (demands: PortDemandInput[]) => PortDemandInput[] = (d) => d,
@@ -81,7 +81,7 @@ const demandsField = (
 };
 
 /** One limit per set asked for, so the selection's rows cannot crowd the others out. */
-const limitFor = (
+export const limitFor = (
   base: number,
   options: SearchOptions,
   demands: PortDemandInput[],

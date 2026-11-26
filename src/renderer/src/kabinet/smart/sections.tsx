@@ -6,7 +6,13 @@ import {
 } from "@/kabinet/api/graphql";
 import { Download } from "lucide-react";
 import React from "react";
-import { buildDemands, useSmartDemands } from "@/rekuest/smart/demands";
+import {
+  buildDemands,
+  firstArgIdentifier,
+  pageSource,
+  useRelatedDemands,
+  useSmartDemands,
+} from "@/rekuest/smart/demands";
 import type {
   SectionItems,
   SectionStatus,
@@ -15,7 +21,7 @@ import type {
 } from "@/core/smart/extensions/section";
 import { useStableData } from "@/core/smart/extensions/useStableData";
 import { InstallDefinitionRow } from "./definitions";
-import { definitionsVariables, toKabinetDemands } from "./queries";
+import { definitionsVariables } from "./queries";
 
 const QUERY_OPTIONS = {
   fetchPolicy: "cache-and-network",
@@ -34,26 +40,36 @@ const worse = (a: SectionStatus, b: SectionStatus) => (STATUS_RANK[a] >= STATUS_
 /**
  * Definitions that could be installed to act on the selection, one row each;
  * choosing one opens the install dialog for its release (authorize, then
- * deploy). They are asked for with the demands the Run section uses,
- * descriptors included, so kabinet offers only what the selection's ports
- * accept. A multi-selection also asks for definitions that take one item
- * (rekuest's Batch): installing consumes nothing, so a definition run per
- * item is as much an answer as one taking the list.
+ * deploy). They are asked for as the Run section asks for actions: the same
+ * demands, descriptors included (so kabinet offers only what the selection's
+ * ports accept), the page's related contexts ORed in, the menu's collection.
+ * A multi-selection also asks for definitions that take one item (rekuest's
+ * Batch): installing consumes nothing, so a definition run per item is as
+ * much an answer as one taking the list.
  */
 const useInstallItems = (ctx: SmartSectionContext): SectionItems<SmartDefinitionFragment> => {
-  const demands = useSmartDemands(ctx);
+  const page = pageSource(ctx);
+  const demands = useSmartDemands(page);
+  const alsoDemands = useRelatedDemands(ctx);
   const skipBatch = demands.objects !== "many";
 
   const single = useStableData(
     useSmartDefinitionsQuery({
       ...QUERY_OPTIONS,
-      variables: definitionsVariables(toKabinetDemands(demands.single), { search: ctx.filter }),
+      variables: definitionsVariables(demands.single, {
+        search: ctx.filter,
+        collection: ctx.collection,
+        alsoDemands,
+      }),
     }),
   );
   const batch = useStableData(
     useSmartDefinitionsQuery({
       ...QUERY_OPTIONS,
-      variables: definitionsVariables(toKabinetDemands(demands.batch), { search: ctx.filter }),
+      variables: definitionsVariables(demands.batch, {
+        search: ctx.filter,
+        collection: ctx.collection,
+      }),
       skip: skipBatch,
     }),
     skipBatch,
@@ -84,6 +100,7 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<SmartDefinitionFra
   tier: "remote",
   Guard: KabinetGuard,
   applies: () => true,
+  related: { mode: "or", routeOf: firstArgIdentifier },
   useItems: useInstallItems,
   itemKey: (definition) => definition.id,
   searchParts: (definition) => [definition.name, definition.description],
@@ -96,7 +113,7 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<SmartDefinitionFra
         service: "kabinet",
         name: "definitions",
         query: SmartDefinitionsDocument,
-        variables: definitionsVariables(toKabinetDemands(demands.single)),
+        variables: definitionsVariables(demands.single, { collection: target.collection }),
       },
       ...(demands.objects === "many"
         ? [
@@ -104,7 +121,7 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<SmartDefinitionFra
               service: "kabinet",
               name: "batchDefinitions",
               query: SmartDefinitionsDocument,
-              variables: definitionsVariables(toKabinetDemands(demands.batch)),
+              variables: definitionsVariables(demands.batch, { collection: target.collection }),
             },
           ]
         : []),

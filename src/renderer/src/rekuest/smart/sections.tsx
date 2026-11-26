@@ -11,8 +11,13 @@ import {
   useShortcutsQuery,
 } from "@/rekuest/api/graphql";
 import { AppWindow, Boxes, PlayCircle, ShieldCheck, Zap } from "lucide-react";
-import { buildDemands, demandKey, useSmartDemands } from "@/rekuest/smart/demands";
-import React from "react";
+import {
+  buildDemands,
+  firstArgIdentifier,
+  pageSource,
+  useRelatedDemands,
+  useSmartDemands,
+} from "@/rekuest/smart/demands";
 import { supervisorOf } from "@/rekuest/smart/agent";
 import type {
   SectionItems,
@@ -49,33 +54,6 @@ const QUERY_OPTIONS = {
 /** Something to ask about: a selection, or (for a "new" button) a return type. */
 const hasSubject = (props: SmartContextProps) =>
   props.objects.length > 0 || (props.returns?.length ?? 0) > 0;
-
-/**
- * The page's own selection: in the mount for one of its related contexts it
- * is `primary`, and the one query is built from it there too.
- */
-const pageSource = (ctx: SmartSectionContext) => ctx.primary ?? ctx;
-
-/**
- * The demands of the page's related contexts (its whole lens), which the
- * selection's query ORs in. Every mount builds the same list, so Apollo sends
- * one request for all of them.
- */
-const useRelatedDemands = (ctx: SmartSectionContext) => {
-  const key = (ctx.related ?? []).map((related) => demandKey({ objects: related.objects })).join("‖");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return React.useMemo(
-    () =>
-      (ctx.related ?? [])
-        .filter((related) => related.objects.length > 0)
-        .map((related) => buildDemands({ objects: related.objects }).single),
-    [key],
-  );
-};
-
-/** Which context a row belongs to: what its first arg takes, as the demands asked at 0. */
-const firstArgIdentifier = (item: { args: readonly { identifier?: string | null }[] }) =>
-  item.args[0]?.identifier ?? undefined;
 
 const useShortcutItems = (ctx: SmartSectionContext): SectionItems<ListShortcutFragment> => {
   const demands = useSmartDemands(pageSource(ctx));

@@ -8,6 +8,7 @@ import {
 import React from "react";
 import type { JSONObject, Structure } from "@/core/types";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
+import type { SmartSectionContext } from "@/core/smart/extensions/section";
 
 /**
  * The port demands the menu asks the servers with: "an action whose first arg
@@ -156,3 +157,31 @@ export const useSmartDemands = (source: DemandSource): SmartDemands => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return React.useMemo(() => buildDemands(source), [key]);
 };
+
+/**
+ * The page's own selection: in the mount for one of its related contexts it
+ * is `primary`, and the one query is built from it there too.
+ */
+export const pageSource = (ctx: SmartSectionContext) => ctx.primary ?? ctx;
+
+/**
+ * The demands of the page's related contexts (its whole lens), which the
+ * selection's query ORs in. Every mount builds the same list, so Apollo sends
+ * one request for all of them. Used by every section that asks with demands
+ * (rekuest's Run and Shortcuts, kabinet's Installable).
+ */
+export const useRelatedDemands = (ctx: SmartSectionContext) => {
+  const key = (ctx.related ?? []).map((related) => demandKey({ objects: related.objects })).join("‖");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return React.useMemo(
+    () =>
+      (ctx.related ?? [])
+        .filter((related) => related.objects.length > 0)
+        .map((related) => buildDemands({ objects: related.objects }).single),
+    [key],
+  );
+};
+
+/** Which context a row belongs to: what its first arg takes, as the demands asked at 0. */
+export const firstArgIdentifier = (item: { args: readonly { identifier?: string | null }[] }) =>
+  item.args[0]?.identifier ?? undefined;

@@ -56,6 +56,10 @@ fragment SmartDefinition on Definition {
   id
   name
   description
+  # What its first arg takes: which related context of the page a row belongs to.
+  args {
+    identifier
+  }
   logo {
     ...KabinetLogoBlok
   }

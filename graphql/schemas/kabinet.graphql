@@ -1776,6 +1776,16 @@ input DefinitionFilter {
   """
   alreadyDeployed: Boolean
 
+  """
+  Any of these demand sets: the definitions that satisfy every demand of at least one set (each set as `demands`). One statement, so prefer it to `OR`-ing `demands`. An empty list is ignored; an empty set is an error.
+  """
+  anyDemands: [[PortDemandInput!]!]
+
+  """
+  Keep only definitions provided by the app of this identifier (by any of its releases).
+  """
+  appIdentifier: String
+
   """Keep only definitions provided by these apps."""
   apps: [ID!]
 
@@ -1813,6 +1823,9 @@ input DefinitionFilter {
   """
   inCollaboration: ID
 
+  """Keep only definitions in the collection of this name."""
+  inCollection: String
+
   """Keep only definitions that declare all of these interfaces."""
   interfaces: [String!]
 
@@ -1821,6 +1834,14 @@ input DefinitionFilter {
 
   """Keep only definitions of these kinds (function, generator, ...)."""
   kinds: [ActionKind!]
+
+  """The cleartext name of this Action"""
+  name: StrFilterLookup
+
+  """
+  Keep only definitions whose ports accept the given concrete objects: `demands`, for the case where each match carries the object's descriptors, checked against the port's `requires`.
+  """
+  objectDemands: [PortDemandInput!]
 
   """Keep only definitions implementing these protocols."""
   protocols: [ID!]
@@ -1942,7 +1963,21 @@ input DefinitionInput {
 
 """Order for action definitions."""
 input DefinitionOrder @oneOf {
+  """
+  By the identifier of the app that provides the definition (the first, alphabetically, when several do), so one app's definitions stay together across pages.
+  """
+  appIdentifier: Ordering
+
+  """
+  By the name of the definition's first collection (alphabetically): the collection a grouped list files it under. Definitions in no collection come last.
+  """
+  collection: Ordering
   definedAt: Ordering
+
+  """
+  Deployed first (DESC) or last (ASC), by `DefinitionFilter.alreadyDeployed`: rekuest's `ActionOrder.assignable` for what is not running yet. The order the filters set (a `search`'s ranking) is kept as the tie-break.
+  """
+  deployed: Ordering
   kind: Ordering
   name: Ordering
 }
@@ -3292,8 +3327,23 @@ input PortGroupInput {
 The kind of a port: its structural type. Decides which of children, identifier and choices the port must, may or must not carry (see docs/design/ports.md).
 """
 enum PortKind {
+  """
+  A catalog prop that names a file an app registered (`self.assets.<name>`). No children. Never an agent's port.
+  """
+  ASSET
+
+  """
+  A catalog prop that reads and writes a local (`bind`); its one child, keyed '...', is what it writes. Never an agent's port.
+  """
+  BINDING
+
   """A boolean. No children."""
   BOOL
+
+  """
+  A catalog prop that holds a call (onClick); its children are the payload it is called with. Never an agent's port.
+  """
+  CALLBACK
 
   """An ISO-8601 date or datetime string. No children."""
   DATE
@@ -4580,6 +4630,26 @@ input StateImplementationInput {
   The stable identity key of the state, matched by state demands. Defaults to the interface when omitted.
   """
   key: String = null
+}
+
+input StrFilterLookup {
+  contains: String
+  endsWith: String
+  exact: String
+  gt: String
+  gte: String
+  iContains: String
+  iEndsWith: String
+  iExact: String
+  iRegex: String
+  iStartsWith: String
+  inList: [String!]
+  isNull: Boolean
+  lt: String
+  lte: String
+  range: [String!]
+  regex: String
+  startsWith: String
 }
 
 type StringAssignWidget implements AssignWidget {
