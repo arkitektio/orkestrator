@@ -73,7 +73,9 @@ describe("RailBackdrop", () => {
     use({ railBackdrop: "custom", railBackdropVersion: 2 });
     rerender(<RailBackdrop />);
     await waitFor(() => expect(screen.getByTestId("rail-backdrop").style.backgroundImage).toContain("blob:backdrop-2"));
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:backdrop-1");
+    // The old URL is revoked in a passive effect's cleanup, which React runs after the
+    // commit that shows the new one: waited for too, or this races the effect pass.
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:backdrop-1"));
   });
 
   it("paints nothing when the image is gone from storage", async () => {
