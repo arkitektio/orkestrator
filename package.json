@@ -1,6 +1,6 @@
 {
   "name": "orkestrator",
-  "version": "8.33.1",
+  "version": "8.34.0",
   "license": "MIT",
   "description": "The client application for the Arkitekt Framework",
   "main": "./out/main/index.js",

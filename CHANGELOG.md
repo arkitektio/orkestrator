@@ -1,3 +1,19 @@
+# [8.34.0](https://github.com/arkitektio/orkestrator/compare/v8.33.1...v8.34.0) (2026-11-26)
+
+
+### Bug Fixes
+
+* **deps:** three is typed again ([161886c](https://github.com/arkitektio/orkestrator/commit/161886c899a8a2e9a805773062be248f49c29ec7))
+* **kabinet:** Installable leaves the menu's collection out, kabinet stores none for a definition ([f49e7b6](https://github.com/arkitektio/orkestrator/commit/f49e7b68826285dc263a37c6cbc9c8d7309cbef1))
+
+
+### Features
+
+* every path segment opens a page ([f166f6b](https://github.com/arkitektio/orkestrator/commit/f166f6b47b22f5e49cbac76927c9716a2c6b7593))
+* **kabinet:** Installable asks as Run does, related contexts and collection included ([5d6fb82](https://github.com/arkitektio/orkestrator/commit/5d6fb82d59363ce3565b357c5785aabb06354c5f))
+* **kabinet:** Installable narrows to the menu's collection, as Run does ([1e6f336](https://github.com/arkitektio/orkestrator/commit/1e6f3369e53dcbc5c7e9b76410315c4c5337cd7e))
+* **mikro:** an upload asks before sending a file mikro already holds ([655ab9e](https://github.com/arkitektio/orkestrator/commit/655ab9e4c1f4ee1c90b2d7d23707eade12c70080))
+
 ## [8.33.1](https://github.com/arkitektio/orkestrator/compare/v8.33.0...v8.33.1) (2026-11-24)
 
 
