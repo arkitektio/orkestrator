@@ -57,13 +57,6 @@ describe("the definitions asked for, as Run asks for actions", () => {
     const variables = definitionsVariables([], { collection: "Analysis" });
     expect(variables.filters?.inCollection).toBe("Analysis");
   });
-
-  it("prefetches with the collection the menu opens with", () => {
-    const target = { objects: [image("1")], collection: "Analysis" };
-    expect(definitionQueries(target)[0].variables).toEqual(
-      definitionsVariables(buildDemands(target).single, { collection: "Analysis" }),
-    );
-  });
 });
 
 describe("the release a definition installs from", () => {

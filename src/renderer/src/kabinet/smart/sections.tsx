@@ -42,7 +42,9 @@ const worse = (a: SectionStatus, b: SectionStatus) => (STATUS_RANK[a] >= STATUS_
  * choosing one opens the install dialog for its release (authorize, then
  * deploy). They are asked for as the Run section asks for actions: the same
  * demands, descriptors included (so kabinet offers only what the selection's
- * ports accept), the page's related contexts ORed in, the menu's collection.
+ * ports accept) and the page's related contexts ORed in. Not the menu's
+ * collection: kabinet stores no collections for a definition yet, so
+ * `inCollection` would answer nothing.
  * A multi-selection also asks for definitions that take one item (rekuest's
  * Batch): installing consumes nothing, so a definition run per item is as
  * much an answer as one taking the list.
@@ -56,20 +58,13 @@ const useInstallItems = (ctx: SmartSectionContext): SectionItems<SmartDefinition
   const single = useStableData(
     useSmartDefinitionsQuery({
       ...QUERY_OPTIONS,
-      variables: definitionsVariables(demands.single, {
-        search: ctx.filter,
-        collection: ctx.collection,
-        alsoDemands,
-      }),
+      variables: definitionsVariables(demands.single, { search: ctx.filter, alsoDemands }),
     }),
   );
   const batch = useStableData(
     useSmartDefinitionsQuery({
       ...QUERY_OPTIONS,
-      variables: definitionsVariables(demands.batch, {
-        search: ctx.filter,
-        collection: ctx.collection,
-      }),
+      variables: definitionsVariables(demands.batch, { search: ctx.filter }),
       skip: skipBatch,
     }),
     skipBatch,
@@ -113,7 +108,7 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<SmartDefinitionFra
         service: "kabinet",
         name: "definitions",
         query: SmartDefinitionsDocument,
-        variables: definitionsVariables(demands.single, { collection: target.collection }),
+        variables: definitionsVariables(demands.single),
       },
       ...(demands.objects === "many"
         ? [
@@ -121,7 +116,7 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<SmartDefinitionFra
               service: "kabinet",
               name: "batchDefinitions",
               query: SmartDefinitionsDocument,
-              variables: definitionsVariables(demands.batch, { collection: target.collection }),
+              variables: definitionsVariables(demands.batch),
             },
           ]
         : []),
