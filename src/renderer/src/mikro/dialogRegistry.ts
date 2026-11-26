@@ -16,6 +16,7 @@ import { RenameLensForm } from "./forms/RenameLensForm";
 import { UpdateFolderForm } from "./forms/UpdateFolderForm";
 import { UploadFixtureForm } from "./forms/UploadFixtureForm";
 import { AgentUploadFileForm } from "./forms/AgentUploadFileForm";
+import { DuplicateUploadForm } from "./forms/DuplicateUploadForm";
 
 /**
  * mikro's dialogs, by id (a `dialogs` builtin). Its own file, apart from
@@ -45,6 +46,8 @@ export const MIKRO_DIALOGS = {
   uploadfixture: UploadFixtureForm,
   // a file the Orkestrator agent's `upload_file` asks the person for (awaited)
   agentuploadfile: prefersSize("small", AgentUploadFileForm),
+  // asked before an upload when mikro already holds the file (useMikroBigFileUpload, awaited)
+  duplicateupload: DuplicateUploadForm,
   // a lineage-safe delete that would take what was made from it along (lib/deletion)
   cascadedelete: prefersSize("small", CascadeDeleteDialog),
 };

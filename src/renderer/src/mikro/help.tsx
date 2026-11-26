@@ -278,6 +278,19 @@ export const MIKRO_HELP = {
       ]}
       tips={[
         <>To upload new files, use <b>Upload Files</b> on the Dashboard, or drop them onto the Dashboard or an open folder.</>,
+        <>When a file you upload is already stored, you are asked whether to <b>Use the stored file</b> or <b>Upload anyway</b>.</>,
+      ]}
+    />
+  ),
+  duplicates: (
+    <PageHelp
+      intro="Files that hold exactly the same bytes, grouped, the most space taken twice first. Nothing here is merged: every copy stays until you delete it."
+      steps={[
+        <>Click a file to open it; its <b>Info</b> tab lists the other files with the same bytes under <b>Same bytes</b>.</>,
+        <>Right-click a copy you do not need and choose <b>Delete File</b>.</>,
+      ]}
+      tips={[
+        <>A file appears here once its <b>Digest</b> is known (shown in its <b>Info</b> tab). New uploads usually have one right away; older ones get theirs when the hub's hashing job has run.</>,
       ]}
     />
   ),

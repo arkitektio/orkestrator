@@ -222,6 +222,10 @@ declare global {
       >;
       discardAsset: (opts: { path: string }) => Promise<void>;
       cancelBigFile: (opts: { uploadId: string }) => Promise<void>;
+      /** The file's size and sample (SHA-256 of the size and its first, middle and last 4 MiB), as mikro's `fileCandidates` compares them. */
+      sampleBigFile: (opts: { path: string }) => Promise<{ size: number; sample: string }>;
+      /** The whole file's digest (SHA-256 composite over its parts), as mikro's `BigFileStore.digest`. Reads the file once. */
+      digestBigFile: (opts: { path: string }) => Promise<{ size: number; digest: string }>;
       downloadBigFile: (opts: { downloadId: string; grant: any; endpointUrl: string; fileName: string; savePath?: string }) => Promise<string>;
       cancelBigFileDownload: (opts: { downloadId: string }) => Promise<void>;
       showItemInFolder: (path: string) => Promise<void>;

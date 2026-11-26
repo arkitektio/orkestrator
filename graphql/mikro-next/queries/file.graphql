@@ -45,3 +45,19 @@ query GetListFile($id: ID!) {
     ...ListFile
   }
 }
+
+# Files that may already hold a file about to be uploaded: same size and the
+# same sample (SHA-256 of the size and the first, middle and last 4 MiB,
+# computed in main by `upload:sample`). A candidate, not a proof.
+query FileCandidates($size: ByteCount!, $sample: String!) {
+  fileCandidates(size: $size, sample: $sample) {
+    ...DuplicateFile
+  }
+}
+
+# Sets of files holding the same bytes, most redundant bytes first.
+query FileDuplicateGroups($pagination: OffsetPaginationInput) {
+  fileDuplicateGroups(pagination: $pagination) {
+    ...DuplicateFileGroup
+  }
+}

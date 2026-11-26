@@ -1,7 +1,14 @@
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { UploadAlreadyStored } from "@/core/datalayer/UploadProvider";
+import { DialogDismissedError } from "@/core/dialogs/DialogProvider";
+import { useDialog } from "@/core/dialogs/registry";
 import { useMikro } from "@/mikro/api/funcs";
+import type { DuplicateUploadChoice } from "@/mikro/forms/DuplicateUploadForm";
 import {
   BigFileUploadGrantFragment,
+  FileCandidatesDocument,
+  FileCandidatesQuery,
+  FileCandidatesQueryVariables,
   FinishBigfileUploadDocument,
   FinishBigfileUploadMutation,
   FinishBigfileUploadMutationVariables,
@@ -79,7 +86,23 @@ export type UploadOptions = {
   signal?: AbortSignal;
   onProgress?: (ev: ProgressEvent) => void;
   id?: string;
+  /**
+   * Ask before sending a file mikro already holds (default). Off where the
+   * upload itself runs inside an awaited dialog: the question would replace it.
+   */
+  checkDuplicates?: boolean;
 };
+
+/** One question at a time: files dropped together are asked about in turn, never over each other. */
+let asking: Promise<unknown> = Promise.resolve();
+const oneAtATime = <T,>(ask: () => Promise<T>): Promise<T> => {
+  const next = asking.then(ask, ask);
+  asking = next.catch(() => undefined);
+  return next;
+};
+
+const filePathOf = (file: File): string =>
+  window.api?.getFilePath ? window.api.getFilePath(file) : (file as any).path || file.name;
 
 const uploadToStore = async (
   file: File,
@@ -108,7 +131,7 @@ const uploadToStore = async (
 
     // In Electron, File objects dragged into the app might fall back to web standards depending on version/handling.
     // Use window.api.getFilePath(file) if available (via webUtils).
-    const filePath = window.api?.getFilePath ? window.api.getFilePath(file) : (file as any).path || file.name;
+    const filePath = filePathOf(file);
 
     window.api.uploadBigFile({
        uploadId,
@@ -126,11 +149,78 @@ const uploadToStore = async (
 export const useMikroBigFileUpload = () => {
   const client = useMikro();
   const datalayerEndpoint = useDatalayerEndpoint();
+  const { awaitDialog } = useDialog();
+
+  /**
+   * Before a byte is sent: does mikro already hold this file? The sample (size
+   * and three 4 MiB windows, 12 MiB read) finds candidates; only then is the
+   * whole file hashed, to tell a copy from a file that merely shares those
+   * windows. A real copy — or one whose digest mikro does not know yet — is put
+   * to the person. "Use the stored file" ends the upload as `UploadAlreadyStored`;
+   * closing the question cancels it. Anything failing here only means the check
+   * is skipped: it never stops an upload.
+   */
+  const askAboutCopies = useCallback(
+    async (file: File, options?: UploadOptions) => {
+      if (!client || !window.api?.sampleBigFile || !window.api?.digestBigFile) return;
+      const path = filePathOf(file);
+      let candidates: FileCandidatesQuery["fileCandidates"] = [];
+      let size = 0;
+      let verified = false;
+      try {
+        const sampled = await window.api.sampleBigFile({ path });
+        size = sampled.size;
+        const { data } = await client.query<FileCandidatesQuery, FileCandidatesQueryVariables>({
+          query: FileCandidatesDocument,
+          variables: { size: sampled.size, sample: sampled.sample },
+          fetchPolicy: "network-only",
+        });
+        candidates = data?.fileCandidates ?? [];
+        if (candidates.length === 0) return;
+        options?.signal?.throwIfAborted();
+        const { digest } = await window.api.digestBigFile({ path });
+        const same = candidates.filter((candidate) => candidate.store.digest === digest);
+        // A candidate with a known, different digest is a different file.
+        candidates = same.length > 0 ? same : candidates.filter((candidate) => candidate.store.digest == null);
+        if (candidates.length === 0) return;
+        verified = same.length > 0;
+      } catch (error) {
+        if ((error as Error)?.name === "AbortError") throw error;
+        console.warn("Could not check whether the file is already stored; uploading it.", error);
+        return;
+      }
+
+      const choice = await oneAtATime(() =>
+        awaitDialog<DuplicateUploadChoice, "duplicateupload">("duplicateupload", {
+          fileName: file.name,
+          size,
+          verified,
+          candidates,
+        }),
+      ).catch((error) => {
+        if (error instanceof DialogDismissedError) throw new DOMException("Aborted", "AbortError");
+        throw error;
+      });
+      if (choice.kind === "existing") {
+        throw new UploadAlreadyStored({
+          object: { identifier: "@mikro/file", id: choice.file.id, label: choice.file.name },
+          container: choice.file.folder
+            ? { identifier: "@mikro/folder", id: choice.file.folder.id, label: choice.file.folder.name }
+            : undefined,
+        });
+      }
+    },
+    [client, awaitDialog],
+  );
 
   const upload = useCallback(
     async (file: File, options?: UploadOptions) => {
       if (!client) {
         throw Error("No client configured");
+      }
+
+      if (options?.checkDuplicates !== false) {
+        await askAboutCopies(file, options);
       }
 
       const data = await client.mutate<
@@ -166,7 +256,7 @@ export const useMikroBigFileUpload = () => {
 
       return z.store;
     },
-    [client, datalayerEndpoint],
+    [client, datalayerEndpoint, askAboutCopies],
   );
 
   return upload;

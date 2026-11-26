@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createUploadStore } from "./UploadProvider";
+import { UploadAlreadyStored, createUploadStore } from "./UploadProvider";
 
 const file = (name: string) => new File(["x"], name);
 
@@ -51,5 +51,26 @@ describe("upload store", () => {
 
     expect(store.getState().uploads).toHaveLength(0);
     expect(signal?.aborted).toBe(false);
+  });
+
+  it("finishes an upload the person answered with a stored copy, linking to it", async () => {
+    const store = createUploadStore();
+    const refs = { object: { identifier: "@mikro/file", id: "7" } };
+    const created = vi.fn();
+    const result = await store.getState().startUpload(
+      file("a.tif"),
+      async () => {
+        throw new UploadAlreadyStored(refs);
+      },
+      created,
+    );
+
+    expect(result).toBeUndefined();
+    expect(created).not.toHaveBeenCalled();
+    expect(store.getState().uploads[0]).toMatchObject({
+      status: "completed",
+      refs,
+      note: "already stored",
+    });
   });
 });

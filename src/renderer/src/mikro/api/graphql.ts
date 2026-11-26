@@ -1487,12 +1487,18 @@ export type BigFileStore = {
   accessGrant: BigFileAccessGrant;
   bucket: Scalars['String']['output'];
   contentType?: Maybe<Scalars['String']['output']>;
+  /** What the bytes are: the hex SHA-256 composite over parts cut at a size that follows from the file's size (`digestAlgorithm`). Two files with the same digest and size hold the same bytes. Null while it is owed */
+  digest?: Maybe<Scalars['String']['output']>;
+  /** How `digest` was computed: `sha256-composite` */
+  digestAlgorithm?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
   maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
+  /** A fingerprint of the size and three windows of the file: what a client computes before uploading, to ask whether the file may already be stored. A candidate, not a proof */
+  sample?: Maybe<Scalars['String']['output']>;
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
   sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
@@ -1502,10 +1508,12 @@ export type BigFileUploadGrant = {
   __typename?: 'BigFileUploadGrant';
   accessKey: Scalars['String']['output'];
   bucket: Scalars['String']['output'];
+  checksumAlgorithm: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
   maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
+  partSize: Scalars['ByteCount']['output'];
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
@@ -3856,6 +3864,19 @@ export type DistributionChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
+/** Files holding one set of bytes: the same digest and size. What keeping one of them would free is `redundantBytes` */
+export type DuplicateFileGroup = {
+  __typename?: 'DuplicateFileGroup';
+  /** The bytes' digest (`BigFileStore.digest`) */
+  digest: Scalars['String']['output'];
+  /** The files holding these bytes, oldest first */
+  files: Array<File>;
+  /** The bytes stored more than once: the size times the copies past the first */
+  redundantBytes: Scalars['ByteCount']['output'];
+  /** The size of each copy, in bytes */
+  size: Scalars['ByteCount']['output'];
+};
+
 /** How a viewer eases the camera along the travel into an animation waypoint. */
 export enum Easing {
   /** Start slow, arrive at full speed. Right for the first leg, pulling away from rest. */
@@ -4036,6 +4057,8 @@ export type File = {
   derivedContainersCount: Scalars['Int']['output'];
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** The other files of this organization holding the same bytes: the same store, or one whose `digest` and size are this file's. Empty while this file's digest is owed (`store.digest` is null), and read only -- nothing is merged; both files stand until someone deletes one */
+  duplicates: Array<File>;
   /** The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers` */
   exportedFrom: Array<FileLink>;
   /** The folder this file is filed in, or null once its folder was deleted (deleting a folder unfiles what is in it and destroys nothing). Organisational only: it says where a user keeps the file, nothing about its contents */
@@ -4109,6 +4132,8 @@ export type FileFilter = {
   createdThroughTask?: InputMaybe<Scalars['String']['input']>;
   /** Only what the workflow (its root task id) created */
   createdUnder?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter for files that share their bytes (`store.digest` and size) with another file of the organization (`true`), or with none (`false`). A file whose digest is still owed shares with none */
+  duplicated?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the files written out of this container -- the OME-TIFF a dataset was exported to. The opposite direction from `sourceOf` */
   exportedFrom?: InputMaybe<FileLinkContainerRef>;
   /** Filter by file extension, case-insensitively and with the leading dot optional: `czi`, `.czi` and `CZI` are the same request, and `ome.tiff` matches only the double extension. A normalizing convenience over `name: {iEndsWith: ".czi"}`, which is still there if you want the raw lookup */
@@ -9891,6 +9916,10 @@ export type Query = {
   describe: Array<DescriptorValue>;
   /** Get a single file by ID */
   file: File;
+  /** The files of this organization that may already hold a file a client is about to upload: the same size and the same `sample` (the SHA-256 of the size and the first, middle and last 4 MiB -- `BigFileStore.sample`). A candidate, not a proof: a candidate whose `store.digest` is known can be compared with the client's own digest of the whole file. Oldest first */
+  fileCandidates: Array<File>;
+  /** The sets of files of this organization holding the same bytes (the same `store.digest` and size), most redundant bytes first. Files whose digest is still owed are in none: `digest_bigfiles` records it */
+  fileDuplicateGroups: Array<DuplicateFileGroup>;
   /** List files (raw microscopy files such as .czi or .ome.tiff) */
   files: Array<File>;
   /** Get statistics about files: counts and time-bucketed series over the files of the current organization */
@@ -10218,6 +10247,17 @@ export type QueryDescribeArgs = {
 
 export type QueryFileArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryFileCandidatesArgs = {
+  sample: Scalars['String']['input'];
+  size: Scalars['ByteCount']['input'];
+};
+
+
+export type QueryFileDuplicateGroupsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -14641,9 +14681,19 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
   )>, organization: { __typename?: 'Organization', id: string, identifier: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type DetailFileFragment = (
-  { __typename?: 'File', createdAt: any, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
+  { __typename?: 'File', createdAt: any, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null, digest?: string | null, digestAlgorithm?: string | null }, duplicates: Array<(
+    { __typename?: 'File' }
+    & DuplicateFileFragment
+  )> }
   & FileFragment
 );
+
+export type DuplicateFileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, createdAt: any, creator: { __typename?: 'User', sub: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null, store: { __typename?: 'BigFileStore', id: string, digest?: string | null } };
+
+export type DuplicateFileGroupFragment = { __typename?: 'DuplicateFileGroup', digest: string, size: number, redundantBytes: number, files: Array<(
+    { __typename?: 'File' }
+    & DuplicateFileFragment
+  )> };
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -19372,6 +19422,27 @@ export type GetListFileQuery = { __typename?: 'Query', file: (
     & ListFileFragment
   ) };
 
+export type FileCandidatesQueryVariables = Exact<{
+  size: Scalars['ByteCount']['input'];
+  sample: Scalars['String']['input'];
+}>;
+
+
+export type FileCandidatesQuery = { __typename?: 'Query', fileCandidates: Array<(
+    { __typename?: 'File' }
+    & DuplicateFileFragment
+  )> };
+
+export type FileDuplicateGroupsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type FileDuplicateGroupsQuery = { __typename?: 'Query', fileDuplicateGroups: Array<(
+    { __typename?: 'DuplicateFileGroup' }
+    & DuplicateFileGroupFragment
+  )> };
+
 export type GetFixtureQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -22585,6 +22656,25 @@ export const FileFragmentDoc = gql`
 }
     ${BigFileStoreFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
+export const DuplicateFileFragmentDoc = gql`
+    fragment DuplicateFile on File {
+  id
+  name
+  size
+  createdAt
+  creator {
+    sub
+  }
+  folder {
+    id
+    name
+  }
+  store {
+    id
+    digest
+  }
+}
+    `;
 export const DetailFileFragmentDoc = gql`
     fragment DetailFile on File {
   ...File
@@ -22605,9 +22695,25 @@ export const DetailFileFragmentDoc = gql`
     originalFileName
     sizeBytes
     contentType
+    digest
+    digestAlgorithm
+  }
+  duplicates {
+    ...DuplicateFile
   }
 }
-    ${FileFragmentDoc}`;
+    ${FileFragmentDoc}
+${DuplicateFileFragmentDoc}`;
+export const DuplicateFileGroupFragmentDoc = gql`
+    fragment DuplicateFileGroup on DuplicateFileGroup {
+  digest
+  size
+  redundantBytes
+  files {
+    ...DuplicateFile
+  }
+}
+    ${DuplicateFileFragmentDoc}`;
 export const ListFileFragmentDoc = gql`
     fragment ListFile on File {
   descriptors
@@ -31525,6 +31631,77 @@ export function useGetListFileLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type GetListFileQueryHookResult = ReturnType<typeof useGetListFileQuery>;
 export type GetListFileLazyQueryHookResult = ReturnType<typeof useGetListFileLazyQuery>;
 export type GetListFileQueryResult = Apollo.QueryResult<GetListFileQuery, GetListFileQueryVariables>;
+export const FileCandidatesDocument = gql`
+    query FileCandidates($size: ByteCount!, $sample: String!) {
+  fileCandidates(size: $size, sample: $sample) {
+    ...DuplicateFile
+  }
+}
+    ${DuplicateFileFragmentDoc}`;
+
+/**
+ * __useFileCandidatesQuery__
+ *
+ * To run a query within a React component, call `useFileCandidatesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFileCandidatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFileCandidatesQuery({
+ *   variables: {
+ *      size: // value for 'size'
+ *      sample: // value for 'sample'
+ *   },
+ * });
+ */
+export function useFileCandidatesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<FileCandidatesQuery, FileCandidatesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<FileCandidatesQuery, FileCandidatesQueryVariables>(FileCandidatesDocument, options);
+      }
+export function useFileCandidatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<FileCandidatesQuery, FileCandidatesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<FileCandidatesQuery, FileCandidatesQueryVariables>(FileCandidatesDocument, options);
+        }
+export type FileCandidatesQueryHookResult = ReturnType<typeof useFileCandidatesQuery>;
+export type FileCandidatesLazyQueryHookResult = ReturnType<typeof useFileCandidatesLazyQuery>;
+export type FileCandidatesQueryResult = Apollo.QueryResult<FileCandidatesQuery, FileCandidatesQueryVariables>;
+export const FileDuplicateGroupsDocument = gql`
+    query FileDuplicateGroups($pagination: OffsetPaginationInput) {
+  fileDuplicateGroups(pagination: $pagination) {
+    ...DuplicateFileGroup
+  }
+}
+    ${DuplicateFileGroupFragmentDoc}`;
+
+/**
+ * __useFileDuplicateGroupsQuery__
+ *
+ * To run a query within a React component, call `useFileDuplicateGroupsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFileDuplicateGroupsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFileDuplicateGroupsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useFileDuplicateGroupsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<FileDuplicateGroupsQuery, FileDuplicateGroupsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<FileDuplicateGroupsQuery, FileDuplicateGroupsQueryVariables>(FileDuplicateGroupsDocument, options);
+      }
+export function useFileDuplicateGroupsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<FileDuplicateGroupsQuery, FileDuplicateGroupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<FileDuplicateGroupsQuery, FileDuplicateGroupsQueryVariables>(FileDuplicateGroupsDocument, options);
+        }
+export type FileDuplicateGroupsQueryHookResult = ReturnType<typeof useFileDuplicateGroupsQuery>;
+export type FileDuplicateGroupsLazyQueryHookResult = ReturnType<typeof useFileDuplicateGroupsLazyQuery>;
+export type FileDuplicateGroupsQueryResult = Apollo.QueryResult<FileDuplicateGroupsQuery, FileDuplicateGroupsQueryVariables>;
 export const GetFixtureDocument = gql`
     query GetFixture($id: ID!) {
   fixture(id: $id) {

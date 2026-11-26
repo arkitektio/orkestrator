@@ -44,6 +44,8 @@ export const AgentUploadFileForm = (props: {
       setProgress(0);
       try {
         const key = await upload(file, {
+          // This form is an awaited dialog: a duplicate question would replace it.
+          checkDuplicates: false,
           onProgress: (event) => {
             if (event.lengthComputable) setProgress((event.loaded / event.total) * 100);
           },

@@ -25,12 +25,26 @@ export type UploadRefs = {
   container?: Structure;
 };
 
+/**
+ * What an uploader throws when the person chose the copy the service already
+ * holds over sending the file again: nothing was uploaded, and `refs` is what
+ * the row links to instead. Not a failure — the row finishes, saying so.
+ */
+export class UploadAlreadyStored extends Error {
+  constructor(readonly refs: UploadRefs) {
+    super("The file is already stored, so it was not uploaded again");
+    this.name = "UploadAlreadyStored";
+  }
+}
+
 export interface UploadTask {
   id: string;
   /** The name only: the `File` itself is never pinned by the list. */
   fileName: string;
   progress: number;
   status: UploadStatus;
+  /** Said beside the name of a finished row that did not upload (`UploadAlreadyStored`). */
+  note?: string;
   error?: string;
   refs?: UploadRefs;
   abortController?: AbortController;
@@ -50,7 +64,7 @@ export interface UploadProps {
     ) => Promise<U>,
     /** Registers the uploaded store; what it returns is what the row links to. */
     creator?: (file: File, result: U) => Promise<UploadRefs | void>
-  ) => Promise<U>;
+  ) => Promise<U | undefined>;
   cancelUpload: (id: string) => void;
   clearCompleted: () => void;
 }
@@ -179,6 +193,21 @@ export const createUploadStore = () =>
         if (removeProgress) removeProgress();
         if (removeError) removeError();
 
+        if (err instanceof UploadAlreadyStored) {
+          const done: Partial<UploadTask> = {
+            status: "completed",
+            progress: 100,
+            refs: err.refs,
+            note: "already stored",
+          };
+          set((state) => ({
+            uploads: trimLinkedUploads(
+              state.uploads.map((u) => (u.id === id ? { ...u, ...done } : u)),
+            ),
+          }));
+          if (!hasRefs({ ...newUpload, ...done })) scheduleEviction();
+          return undefined;
+        }
         if (err.name === "AbortError") {
           console.log("Upload cancelled");
           set((state) => ({
@@ -289,6 +318,10 @@ export const UploadIsland: React.FC = () => {
                 )}
 
                 <RailIslandName name={u.fileName} working={working} />
+
+                {u.note && (
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{u.note}</span>
+                )}
 
                 {u.status === "uploading" && (
                   <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">

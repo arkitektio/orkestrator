@@ -1946,6 +1946,14 @@ type BigFileStore {
   accessGrant: BigFileAccessGrant!
   bucket: String!
   contentType: String
+
+  """
+  What the bytes are: the hex SHA-256 composite over parts cut at a size that follows from the file's size (`digestAlgorithm`). Two files with the same digest and size hold the same bytes. Null while it is owed
+  """
+  digest: String
+
+  """How `digest` was computed: `sha256-composite`"""
+  digestAlgorithm: String
   id: ID!
   key: String!
 
@@ -1957,6 +1965,11 @@ type BigFileStore {
   path: String!
 
   """
+  A fingerprint of the size and three windows of the file: what a client computes before uploading, to ask whether the file may already be stored. A candidate, not a proof
+  """
+  sample: String
+
+  """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
   sizeBytes: ByteCount
@@ -1966,10 +1979,12 @@ type BigFileStore {
 type BigFileUploadGrant {
   accessKey: String!
   bucket: String!
+  checksumAlgorithm: String!
   expiresIn: Int!
   key: String!
   maxBytes: ByteCount!
   originalFileName: String
+  partSize: ByteCount!
   path: String!
   region: String!
   secretKey: String!
@@ -5033,6 +5048,25 @@ type DistributionChartLayer implements ChartLayer {
 }
 
 """
+Files holding one set of bytes: the same digest and size. What keeping one of them would free is `redundantBytes`
+"""
+type DuplicateFileGroup {
+  """The bytes' digest (`BigFileStore.digest`)"""
+  digest: String!
+
+  """The files holding these bytes, oldest first"""
+  files: [File!]!
+
+  """
+  The bytes stored more than once: the size times the copies past the first
+  """
+  redundantBytes: ByteCount!
+
+  """The size of each copy, in bytes"""
+  size: ByteCount!
+}
+
+"""
 How a viewer eases the camera along the travel into an animation waypoint.
 """
 enum Easing {
@@ -5306,6 +5340,11 @@ type File {
   descriptors: JSON!
 
   """
+  The other files of this organization holding the same bytes: the same store, or one whose `digest` and size are this file's. Empty while this file's digest is owed (`store.digest` is null), and read only -- nothing is merged; both files stand until someone deletes one
+  """
+  duplicates: [File!]!
+
+  """
   The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers`
   """
   exportedFrom(filters: FileLinkFilter): [FileLink!]!
@@ -5371,6 +5410,11 @@ input FileFilter {
 
   """Only what the workflow (its root task id) created"""
   createdUnder: ID
+
+  """
+  Filter for files that share their bytes (`store.digest` and size) with another file of the organization (`true`), or with none (`false`). A file whose digest is still owed shares with none
+  """
+  duplicated: Boolean
 
   """
   Filter to the files written out of this container -- the OME-TIFF a dataset was exported to. The opposite direction from `sourceOf`
@@ -12081,6 +12125,16 @@ type Query {
     """The unique identifier of an object"""
     id: ID!
   ): File!
+
+  """
+  The files of this organization that may already hold a file a client is about to upload: the same size and the same `sample` (the SHA-256 of the size and the first, middle and last 4 MiB -- `BigFileStore.sample`). A candidate, not a proof: a candidate whose `store.digest` is known can be compared with the client's own digest of the whole file. Oldest first
+  """
+  fileCandidates(sample: String!, size: ByteCount!): [File!]!
+
+  """
+  The sets of files of this organization holding the same bytes (the same `store.digest` and size), most redundant bytes first. Files whose digest is still owed are in none: `digest_bigfiles` records it
+  """
+  fileDuplicateGroups(pagination: OffsetPaginationInput = null): [DuplicateFileGroup!]!
 
   """List files (raw microscopy files such as .czi or .ome.tiff)"""
   files(filters: FileFilter, ordering: [FileOrder!]! = [], pagination: OffsetPaginationInput): [File!]!

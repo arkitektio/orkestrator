@@ -16,6 +16,7 @@ import CoordinateSystemPage from "./pages/CoordinateSystemPage";
 import CoordinateSystemsPage from "./pages/CoordinateSystemsPage";
 import FilePage from "./pages/FilePage";
 import FilesPage from "./pages/FilesPage";
+import DuplicatesPage from "./pages/DuplicatesPage";
 import FolderPage from "./pages/FolderPage";
 import FoldersPage from "./pages/FoldersPage";
 import HomePage from "./pages/HomePage";
@@ -56,6 +57,7 @@ export const MikroNextModule = () => {
         <Route path="lenses" element={<LensesPage />} />
         <Route path="lenses/:id" element={<LensPage />} />
         <Route path="files" element={<FilesPage />} />
+        <Route path="duplicates" element={<DuplicatesPage />} />
         <Route path="annotations" element={<AnnotationsPage />} />
         <Route path="annotations/:id" element={<AnnotationPage />} />
         <Route path="scenes" element={<ScenesPage />} />

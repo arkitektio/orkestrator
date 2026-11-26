@@ -46,6 +46,41 @@ fragment DetailFile on File {
     # written before this was recorded.
     sizeBytes
     contentType
+    # What the bytes are; null while owed (mikro's `digest_bigfiles` job).
+    digest
+    digestAlgorithm
+  }
+  # Other files of the organization holding the same bytes. Read only.
+  duplicates {
+    ...DuplicateFile
+  }
+}
+
+# A file as a duplicate or upload candidate is shown: enough to recognise it.
+fragment DuplicateFile on File {
+  id
+  name
+  size
+  createdAt
+  creator {
+    sub
+  }
+  folder {
+    id
+    name
+  }
+  store {
+    id
+    digest
+  }
+}
+
+fragment DuplicateFileGroup on DuplicateFileGroup {
+  digest
+  size
+  redundantBytes
+  files {
+    ...DuplicateFile
   }
 }
 

@@ -11,6 +11,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { NO_TRUST, pinnedTls, type NodeTrust } from '../trust/nodeFetch';
 import { BigFileUploadGrant } from '../schemas/mikro'; // or whatever the type is, I can use any here
+import { digestFile, partSizeFor, sampleFile } from './fileIdentity';
 
 // The AWS SDK talks over Node's TLS stack, which the session's certificate
 // verify proc (src/main/trust) does not cover — that only applies to
@@ -144,6 +145,12 @@ export class BigFileUploadService implements AppModule {
             return this.handleUpload(event, args);
         });
 
+        // What mikro compares before an upload (`fileCandidates`): 12 MiB read, whatever the size.
+        ipcMain.handle("upload:sample", async (_event, args: { path: string }) => sampleFile(args.path));
+        // The whole file's digest, read once: asked only when a sample matched, to tell a
+        // copy from a file that only shares its size and those windows.
+        ipcMain.handle("upload:digest", async (_event, args: { path: string }) => digestFile(args.path));
+
         ipcMain.handle("upload:cancel", async (_event, args: { uploadId: string }) => {
             const upload = this.activeUploads.get(args.uploadId);
             if (upload) {
@@ -180,8 +187,13 @@ export class BigFileUploadService implements AppModule {
                 Bucket: grant.bucket,
                 Key: grant.key,
                 Body: fileStream,
+                // A SHA-256 on every part, in the digest's parts: the object store
+                // verifies each part as it arrives and reports the composite, which
+                // is the file's digest, so the server never reads it again. Not read
+                // off the grant: an older hub that names neither still takes them.
+                ChecksumAlgorithm: "SHA256",
             },
-            partSize: 5 * 1024 * 1024,
+            partSize: partSizeFor(fs.statSync(path).size),
             leavePartsOnError: false, // delete parts on error
         });
 

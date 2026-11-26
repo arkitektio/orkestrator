@@ -2,6 +2,7 @@ import { Badge } from "@/core/ui/badge";
 import { CopyButton } from "@/core/ui/copy-button";
 import { GetFileQuery, LineageNodeKind } from "../../api/graphql";
 import { formatBytes } from "../../specs";
+import { DuplicateFileRow } from "../file/DuplicateFileRow";
 import { LineageLink } from "../lineage/LineageLink";
 import { ProvenanceSection } from "./ProvenanceSection";
 
@@ -81,7 +82,29 @@ export const FileInfoSidebar = ({ file }: { file: PageFile }) => {
         {file.store.contentType && file.store.contentType !== file.contentType && (
           <StorageRow label="Stored as" value={file.store.contentType} copy={false} />
         )}
+        {/* What the bytes are (SHA-256 over the upload's parts). Null until mikro
+            has hashed them: a fresh upload that sent no checksums, or one from
+            before digests were kept, waits for its `digest_bigfiles` job. */}
+        {file.store.digest ? (
+          <StorageRow label="Digest" value={file.store.digest} />
+        ) : (
+          <StorageRow label="Digest" value="not computed yet" copy={false} />
+        )}
       </div>
+
+      {file.duplicates.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <div className="text-xs font-semibold">Same bytes</div>
+          <p className="text-xs text-muted-foreground">
+            {file.duplicates.length === 1
+              ? "Another file holds exactly these bytes."
+              : `${file.duplicates.length} other files hold exactly these bytes.`}
+          </p>
+          {file.duplicates.map((duplicate) => (
+            <DuplicateFileRow key={duplicate.id} file={duplicate} />
+          ))}
+        </div>
+      )}
 
       <LineageLink kind={LineageNodeKind.File} id={file.id} />
 
